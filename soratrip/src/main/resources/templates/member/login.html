@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{site.title}">SoraTrip - 로그인</title>
+</head>
+<body>
+    <h2>SoraTrip 로그인</h2>
+    
+    <!-- 일반 로그인 폼 -->
+    <form th:action="@{/members/login}" method="post">
+        <div>
+            <label>이메일:</label>
+            <input type="email" name="email" required />
+        </div>
+        <div>
+            <label>비밀번호:</label>
+            <input type="password" name="password" required />
+        </div>
+        <button type="submit">로그인</button>
+    </form>
+
+    <hr>
+
+    <!-- 소셜 로그인 버튼 추가 -->
+    <div>
+        <a href="/oauth2/authorization/google">Google 계정으로 로그인</a>
+    </div>
+
+    <br>
+    <a href="/members/join">회원가입 하러가기</a>
+</body>
+</html>

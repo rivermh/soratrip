@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>SoraTrip - 회원가입</title>
+</head>
+<body>
+    <h2>SoraTrip 회원가입</h2>
+    <form th:action="@{/members/join}" th:object="${memberJoinDto}" method="post">
+        <div>
+            <label>이메일:</label>
+            <input type="email" th:field="*{email}" required />
+        </div>
+        <div>
+            <label>비밀번호:</label>
+            <input type="password" th:field="*{password}" required />
+        </div>
+        <div>
+            <label>닉네임:</label>
+            <input type="text" th:field="*{nickname}" required />
+        </div>
+        <button type="submit">가입하기</button>
+    </form>
+    <a href="/members/login">이미 계정이 있으신가요? 로그인</a>
+</body>
+</html>

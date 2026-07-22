@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{site.title}">SoraTrip</title>
+</head>
+<body>
+    <!-- 언어 변경 버튼 -->
+    <div>
+        <a href="?lang=ko" th:text="#{lang.ko}">한국어</a> | 
+        <a href="?lang=ja" th:text="#{lang.ja}">日本語</a>
+    </div>
+
+    <hr>
+
+    <h1 th:text="#{welcome.message}">환영 메시지</h1>
+    <p th:text="#{sub.message}">서브 메시지</p>
+
+    <!-- 로그인하지 않은 경우 -->
+    <div sec:authorize="isAnonymous()">
+        <a href="/members/login" th:text="#{nav.login}">로그인</a> | 
+        <a href="/members/join" th:text="#{nav.join}">회원가입</a>
+    </div>
+
+    <!-- 로그인한 경우 -->
+    <div sec:authorize="isAuthenticated()">
+        <!-- {0} 자리에 로그인된 사용자의 이메일/닉네임 전달 -->
+        <p th:text="#{nav.welcome(${#authentication.name})}">OO님 환영합니다!</p>
+        <a href="/members/logout" th:text="#{nav.logout}">로그아웃</a>
+    </div>
+</body>
+</html>

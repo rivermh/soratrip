@@ -1,0 +1,52 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  profiles:
+    include: secret # application-secret.yml 파일을 포함시킴!
+
+  # 1. DB 설정 (MySQL)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/soratrip?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: sora_user
+    # password는 secret.yml에서 불러옴
+
+  # 2. JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+        default_batch_fetch_size: 100
+    generate-ddl: true
+
+  # 3. Thymeleaf 템플릿 설정
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    cache: false
+
+  # 4. OAuth2 기본 설정
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            # client-id 및 client-secret은 secret.yml에서 불러옴
+            scope:
+              - profile
+              - email
+
+# 5. 로그 출력 설정
+logging:
+  level:
+    com.rivermh.soratrip: debug
+    org.hibernate.SQL: debug

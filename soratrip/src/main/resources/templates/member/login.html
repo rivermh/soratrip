@@ -2,32 +2,46 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{site.title}">SoraTrip - 로그인</title>
+    <title th:text="#{member.login} + ' - SoraTrip'">로그인 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <h2>SoraTrip 로그인</h2>
-    
-    <!-- 일반 로그인 폼 -->
-    <form th:action="@{/members/login}" method="post">
-        <div>
-            <label>이메일:</label>
-            <input type="email" name="email" required />
-        </div>
-        <div>
-            <label>비밀번호:</label>
-            <input type="password" name="password" required />
-        </div>
-        <button type="submit">로그인</button>
-    </form>
+    <div class="container form-container" style="margin-top: 50px;">
+        <h2 style="text-align: center;">🔑 <span th:text="#{member.login}">로그인</span></h2>
 
-    <hr>
+        <!-- ⚠️ 로그인 실패 시 에러 메시지 -->
+        <div th:if="${param.error}" style="background-color: #fef2f2; border: 1px solid #fecaca; color: #dc2626; padding: 12px 15px; border-radius: 6px; font-size: 14px; margin-top: 20px; margin-bottom: 20px;">
+            ⚠️ <span th:text="#{member.login_error}">아이디 또는 비밀번호가 일치하지 않습니다.</span>
+        </div>
 
-    <!-- 소셜 로그인 버튼 추가 -->
-    <div>
-        <a href="/oauth2/authorization/google">Google 계정으로 로그인</a>
+        <!-- ℹ️ 로그아웃 성공 메시지 (선택사항) -->
+        <div th:if="${param.logout}" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; padding: 12px 15px; border-radius: 6px; font-size: 14px; margin-top: 20px; margin-bottom: 20px;">
+            <span th:text="#{member.logout_success}">성공적으로 로그아웃되었습니다.</span>
+        </div>
+        
+        <form th:action="@{/members/login}" method="post" style="margin-top: 15px;">
+            <div class="form-group">
+                <label th:text="#{member.email}">이메일</label>
+                <!-- 💡 name="email"로 수정 완료 -->
+                <input type="email" name="email" class="form-control" required placeholder="example@soratrip.com" />
+            </div>
+            <div class="form-group">
+                <label th:text="#{member.password}">비밀번호</label>
+                <input type="password" name="password" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary" th:text="#{member.login}">로그인</button>
+        </form>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <a th:href="@{/oauth2/authorization/google}" class="btn btn-secondary" style="width: 100%; text-decoration: none; background: #fff; border: 1px solid #ccc; color: #333;">
+                🌐 Google 계정으로 로그인
+            </a>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center; font-size: 14px;">
+            <span th:text="#{member.no_account}">아직 계정이 없으신가요?</span> 
+            <a th:href="@{/members/join}" style="color: var(--primary-color);" th:text="#{member.join}">회원가입</a>
+        </div>
     </div>
-
-    <br>
-    <a href="/members/join">회원가입 하러가기</a>
 </body>
 </html>

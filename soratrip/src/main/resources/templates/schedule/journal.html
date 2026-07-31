@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${journal.schedule.title} + ' - ' + #{journal.title}">여행 일지</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container" style="max-width: 900px;">
+        <div style="margin-bottom: 20px;">
+            <span th:text="${journal.schedule.region.displayName}" style="background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 10px; border-radius: 6px;">TOKYO</span>
+            <h2 style="margin-top: 10px;" th:text="#{journal.title} + ': ' + ${journal.schedule.title}">📖 여행 일지: 도쿄 3박 4일</h2>
+            <p style="color: #64748b;">📅 <span th:text="${journal.schedule.startDate}">2026-08-01</span> ~ <span th:text="${journal.schedule.endDate}">2026-08-04</span></p>
+            <div th:unless="${#lists.isEmpty(journal.schedule.tags)}" style="margin-top: 8px;">
+                <span th:each="t : ${journal.schedule.tags}" th:text="${t.displayName}" class="badge" style="margin-right: 4px;">태그</span>
+            </div>
+        </div>
+
+        <!-- 전체 지출 요약 -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 30px;">
+            <h3 style="margin: 0 0 8px 0;" th:text="#{expense.title}">💰 가계부</h3>
+            <p style="font-weight: bold; font-size: 20px; margin: 0 0 8px 0;">
+                <span th:text="#{expense.total}">총 지출</span>:
+                <span th:text="${#numbers.formatDecimal(journal.total, 0, 'COMMA', 0, 'POINT')}">0</span>
+            </p>
+            <div th:unless="${journal.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span th:each="entry : ${journal.byCategory}" class="badge"
+                      th:text="${entry.key.displayName} + ': ' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: 0</span>
+            </div>
+        </div>
+
+        <!-- 일자별 여행 일지 -->
+        <h3>🗓️ 일자별 기록</h3>
+        <div th:each="day : ${journal.schedule.days}" style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <h4 style="color: #0f172a; margin-bottom: 12px;">
+                <span th:text="${day.dayNumber}">1</span>일차
+                <span style="font-size: 14px; color: #64748b; font-weight: normal;" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+            </h4>
+
+            <!-- 방문 장소 -->
+            <div th:unless="${#lists.isEmpty(day.items)}" style="margin-bottom: 14px;">
+                <div th:each="item : ${day.items}" style="font-size: 14px; margin-bottom: 4px;">
+                    📍 <span th:text="${item.placeName}">도쿄 타워</span>
+                    <span th:if="${item.visitTime != null}" th:text="'(' + ${item.visitTime} + ')'" style="color: #0284c7;">(10:00)</span>
+                </div>
+            </div>
+
+            <!-- 사진 갤러리 -->
+            <div th:unless="${#lists.isEmpty(journal.photosByDay.get(day.id))}" class="photo-grid" style="margin-bottom: 14px;">
+                <div th:each="p : ${journal.photosByDay.get(day.id)}" class="photo-grid-item">
+                    <img th:src="@{${p.imageUrl}}" th:alt="${p.caption}">
+                </div>
+            </div>
+
+            <!-- 후기 -->
+            <div th:if="${journal.reviewByDay.get(day.id) != null}" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;">
+                <strong style="font-size: 13px; color: #64748b;" th:text="#{review.title}">📝 오늘의 후기</strong>
+                <p style="margin-top: 6px;" th:text="${journal.reviewByDay.get(day.id).content}">후기 내용</p>
+            </div>
+
+            <!-- 지출 -->
+            <div th:unless="${#lists.isEmpty(journal.expensesByDay.get(day.id))}" style="font-size: 13px; color: #475569;">
+                <div th:each="e : ${journal.expensesByDay.get(day.id)}">
+                    💰 <span th:text="${e.category.displayName}">분류</span> -
+                    <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; display: flex; gap: 8px;">
+            <a th:href="@{/schedules/{id}(id=${journal.schedule.id})}" class="btn btn-secondary" th:text="#{post.back_to_list}">📋 일정으로 돌아가기</a>
+            <a th:if="${owner}" th:href="@{/portfolio/{id}(id=${journal.schedule.member.id})}" class="btn btn-secondary" th:text="#{portfolio.title}">🖼️ 내 포트폴리오</a>
+        </div>
+    </div>
+</body>
+</html>

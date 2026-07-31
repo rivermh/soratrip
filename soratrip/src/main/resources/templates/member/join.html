@@ -1,26 +1,36 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>SoraTrip - 회원가입</title>
+<meta charset="UTF-8">
+<title>회원가입 - SoraTrip</title>
+<link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <h2>SoraTrip 회원가입</h2>
-    <form th:action="@{/members/join}" th:object="${memberJoinDto}" method="post">
-        <div>
-            <label>이메일:</label>
-            <input type="email" th:field="*{email}" required />
-        </div>
-        <div>
-            <label>비밀번호:</label>
-            <input type="password" th:field="*{password}" required />
-        </div>
-        <div>
-            <label>닉네임:</label>
-            <input type="text" th:field="*{nickname}" required />
-        </div>
-        <button type="submit">가입하기</button>
-    </form>
-    <a href="/members/login">이미 계정이 있으신가요? 로그인</a>
+	<div class="container form-container" style="margin-top: 40px;">
+		<h2 style="text-align: center;">📝 회원가입</h2>
+
+		<form th:action="@{/members/join}" method="post">
+			<div class="form-group">
+				<label th:text="#{member.email}">이메일</label>
+				<!-- 💡 name="username" -> name="email" 로 수정 -->
+				<input type="email" name="email" class="form-control" required
+					placeholder="example@soratrip.com" />
+			</div>
+			<div class="form-group">
+				<label>비밀번호</label> <input type="password" name="password"
+					class="form-control" required />
+			</div>
+			<div class="form-group">
+				<label>닉네임</label> <input type="text" name="nickname"
+					class="form-control" required />
+			</div>
+			<button type="submit" class="btn btn-primary">가입하기</button>
+		</form>
+
+		<div style="margin-top: 15px; text-align: center; font-size: 14px;">
+			이미 계정이 있으신가요? <a th:href="@{/members/login}"
+				style="color: var(--primary-color);">로그인</a>
+		</div>
+	</div>
 </body>
 </html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{expense.title}">SoraTrip - 가계부</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2 th:text="#{expense.title}">💰 가계부</h2>
+
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+            <p style="font-weight: bold; font-size: 20px; margin: 0 0 8px 0;">
+                <span th:text="#{expense.total}">총 지출</span>:
+                <span th:text="${#numbers.formatDecimal(summary.total, 0, 'COMMA', 0, 'POINT')}">0</span>
+            </p>
+            <div th:unless="${summary.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span th:each="entry : ${summary.byCategory}" class="badge"
+                      th:text="${entry.key.displayName} + ': ' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: 0</span>
+            </div>
+        </div>
+
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th>일자</th>
+                    <th th:text="#{expense.category}">분류</th>
+                    <th th:text="#{expense.amount}">금액</th>
+                    <th th:text="#{expense.memo}">메모</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="e : ${expenses}">
+                    <td th:text="${e.scheduleDay.dayNumber} + '일차'">1일차</td>
+                    <td th:text="${e.category.displayName}">분류</td>
+                    <td th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</td>
+                    <td th:text="${e.memo}">메모</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(expenses)}">
+                    <td colspan="4" style="text-align: center; color: var(--text-sub); padding: 30px;" th:text="#{expense.empty}">등록된 지출 내역이 없습니다.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin-top: 25px;">
+            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" th:text="#{post.back_to_list}">📋 일정으로 돌아가기</a>
+        </div>
+    </div>
+</body>
+</html>

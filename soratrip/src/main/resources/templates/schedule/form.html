@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>새 여행 일정 만들기 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container" style="max-width: 800px;">
+        <h2 style="margin-bottom: 20px;">🗺️ 새 여행 일정 짜기</h2>
+
+        <form th:action="@{/schedules/new}" th:object="${scheduleForm}" method="post" id="scheduleForm">
+            <div class="form-group">
+                <label>일정 제목</label>
+                <input type="text" th:field="*{title}" class="form-control" placeholder="예: 3박 4일 도쿄 알찬 여행" required />
+            </div>
+
+            <div style="display: flex; gap: 16px; margin-bottom: 20px;">
+                <div style="flex: 1;">
+                    <label>여행 지역</label>
+                    <select th:field="*{region}" class="form-control" required>
+                        <option value="">-- 선택 --</option>
+                        <option th:each="r : ${regions}" th:value="${r}" th:text="${r}">TOKYO</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label>시작일</label>
+                    <input type="date" th:field="*{startDate}" class="form-control" required />
+                </div>
+                <div style="flex: 1;">
+                    <label>종료일</label>
+                    <input type="date" th:field="*{endDate}" class="form-control" required />
+                </div>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border-color);" />
+
+            <h4>📍 방문 장소 검색 & 추가 (1일차 기본)</h4>
+            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                <input id="pac-input" class="form-control" type="text" placeholder="검색할 장소명을 입력하세요 (예: 도쿄 타워)" style="margin-bottom: 10px;">
+                <div id="map" style="width: 100%; height: 250px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 12px;"></div>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="selectedPlaceName" class="form-control" placeholder="선택된 장소명" readonly />
+                    <input type="text" id="selectedPlaceAddress" class="form-control" placeholder="주소" readonly />
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <input type="time" id="selectedTime" class="form-control" style="width: 150px;" />
+                    <input type="text" id="selectedMemo" class="form-control" placeholder="메모 (예: 오픈시간 맞춰 방문)" />
+                    <button type="button" class="btn btn-primary" onclick="addPlaceToSchedule()" style="white-space: nowrap;">➕ 장소 추가</button>
+                </div>
+            </div>
+
+            <!-- 추가된 장소 리스트가 동적으로 담길 영역 -->
+            <h4>📋 추가된 일정 장소</h4>
+            <div id="addedItemsList" style="margin-bottom: 20px;">
+                <p id="emptyMsg" style="color: #94a3b8; font-size: 14px;">지도를 통해 장소를 검색하고 '장소 추가' 버튼을 눌러주세요.</p>
+            </div>
+
+            <!-- 백엔드로 넘길 Hidden Inputs Container -->
+            <div id="hiddenInputsContainer"></div>
+
+            <div style="display: flex; gap: 10px; margin-top: 30px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">일정 저장하기</button>
+                <a href="/schedules" class="btn btn-secondary">취소</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Google Maps Scripts & Dynamic Add Logic -->
+    <script>
+        let map, autocomplete, selectedPlace = null;
+        let addedPlaces = [];
+
+        function initMap() {
+            const defaultLoc = { lat: 35.681236, lng: 139.767125 };
+            map = new google.maps.Map(document.getElementById("map"), { zoom: 12, center: defaultLoc });
+            
+            const input = document.getElementById("pac-input");
+            autocomplete = new google.maps.places.Autocomplete(input);
+            autocomplete.bindTo("bounds", map);
+
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (!place.geometry) return;
+
+                map.setCenter(place.geometry.location);
+                map.setZoom(15);
+
+                selectedPlace = {
+                    name: place.name,
+                    address: place.formatted_address,
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng()
+                };
+
+                document.getElementById("selectedPlaceName").value = place.name;
+                document.getElementById("selectedPlaceAddress").value = place.formatted_address || '';
+            });
+        }
+
+        function addPlaceToSchedule() {
+            if (!selectedPlace) {
+                alert("먼저 지도 검색을 통해 장소를 선택해주세요.");
+                return;
+            }
+
+            const time = document.getElementById("selectedTime").value;
+            const memo = document.getElementById("selectedMemo").value;
+
+            const item = { ...selectedPlace, time, memo };
+            addedPlaces.push(item);
+
+            renderPlaces();
+            
+            // 입력창 초기화
+            document.getElementById("pac-input").value = '';
+            document.getElementById("selectedPlaceName").value = '';
+            document.getElementById("selectedPlaceAddress").value = '';
+            document.getElementById("selectedTime").value = '';
+            document.getElementById("selectedMemo").value = '';
+            selectedPlace = null;
+        }
+
+        function renderPlaces() {
+            const listDiv = document.getElementById("addedItemsList");
+            const hiddenDiv = document.getElementById("hiddenInputsContainer");
+            
+            if (addedPlaces.length === 0) {
+                listDiv.innerHTML = '<p id="emptyMsg" style="color: #94a3b8; font-size: 14px;">지도를 통해 장소를 검색하고 \'장소 추가\' 버튼을 눌러주세요.</p>';
+                hiddenDiv.innerHTML = '';
+                return;
+            }
+
+            listDiv.innerHTML = '';
+            hiddenDiv.innerHTML = '';
+
+            addedPlaces.forEach((p, idx) => {
+                // UI Render
+                const card = document.createElement("div");
+                card.style.cssText = "background: white; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
+                card.innerHTML = `
+                    <div>
+                        <strong>${idx + 1}. ${p.name}</strong> ${p.time ? `<span style="color: #0284c7; font-size: 13px;">(${p.time})</span>` : ''}
+                        <div style="font-size: 12px; color: #64748b;">${p.address} ${p.memo ? ` | 📝 ${p.memo}` : ''}</div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="removePlace(${idx})">삭제</button>
+                `;
+                listDiv.appendChild(card);
+
+                // Spring Form Binding 용 Hidden Inputs (1일차 days[0].items[x] 기준)
+                hiddenDiv.innerHTML += `
+                    <input type="hidden" name="days[0].items[${idx}].placeName" value="${p.name}" />
+                    <input type="hidden" name="days[0].items[${idx}].placeAddress" value="${p.address}" />
+                    <input type="hidden" name="days[0].items[${idx}].latitude" value="${p.lat}" />
+                    <input type="hidden" name="days[0].items[${idx}].longitude" value="${p.lng}" />
+                    <input type="hidden" name="days[0].items[${idx}].visitTime" value="${p.time}" />
+                    <input type="hidden" name="days[0].items[${idx}].memo" value="${p.memo}" />
+                `;
+            });
+        }
+
+        function removePlace(index) {
+            addedPlaces.splice(index, 1);
+            renderPlaces();
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAmhAKiW9LjIo4VaIxoht7kP7Ghd8HZ5SE&libraries=places&callback=initMap" async defer></script>
+</body>
+</html>

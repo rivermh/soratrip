@@ -7,15 +7,15 @@ server:
       force: true
 
 spring:
-  profiles:
-    include: secret # application-secret.yml 파일을 포함시킴!
+  # 외부 보안 파일 임포트 (Google Client Secret, DB Password 등)
+  config:
+    import: optional:classpath:application-secret.yml
 
   # 1. DB 설정 (MySQL)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/soratrip?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: sora_user
-    # password는 secret.yml에서 불러옴
 
   # 2. JPA 설정
   jpa:
@@ -32,7 +32,7 @@ spring:
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
-    cache: false
+    cache: false # 개발 시 캐시 끔 (HTML 수정 즉시 반영)
 
   # 4. OAuth2 기본 설정
   security:
@@ -40,13 +40,23 @@ spring:
       client:
         registration:
           google:
-            # client-id 및 client-secret은 secret.yml에서 불러옴
             scope:
               - profile
               - email
 
-# 5. 로그 출력 설정
+  # 5. 사진 업로드 (Multipart) 설정
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 15MB
+
+# 6. 사진 업로드 저장 경로 (file.upload-dir)
+file:
+  upload-dir: uploads
+
+# 7. 로그 출력 설정
 logging:
   level:
-    com.rivermh.soratrip: debug
-    org.hibernate.SQL: debug
+    com.rivermh.soratrip: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.security: DEBUG

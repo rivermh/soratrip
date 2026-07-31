@@ -1,0 +1,102 @@
+package com.rivermh.soratrip.domain.post.controller;
+
+import com.rivermh.soratrip.domain.comment.dto.CommentRequestDto;
+import com.rivermh.soratrip.domain.comment.dto.CommentResponseDto;
+import com.rivermh.soratrip.domain.comment.service.CommentService;
+import com.rivermh.soratrip.domain.post.dto.PostCreateDto;
+import com.rivermh.soratrip.domain.post.dto.PostResponseDto;
+import com.rivermh.soratrip.domain.post.entity.Category;
+import com.rivermh.soratrip.domain.post.entity.Region;
+import com.rivermh.soratrip.domain.post.service.PostService;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Sort;
+
+import java.util.List;
+
+@Controller
+@RequestMapping("/posts")
+@RequiredArgsConstructor
+public class PostController {
+
+	private final PostService postService;
+	
+	private final CommentService commentService;
+
+	// 1. 게시글 목록 조회 (필터링 지원)
+	@GetMapping
+    public String postList(@RequestParam(name = "region", required = false) Region region,
+                           @RequestParam(name = "category", required = false) Category category,
+                           @RequestParam(name = "keyword", required = false) String keyword,
+                           @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable,
+                           Model model) {
+
+        Page<PostResponseDto> posts = postService.getPostList(region, category, keyword, pageable);
+
+        model.addAttribute("posts", posts);
+        model.addAttribute("regions", Region.values());
+        model.addAttribute("categories", Category.values());
+        
+        // 검색 필터 상태 유지용
+        model.addAttribute("selectedRegion", region);
+        model.addAttribute("selectedCategory", category);
+        model.addAttribute("keyword", keyword);
+
+        return "post/list";
+    }
+
+	// 2. 게시글 작성 폼 이동
+	@GetMapping("/new")
+	public String createForm(Model model) {
+		model.addAttribute("postForm", new PostCreateDto());
+		model.addAttribute("regions", Region.values());
+		model.addAttribute("categories", Category.values());
+		return "post/form";
+	}
+
+	// 3. 게시글 작성 처리
+	@PostMapping("/new")
+	public String createPost(@ModelAttribute("postForm") PostCreateDto dto, @AuthenticationPrincipal Object principal) {
+		String email = extractEmail(principal);
+		Long postId = postService.createPost(dto, email);
+		return "redirect:/posts/" + postId;
+	}
+
+	// 4. 게시글 상세 페이지 
+	@GetMapping("/{id}")
+    public String postDetail(@PathVariable(name = "id") Long id, 
+                             @AuthenticationPrincipal Object principal, 
+                             Model model) {
+        PostResponseDto post = postService.getPostDetail(id);
+        
+        // 로그인 유저 이메일 추출 (비로그인 사용자는 null)
+        String loginEmail = null;
+        if (principal != null) {
+            loginEmail = extractEmail(principal);
+        }
+
+        List<CommentResponseDto> comments = commentService.getComments(id, loginEmail);
+        
+        model.addAttribute("post", post);
+        model.addAttribute("comments", comments);
+        model.addAttribute("commentForm", new CommentRequestDto());
+        return "post/detail";
+    }
+
+    // 이메일 추출 헬퍼 메서드 (컨트롤러 내에 없다면 추가)
+    private String extractEmail(Object principal) {
+        if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User oAuth2User) {
+            return oAuth2User.getAttribute("email");
+        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+            return userDetails.getUsername();
+        }
+        return null;
+    }
+}

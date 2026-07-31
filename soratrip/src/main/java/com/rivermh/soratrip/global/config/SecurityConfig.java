@@ -27,7 +27,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/members/join", "/members/login", "/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/members/join", "/members/login", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/uploads/**").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .loginProcessingUrl("/members/login")
                 .usernameParameter("email")
                 .defaultSuccessUrl("/", true)
+                .failureUrl("/members/login?error") // 로그인 실패 시 ?error 파라미터 전달
                 .permitAll()
             )
             // OAuth2 소셜 로그인 설정 추가

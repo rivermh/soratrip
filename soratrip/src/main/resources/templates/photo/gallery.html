@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{photo.title}">SoraTrip - 사진</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2 th:text="#{photo.title}">📷 사진</h2>
+
+        <div th:if="${#lists.isEmpty(photos)}" style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 12px;" th:text="#{photo.empty}">
+            등록된 사진이 없습니다.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(photos)}" class="photo-grid">
+            <div th:each="p : ${photos}" class="photo-grid-item">
+                <img th:src="@{${p.imageUrl}}" th:alt="${p.caption}">
+                <div style="font-size: 12px; color: var(--text-sub);" th:text="${p.scheduleDay.dayNumber} + '일차'">1일차</div>
+                <div th:if="${p.caption != null and !#strings.isEmpty(p.caption)}" style="font-size: 12px;" th:text="${p.caption}">설명</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 25px;">
+            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" th:text="#{post.back_to_list}">📋 일정으로 돌아가기</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${schedule.title} + ' - SoraTrip'">여행 일정 상세보기</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container" style="max-width: 900px;">
+        <div style="margin-bottom: 20px;">
+            <span th:text="${schedule.region}" style="background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 10px; border-radius: 6px;">TOKYO</span>
+            <span th:if="${schedule.public}" class="badge" th:text="#{schedule.settings.public_badge}">공개</span>
+            <h2 th:text="${schedule.title}" style="margin-top: 10px;">도쿄 3박 4일 일정</h2>
+            <p style="color: #64748b;">📅 <span th:text="${schedule.startDate}">2026-08-01</span> ~ <span th:text="${schedule.endDate}">2026-08-04</span></p>
+            <div th:unless="${#lists.isEmpty(schedule.tags)}" style="margin-top: 8px;">
+                <span th:each="t : ${schedule.tags}" th:text="${t.displayName}" class="badge" style="margin-right: 4px;">태그</span>
+            </div>
+            <div style="margin-top: 12px; display: flex; gap: 8px;">
+                <a th:if="${!owner}" th:href="@{/schedules/{id}/copy(id=${schedule.id})}" class="btn btn-primary" style="width: auto;" th:text="#{schedule.copy.button}">📋 내 일정으로 복사</a>
+                <a th:if="${owner}" th:href="@{/schedules/{id}/settings(id=${schedule.id})}" class="btn btn-secondary" style="width: auto;" th:text="#{schedule.settings.button}">⚙️ 공개 설정</a>
+                <a th:if="${schedule.endDate.isBefore(T(java.time.LocalDate).now())}" th:href="@{/schedules/{id}/journal(id=${schedule.id})}" class="btn btn-secondary" style="width: auto;" th:text="#{journal.title}">📖 여행 일지</a>
+                <a th:if="${schedule.public}" th:href="@{/portfolio/{id}(id=${schedule.member.id})}" class="btn btn-secondary" style="width: auto;" th:text="#{portfolio.title}">🖼️ 여행 포트폴리오</a>
+            </div>
+        </div>
+
+        <!-- 여행 전체 가계부 요약 -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 8px 0;" th:text="#{expense.title}">💰 가계부</h3>
+            <p style="font-weight: bold; font-size: 18px; margin: 0 0 6px 0;">
+                <span th:text="#{expense.total}">총 지출</span>:
+                <span th:text="${#numbers.formatDecimal(expenseSummary.total, 0, 'COMMA', 0, 'POINT')}">0</span>
+            </p>
+            <div th:unless="${expenseSummary.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span th:each="entry : ${expenseSummary.byCategory}" class="badge"
+                      th:text="${entry.key.displayName} + ': ' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: 0</span>
+            </div>
+        </div>
+
+        <!-- Google Map 핀 동선 출력 -->
+        <div id="map" style="width: 100%; height: 350px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 30px;"></div>
+
+        <!-- 일차별 일정 타임라인 -->
+        <h3>🗓️ 일차별 일정</h3>
+        <div th:each="day : ${schedule.days}" style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <h4 style="color: #0f172a; margin-bottom: 12px;">
+                <span th:text="${day.dayNumber}">1</span>일차 
+                <span style="font-size: 14px; color: #64748b; font-weight: normal;" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+            </h4>
+
+            <div th:if="${#lists.isEmpty(day.items)}" style="color: #94a3b8; font-size: 14px;">
+                등록된 장소가 없습니다.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(day.items)}" style="display: flex; flex-direction: column; gap: 10px;">
+                <div th:each="item : ${day.items}" style="background: white; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="font-size: 16px;" th:text="${item.visitOrder} + '. ' + ${item.placeName}">1. 도쿄 타워</strong>
+                        <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" style="font-size: 13px; color: #0284c7; margin-left: 8px;">⏰ 10:00</span>
+                        <div style="font-size: 13px; color: #64748b; margin-top: 4px;" th:text="${item.placeAddress}">주소 정보</div>
+                        <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" style="font-size: 13px; color: #059669; margin-top: 2px;" th:text="'📝 메모: ' + ${item.memo}">메모 내용</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 일자별 가계부 -->
+            <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
+                <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{expense.title}">💰 가계부</h5>
+                <div th:each="e : ${expensesByDay?.get(day.id)}" style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                    <span th:text="${e.category.displayName} + (${e.memo != null and !#strings.isEmpty(e.memo)} ? ' - ' + ${e.memo} : '')">분류 - 메모</span>
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
+                        <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses/{eid}/delete(sid=${schedule.id},did=${day.id},eid=${e.id})}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;">✕</button>
+                        </form>
+                    </span>
+                </div>
+                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses(sid=${schedule.id},did=${day.id})}" method="post" style="display: flex; gap: 6px; margin-top: 8px;">
+                    <select name="category" class="form-control" style="flex: 1;">
+                        <option th:each="c : ${expenseCategories}" th:value="${c}" th:text="${c.displayName}">분류</option>
+                    </select>
+                    <input type="number" name="amount" class="form-control" placeholder="금액" style="flex: 1;" required>
+                    <input type="text" name="memo" class="form-control" placeholder="메모" style="flex: 2;">
+                    <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{expense.add}">추가</button>
+                </form>
+            </div>
+
+            <!-- 일자별 사진 -->
+            <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
+                <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{photo.title}">📷 사진</h5>
+                <div class="photo-grid">
+                    <div th:each="p : ${photosByDay?.get(day.id)}" class="photo-grid-item">
+                        <img th:src="@{${p.imageUrl}}" th:alt="${p.caption}">
+                        <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos/{pid}/delete(sid=${schedule.id},did=${day.id},pid=${p.id})}" method="post">
+                            <button type="submit" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;" th:text="#{photo.delete}">삭제</button>
+                        </form>
+                    </div>
+                </div>
+                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos(sid=${schedule.id},did=${day.id})}" method="post" enctype="multipart/form-data" style="display: flex; gap: 6px; margin-top: 8px;">
+                    <input type="file" name="file" accept="image/*" required>
+                    <input type="text" name="caption" class="form-control" placeholder="설명 (선택)" style="flex: 1;">
+                    <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{photo.upload}">업로드</button>
+                </form>
+            </div>
+
+            <!-- 일자별 후기 -->
+            <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
+                <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{review.title}">📝 오늘의 후기</h5>
+                <div th:if="${!owner}" style="font-size: 14px; color: #334155;" th:text="${reviewByDay.get(day.id)?.content}">후기 내용</div>
+                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/review(sid=${schedule.id},did=${day.id})}" method="post">
+                    <textarea name="content" class="form-control" rows="2" th:text="${reviewByDay.get(day.id)?.content}" th:placeholder="#{review.content}"></textarea>
+                    <button type="submit" class="btn btn-secondary" style="width: auto; margin-top: 6px;" th:text="#{review.save}">후기 저장</button>
+                </form>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="/schedules" class="btn btn-secondary">📋 내 일정 목록으로</a>
+        </div>
+    </div>
+
+    <!-- Map Script (순환 참조 방지 및 안전한 데이터 바인딩 적용) -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        // Entity 전체 객체 대신 필요한 위도/경도/장소명/순서만 뽑아서 배열 생성
+        const mapItems = [
+            /*[# th:each="day : ${schedule.days}"]*/
+                /*[# th:each="item : ${day.items}"]*/
+                {
+                    placeName: /*[[${item.placeName}]]*/ '',
+                    visitOrder: /*[[${item.visitOrder}]]*/ 1,
+                    lat: /*[[${item.latitude}]]*/ null,
+                    lng: /*[[${item.longitude}]]*/ null
+                },
+                /*[/]*/
+            /*[/]*/
+        ];
+        /*]]>*/
+
+        function initMap() {
+            const bounds = new google.maps.LatLngBounds();
+            const defaultLoc = { lat: 35.681236, lng: 139.767125 };
+            const map = new google.maps.Map(document.getElementById("map"), { zoom: 11, center: defaultLoc });
+
+            let hasMarkers = false;
+
+            mapItems.forEach(item => {
+                if (item.lat !== null && item.lng !== null) {
+                    const pos = { lat: Number(item.lat), lng: Number(item.lng) };
+                    new google.maps.Marker({
+                        position: pos,
+                        map: map,
+                        title: item.placeName,
+                        label: String(item.visitOrder)
+                    });
+                    bounds.extend(pos);
+                    hasMarkers = true;
+                }
+            });
+
+            if (hasMarkers) {
+                map.fitBounds(bounds);
+            }
+        }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAmhAKiW9LjIo4VaIxoht7kP7Ghd8HZ5SE&callback=initMap" async defer></script>
+</body>
+</html>

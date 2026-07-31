@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${member.nickname} + ' - ' + #{portfolio.title}">여행 포트폴리오</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <h2 th:text="${member.nickname} + '님의 ' + #{portfolio.title}">🖼️ OO님의 여행 포트폴리오</h2>
+
+        <div th:if="${#lists.isEmpty(trips)}" style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 12px;" th:text="#{portfolio.empty}">
+            아직 완료된 여행이 없습니다.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(trips)}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;">
+            <div th:each="t : ${trips}" class="portfolio-card">
+                <img th:if="${coverPhotoBySchedule.get(t.id) != null}" th:src="@{${coverPhotoBySchedule.get(t.id).imageUrl}}" alt="여행 사진">
+                <div class="portfolio-card-body">
+                    <span th:text="${t.region.displayName}" class="badge">TOKYO</span>
+                    <h3 style="margin: 8px 0 4px 0; font-size: 16px;">
+                        <a th:href="@{/schedules/{id}/journal(id=${t.id})}" th:text="${t.title}" style="text-decoration: none; color: var(--text-main);">3박 4일 도쿄 여행</a>
+                    </h3>
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">
+                        📅 <span th:text="${t.startDate}">2026-08-01</span> ~ <span th:text="${t.endDate}">2026-08-04</span>
+                    </p>
+                    <div>
+                        <span th:each="tag : ${t.tags}" th:text="${tag.displayName}" class="badge" style="margin-right: 4px;">태그</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="/" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
+        </div>
+    </div>
+</body>
+</html>

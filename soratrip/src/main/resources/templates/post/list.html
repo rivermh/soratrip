@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{site.title}">SoraTrip - 여행 게시판</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 & 글쓰기 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 th:text="#{post.list.title}">✈️ 여행 & 동행 게시판</h2>
+            <div sec:authorize="isAuthenticated()">
+                <a th:href="@{/posts/new}" class="btn btn-primary" style="width: auto;" th:text="#{post.write}">✍️ 글쓰기</a>
+            </div>
+        </div>
+
+        <!-- 검색 & 필터 영역 -->
+        <div style="background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
+            <!-- 🔍 검색창 -->
+            <form th:action="@{/posts}" method="get" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <!-- 현재 선택된 필터 파라미터 유지 -->
+                <input type="hidden" name="region" th:if="${selectedRegion != null}" th:value="${selectedRegion}">
+                <input type="hidden" name="category" th:if="${selectedCategory != null}" th:value="${selectedCategory}">
+                
+                <input type="text" name="keyword" th:value="${keyword}" class="form-control" placeholder="제목이나 내용으로 검색..." style="flex: 1;">
+                <button type="submit" class="btn btn-primary" style="width: auto; padding: 0 20px;">검색</button>
+            </form>
+
+            <!-- 지역 필터 -->
+            <div class="filter-group">
+                <strong style="font-size: 14px; margin-right: 5px;" th:text="#{post.region}">지역:</strong>
+                <a th:href="@{/posts(category=${selectedCategory}, keyword=${keyword})}" class="filter-chip">전체</a>
+                <a th:each="r : ${regions}" 
+                   th:href="@{/posts(region=${r}, category=${selectedCategory}, keyword=${keyword})}" 
+                   th:text="${r.displayName}" class="filter-chip">지역</a>
+            </div>
+
+            <!-- 카테고리 필터 -->
+            <div class="filter-group" style="margin-bottom: 0;">
+                <strong style="font-size: 14px; margin-right: 5px;" th:text="#{post.category}">분류:</strong>
+                <a th:href="@{/posts(region=${selectedRegion}, keyword=${keyword})}" class="filter-chip">전체</a>
+                <a th:each="c : ${categories}" 
+                   th:href="@{/posts(region=${selectedRegion}, category=${c}, keyword=${keyword})}" 
+                   th:text="${c.displayName}" class="filter-chip">카테고리</a>
+            </div>
+        </div>
+
+        <!-- 목록 테이블 -->
+        <table class="styled-table">
+            <thead>
+                <tr>
+                    <th style="width: 12%;" th:text="#{post.region}">지역</th>
+                    <th style="width: 15%;" th:text="#{post.category}">카테고리</th>
+                    <th th:text="#{post.title}">제목</th>
+                    <th style="width: 15%;" th:text="#{post.writer}">작성자</th>
+                    <th style="width: 10%;" th:text="#{post.views}">조회수</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="p : ${posts}">
+                    <td><span class="badge" th:text="${p.region.displayName}">도쿄</span></td>
+                    <td th:text="${p.category.displayName}">동행</td>
+                    <td>
+                        <a th:href="@{/posts/{id}(id=${p.id})}" th:text="${p.title}" style="color: var(--text-main); font-weight: 600; text-decoration: none;">글 제목</a>
+                    </td>
+                    <td th:text="${p.writerNickname}">작성자</td>
+                    <td th:text="${p.viewCount}">0</td>
+                </tr>
+                <tr th:if="${posts.totalElements == 0}">
+                    <td colspan="5" style="text-align: center; color: var(--text-sub); padding: 30px;" th:text="#{post.empty}">등록된 게시글이 없습니다.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 📄 페이징 영역 -->
+        <div th:if="${posts.totalPages > 1}" style="display: flex; justify-content: center; gap: 5px; margin-top: 25px;">
+            <!-- 이전 페이지 -->
+            <a th:if="${posts.hasPrevious()}"
+               th:href="@{/posts(page=${posts.number - 1}, region=${selectedRegion}, category=${selectedCategory}, keyword=${keyword})}"
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;">이전</a>
+
+            <!-- 페이지 번호 -->
+            <span th:each="pageNumber : ${#numbers.sequence(0, posts.totalPages - 1)}">
+                <a th:href="@{/posts(page=${pageNumber}, region=${selectedRegion}, category=${selectedCategory}, keyword=${keyword})}"
+                   th:text="${pageNumber + 1}"
+                   th:style="${pageNumber == posts.number} ? 'background: var(--primary-color); color: white; border-radius: 4px; padding: 5px 10px; text-decoration: none;' : 'padding: 5px 10px; text-decoration: none; color: var(--text-main);'">1</a>
+            </span>
+
+            <!-- 다음 페이지 -->
+            <a th:if="${posts.hasNext()}"
+               th:href="@{/posts(page=${posts.number + 1}, region=${selectedRegion}, category=${selectedCategory}, keyword=${keyword})}"
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;">다음</a>
+        </div>
+
+        <div style="margin-top: 25px;">
+            <a href="/" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
+        </div>
+    </div>
+</body>
+</html>

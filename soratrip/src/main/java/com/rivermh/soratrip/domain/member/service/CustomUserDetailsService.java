@@ -20,11 +20,11 @@ public class CustomUserDetailsService implements UserDetailsService {
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("해당 이메일을 가진 회원을 찾을 수 없습니다: " + email));
 
-        // 스프링 시큐리티의 User 객체 생성
+ 
         return User.builder()
                 .username(member.getEmail())
                 .password(member.getPassword())
-                .roles(member.getRole().name()) // Role Enum의 이름 (USER 등)
+                .authorities(member.getRole().getKey()) 
                 .build();
     }
 }

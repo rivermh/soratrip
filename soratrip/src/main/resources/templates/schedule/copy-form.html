@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{site.title}">SoraTrip - 일정 복사</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <div class="container form-container" style="max-width: 480px;">
+        <h2 th:text="#{schedule.copy.title}">📋 이 일정을 내 일정으로 복사하기</h2>
+        <p style="color: #64748b; margin-bottom: 20px;">
+            <strong th:text="${schedule.title}">3박 4일 도쿄 여행</strong>
+            <span th:text="'(' + ${schedule.startDate} + ' ~ ' + ${schedule.endDate} + ')'">(2026-08-01 ~ 2026-08-04)</span>
+        </p>
+
+        <form th:action="@{/schedules/{id}/copy(id=${schedule.id})}" method="post">
+            <div class="form-group">
+                <label for="newStartDate" th:text="#{schedule.copy.new_start_date}">새로운 시작일</label>
+                <input type="date" id="newStartDate" name="newStartDate" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary" th:text="#{schedule.copy.submit}">✈️ 내 일정으로 복사하기</button>
+        </form>
+
+        <div style="margin-top: 20px;">
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" th:text="#{post.cancel}">취소</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -153,8 +153,9 @@
 			});
 		}
 	</script>
-	<script th:if="${post.latitude != null and post.longitude != null}"
-			src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAmhAKiW9LjIo4VaIxoht7kP7Ghd8HZ5SE&callback=initMap" async defer>
-	</script>
+<script th:if="${post.latitude != null and post.longitude != null}"
+        th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" 
+        async defer>
+</script>
 </body>
 </html>

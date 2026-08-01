@@ -1,23 +1,30 @@
 server:
   port: 8080
+
+spring:
+  # 1. 인코딩 설정 (Spring Boot 3.x 권장 위치로 이동)
+  # 참고: Spring Boot 3.x는 기본이 UTF-8이므로 생략해도 무방합니다.
   servlet:
     encoding:
       charset: UTF-8
       enabled: true
       force: true
+    # 2. 사진 업로드 (Multipart) 설정 (spring.servlet 하위로 통합)
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 15MB
 
-spring:
-  # 외부 보안 파일 임포트 (Google Client Secret, DB Password 등)
+  # 3. 외부 보안 파일 임포트
   config:
     import: optional:classpath:application-secret.yml
 
-  # 1. DB 설정 (MySQL)
+  # 4. DB 설정 (MySQL)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/soratrip?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: sora_user
 
-  # 2. JPA 설정
+  # 5. JPA 설정
   jpa:
     hibernate:
       ddl-auto: update
@@ -25,16 +32,17 @@ spring:
       hibernate:
         format_sql: true
         show_sql: true
+        highlight_sql: true # SQL 로그 가독성을 위해 하이라이트 추가 (선택사항)
         default_batch_fetch_size: 100
-    generate-ddl: true
+    # generate-ddl: true  # ddl-auto가 설정되어 있으면 중복/불필요하므로 생략 가능합니다.
 
-  # 3. Thymeleaf 템플릿 설정
+  # 6. Thymeleaf 템플릿 설정
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
-    cache: false # 개발 시 캐시 끔 (HTML 수정 즉시 반영)
+    cache: false # 개발 시 캐시 끎 (HTML 수정 즉시 반영)
 
-  # 4. OAuth2 기본 설정
+  # 7. OAuth2 기본 설정
   security:
     oauth2:
       client:
@@ -44,19 +52,15 @@ spring:
               - profile
               - email
 
-  # 5. 사진 업로드 (Multipart) 설정
-  servlet:
-    multipart:
-      max-file-size: 5MB
-      max-request-size: 15MB
-
-# 6. 사진 업로드 저장 경로 (file.upload-dir)
+# 8. 커스텀 사진 업로드 저장 경로
 file:
   upload-dir: uploads
 
-# 7. 로그 출력 설정
+# 9. 로그 출력 설정
 logging:
   level:
     com.rivermh.soratrip: DEBUG
     org.hibernate.SQL: DEBUG
     org.springframework.security: DEBUG
+    # Hibernate 6.x(Spring Boot 3) 바인딩 파라미터 확인용 로그 (필요시 사용)
+    org.hibernate.orm.jdbc.bind: TRACE

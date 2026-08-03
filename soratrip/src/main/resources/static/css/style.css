@@ -1,120 +1,193 @@
 /* ==========================================
-   SoraTrip — Editorial Ocean & Sand Theme
-   폰트: 본문 Pretendard / 헤드라인 세리프(에디토리얼)
+   SoraTrip — Sky Blue Airy Theme (Trip.com inspired)
+   소라(そら, 하늘) 감성: 밝고 청량하고 하늘하늘하게
    ========================================== */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Noto+Serif+KR:wght@500;600;700&display=swap');
 
+/* ==========================================
+   디자인 토큰 (Sky Blue)
+   ========================================== */
 :root {
-  --primary-color: #14535e;
-  --primary-hover: #0d3d46;
-  --accent-color: #d97742;
-  --accent-hover: #c4632f;
-  --accent-soft: #f7e9db;
-  --bg-color: #f4eee2;
-  --surface: #ece3d2;
-  --card-bg: #fffdf9;
-  --text-main: #1c2b2e;
-  --text-sub: #5f6d6e;
-  --text-faint: #97907f;
-  --border-color: #ddd2bc;
-  --border-light: #ece3d1;
-  --shadow-sm: 0 1px 2px rgba(28, 43, 46, 0.05);
-  --shadow-md: 0 4px 14px rgba(28, 43, 46, 0.08);
-  --shadow-lg: 0 18px 40px -12px rgba(28, 43, 46, 0.22);
-  --serif: "Fraunces", "Noto Serif KR", Georgia, serif;
+  --primary-color: #2a7de1;       /* 선명한 스카이 블루 (메인) */
+  --primary-hover: #1a63bd;       /* 진한 블루 호버 */
+  --primary-soft: #eaf3fd;        /* 아주 연한 하늘빛 배경 */
+
+  --accent-color: #ff8a3d;        /* 선셋 오렌지 포인트 (CTA) */
+  --accent-hover: #f2731f;
+  --accent-soft: #fff1e6;
+
+  --sky-top: #d6ecff;             /* 히어로 하늘 그라데이션 위 */
+  --sky-bottom: #f4faff;          /* 히어로 하늘 그라데이션 아래 */
+
+  --bg-color: #f3f8fe;            /* 새하얀 하늘빛 페이지 배경 */
+  --surface: #eef5fc;             /* 섹션 구분용 연한 블루 */
+  --card-bg: #ffffff;             /* 순백 카드 */
+
+  --text-main: #1a2b42;           /* 짙은 네이비 잉크 */
+  --text-sub: #5b6b82;            /* 차분한 블루그레이 */
+  --text-faint: #9aa8bd;          /* 흐린 회청색 */
+
+  --border-color: #dce7f3;        /* 연한 하늘빛 경계선 */
+  --border-light: #eaf1f9;        /* 아주 연한 구분선 */
+
+  /* 가볍고 부드러운 그림자 — 공중에 살짝 뜬 느낌 */
+  --shadow-sm: 0 1px 3px rgba(42, 125, 225, 0.06);
+  --shadow-md: 0 8px 24px -8px rgba(42, 125, 225, 0.18);
+  --shadow-lg: 0 20px 44px -14px rgba(42, 125, 225, 0.28);
+
   --sans: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-  --radius: 14px;
+
+  --radius: 16px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-html { background-color: var(--bg-color); }
+html {
+  background-color: var(--bg-color);
+}
 
 body {
   font-family: var(--sans);
   background-color: var(--bg-color);
+  /* 하늘하늘 — 위에서 내려오는 옅은 하늘빛 + 구름 같은 은은한 광 */
   background-image:
-    radial-gradient(1100px 520px at 88% -10%, rgba(20, 83, 94, 0.07), transparent 58%),
-    radial-gradient(820px 460px at -8% 108%, rgba(217, 119, 66, 0.06), transparent 55%);
+    radial-gradient(1200px 560px at 50% -180px, var(--sky-top), transparent 70%),
+    radial-gradient(760px 380px at 92% 4%, rgba(255, 255, 255, 0.9), transparent 60%),
+    radial-gradient(680px 360px at 4% 12%, rgba(255, 138, 61, 0.05), transparent 60%);
   background-attachment: fixed;
   color: var(--text-main);
   line-height: 1.65;
-  padding: 26px 20px 60px;
+  padding: 24px 20px 60px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+/* ==========================================
+   네비게이션 바 — 하늘 위에 떠 있는 알약 형태
+   ========================================== */
 .navbar {
-  max-width: 960px;
-  margin: 0 auto 26px auto;
+  max-width: 1000px;
+  margin: 0 auto 28px auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 253, 249, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 14px 24px;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  padding: 13px 24px;
   border-radius: 100px;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-md);
 }
+
 .navbar a {
   color: var(--text-sub);
   text-decoration: none;
   font-weight: 500;
   font-size: 14px;
-  margin-left: 20px;
+  margin-left: 22px;
   letter-spacing: -0.01em;
   transition: color 0.15s ease;
 }
-.navbar a:hover { color: var(--primary-color); }
+
+.navbar a:hover {
+  color: var(--primary-color);
+}
+
 .navbar a:first-child {
   margin-left: 0;
   color: var(--primary-color);
-  font-weight: 700;
-  font-size: 19px;
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: -0.03em;
 }
 
+/* ==========================================
+   메인 컨테이너
+   ========================================== */
 .container {
-  max-width: 960px;
+  max-width: 1000px;
   margin: 0 auto;
   background: var(--card-bg);
   padding: 48px;
-  border-radius: 22px;
-  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  border: 1px solid var(--border-light);
   box-shadow: var(--shadow-md);
 }
-.form-container { max-width: 460px; }
 
+.form-container {
+  max-width: 460px;
+}
+
+/* 히어로 전용 — 하늘 그라데이션 배경을 주고 싶을 때 container에 함께 사용 */
+.hero {
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
+  border: 1px solid #cfe6ff;
+}
+
+/* ==========================================
+   타이포그래피 — 산뜻한 산세리프 위계
+   ========================================== */
 h1, h2, h3 {
-  font-family: var(--serif);
   color: var(--text-main);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.15;
-  margin-bottom: 18px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.18;
+  margin-bottom: 16px;
   text-wrap: balance;
 }
-h1 { font-size: clamp(34px, 5vw, 52px); font-weight: 500; }
-h1 .accent, h1 em { font-style: italic; color: var(--accent-color); }
-h2 { font-size: clamp(24px, 3vw, 30px); }
-h3 { font-size: 20px; }
-p { color: var(--text-sub); }
 
-.eyebrow {
-  display: inline-block;
-  font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  color: var(--accent-color);
-  margin-bottom: 14px;
+h1 {
+  font-size: clamp(32px, 5vw, 50px);
 }
 
-.form-group { margin-bottom: 22px; }
+/* 헤드라인 안에서 강조할 단어는 <em> 또는 class="accent" */
+h1 .accent,
+h1 em {
+  font-style: normal;
+  color: var(--primary-color);
+}
+
+h2 {
+  font-size: clamp(23px, 3vw, 30px);
+}
+
+h3 {
+  font-size: 19px;
+  font-weight: 700;
+}
+
+p {
+  color: var(--text-sub);
+}
+
+/* 눈금 라벨 — 섹션 위 작은 하늘빛 라벨 */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--primary-color);
+  background: var(--primary-soft);
+  padding: 6px 14px;
+  border-radius: 100px;
+  margin-bottom: 18px;
+}
+
+/* ==========================================
+   폼 요소
+   ========================================== */
+.form-group {
+  margin-bottom: 22px;
+}
+
 .form-group label {
   display: block;
   font-size: 13px;
@@ -123,37 +196,49 @@ p { color: var(--text-sub); }
   color: var(--text-sub);
   letter-spacing: -0.01em;
 }
+
 .form-control {
   width: 100%;
-  padding: 13px 15px;
+  padding: 13px 16px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
   font-size: 14px;
   font-family: inherit;
-  background-color: #fbf6ec;
+  background-color: #f7fbff;
   color: var(--text-main);
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
-.form-control::placeholder { color: var(--text-faint); }
+
+.form-control::placeholder {
+  color: var(--text-faint);
+}
+
 .form-control:focus {
   outline: none;
   border-color: var(--primary-color);
   background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(20, 83, 94, 0.13);
+  box-shadow: 0 0 0 3px rgba(42, 125, 225, 0.15);
 }
-textarea.form-control { resize: vertical; min-height: 120px; }
 
+textarea.form-control {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* ==========================================
+   버튼 — 둥글고 통통한 알약 (Trip.com 느낌)
+   ========================================== */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 12px 22px;
+  padding: 13px 24px;
   border-radius: 100px;
   border: 1px solid transparent;
   font-family: var(--sans);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   text-align: center;
   text-decoration: none;
@@ -161,72 +246,93 @@ textarea.form-control { resize: vertical; min-height: 120px; }
   white-space: nowrap;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
+
 .btn-primary {
   background-color: var(--primary-color);
-  color: #fffdf9;
+  color: #ffffff;
   width: 100%;
-  box-shadow: 0 2px 6px rgba(13, 61, 70, 0.28);
+  box-shadow: 0 4px 12px rgba(42, 125, 225, 0.32);
 }
+
 .btn-primary:hover {
   background-color: var(--primary-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
+
 .btn-secondary {
-  background-color: transparent;
+  background-color: #ffffff;
   color: var(--primary-color);
   border: 1px solid var(--border-color);
 }
+
 .btn-secondary:hover {
-  background-color: #fff;
+  background-color: var(--primary-soft);
   border-color: var(--primary-color);
   transform: translateY(-2px);
   box-shadow: var(--shadow-sm);
 }
+
+/* 포인트(오렌지) 버튼 — 핵심 CTA */
 .btn-accent {
   background-color: var(--accent-color);
-  color: #fffdf9;
-  box-shadow: 0 2px 6px rgba(196, 99, 47, 0.3);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(255, 138, 61, 0.36);
 }
+
 .btn-accent:hover {
   background-color: var(--accent-hover);
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
 
+/* ==========================================
+   테이블
+   ========================================== */
 .styled-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 18px;
   font-size: 14px;
 }
+
 .styled-table th, .styled-table td {
   padding: 15px 18px;
   border-bottom: 1px solid var(--border-light);
   text-align: left;
 }
+
 .styled-table th {
   background-color: var(--surface);
   color: var(--text-sub);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.styled-table tbody tr { transition: background-color 0.15s ease; }
-.styled-table tbody tr:hover { background-color: #faf4e9; }
 
+.styled-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.styled-table tbody tr:hover {
+  background-color: var(--primary-soft);
+}
+
+/* ==========================================
+   뱃지 & 필터 칩
+   ========================================== */
 .badge {
   display: inline-flex;
   align-items: center;
   padding: 4px 12px;
   border-radius: 100px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
   background-color: var(--accent-soft);
   color: var(--accent-hover);
-  border: 1px solid #efd9c2;
+  border: 1px solid #ffe0c7;
 }
 
 .filter-group {
@@ -235,53 +341,72 @@ textarea.form-control { resize: vertical; min-height: 120px; }
   flex-wrap: wrap;
   margin-bottom: 22px;
 }
+
 .filter-chip {
   padding: 8px 16px;
   border-radius: 100px;
-  background-color: transparent;
+  background-color: #ffffff;
   color: var(--text-sub);
   text-decoration: none;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   border: 1px solid var(--border-color);
   transition: all 0.15s ease;
 }
+
 .filter-chip.active, .filter-chip:hover {
   background-color: var(--primary-color);
-  color: #fffdf9;
+  color: #ffffff;
   border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(42, 125, 225, 0.26);
 }
 
+/* ==========================================
+   사진 그리드 & 포트폴리오 카드
+   ========================================== */
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 16px;
 }
-.photo-grid-item { text-align: center; }
+
+.photo-grid-item {
+  text-align: center;
+}
+
 .photo-grid-item img {
   width: 100%;
   height: 120px;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 1px solid var(--border-color);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-.photo-grid-item img:hover { transform: scale(1.03); box-shadow: var(--shadow-md); }
-.photo-grid-item form { margin-top: 8px; }
+
+.photo-grid-item img:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+.photo-grid-item form {
+  margin-top: 8px;
+}
 
 .portfolio-card {
   background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 18px;
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
+
 .portfolio-card:hover {
-  border-color: #c9bda1;
-  transform: translateY(-4px);
+  border-color: #c9e0fb;
+  transform: translateY(-5px);
   box-shadow: var(--shadow-lg);
 }
+
 .portfolio-card img {
   width: 100%;
   height: 180px;
@@ -289,15 +414,24 @@ textarea.form-control { resize: vertical; min-height: 120px; }
   display: block;
   transition: transform 0.4s ease;
 }
-.portfolio-card:hover img { transform: scale(1.04); }
-.portfolio-card .portfolio-card-body { padding: 20px; }
 
+.portfolio-card:hover img {
+  transform: scale(1.05);
+}
+
+.portfolio-card .portfolio-card-body {
+  padding: 20px;
+}
+
+/* ==========================================
+   반응형
+   ========================================== */
 @media (max-width: 640px) {
   body { padding: 16px 14px 40px; }
   .navbar {
     flex-direction: column;
     gap: 12px;
-    border-radius: 20px;
+    border-radius: 22px;
     padding: 16px;
   }
   .navbar a { margin-left: 0; }

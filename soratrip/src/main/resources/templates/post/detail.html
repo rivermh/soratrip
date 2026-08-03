@@ -7,122 +7,109 @@
 <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-	<div class="container" style="max-width: 750px;">
+	<div class="container" style="max-width: 780px;">
+		
 		<!-- 카테고리 & 지역 배지 -->
-		<div style="margin-bottom: 15px;">
-			<span class="badge" th:text="${post.region.displayName}">도쿄</span> <span
-				class="badge" style="background: #fef3c7; color: #b45309;"
-				th:text="${post.category.displayName}">동행</span>
+		<div style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;">
+			<span class="badge" th:text="${post.region.displayName}">도쿄</span>
+			<span class="badge" style="background-color: var(--primary-soft); color: var(--primary-color); border-color: #c9e0fb;" th:text="${post.category.displayName}">동행</span>
 		</div>
 
-		<h2 th:text="${post.title}"
-			style="font-size: 26px; margin-bottom: 10px;">게시글 제목</h2>
+		<!-- 게시글 제목 -->
+		<h2 th:text="${post.title}" style="font-size: 28px; margin-bottom: 14px; word-break: break-all;">게시글 제목</h2>
 
-		<div
-			style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px;">
-			<span th:text="#{post.writer}">작성자</span>: <strong
-				th:text="${post.writerNickname}" style="color: var(--text-main);">닉네임</strong>
-			| <span th:text="#{post.views}">조회수</span>: <span
-				th:text="${post.viewCount}">0</span>
+		<!-- 작성자 & 조회수 정보 -->
+		<div style="color: var(--text-sub); font-size: 14px; margin-bottom: 28px; border-bottom: 1px solid var(--border-light); padding-bottom: 16px; display: flex; gap: 16px; align-items: center;">
+			<div>
+				<span th:text="#{post.writer}">작성자</span>: 
+				<strong th:text="${post.writerNickname}" style="color: var(--text-main);">닉네임</strong>
+			</div>
+			<div style="color: var(--border-color);">|</div>
+			<div>
+				<span th:text="#{post.views}">조회수</span>: 
+				<span th:text="${post.viewCount}">0</span>
+			</div>
 		</div>
 
-		<!-- 동행 정보 카드 -->
-		<div th:if="${post.travelStartDate != null}"
-			style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #166534;">
-			<p style="margin-bottom: 5px;">
-				🗓 <strong th:text="#{post.schedule}">여행 일정:</strong> <span
-					th:text="${post.travelStartDate}"></span> ~ <span
-					th:text="${post.travelEndDate}"></span>
+		<!-- 동행 정보 카드 (여행 일정 및 모집 인원) -->
+		<div th:if="${post.travelStartDate != null}" style="background: var(--primary-soft); border: 1px solid #c9e0fb; padding: 18px 20px; border-radius: var(--radius); margin-bottom: 28px; color: var(--text-main);">
+			<p style="margin-bottom: 8px; font-weight: 500;">
+				🗓️ <strong th:text="#{post.schedule}">여행 일정:</strong> 
+				<span th:text="${post.travelStartDate}"></span> ~ <span th:text="${post.travelEndDate}"></span>
 			</p>
-			<p style="margin: 0;">
-				👥 <strong th:text="#{post.recruitment}">모집 인원:</strong> <span
-					th:text="${post.recruitmentCount}"></span>명
+			<p style="margin: 0; font-weight: 500;">
+				👥 <strong th:text="#{post.recruitment}">모집 인원:</strong> 
+				<span th:text="${post.recruitmentCount}" style="color: var(--primary-color); font-weight: 700;"></span>명
 			</p>
 		</div>
 
 		<!-- 본문 내용 -->
-		<div
-			style="min-height: 200px; font-size: 16px; white-space: pre-wrap; line-height: 1.8;"
-			th:text="${post.content}">본문 내용이 들어가는 자리입니다.</div>
+		<div style="min-height: 180px; font-size: 15px; color: var(--text-main); white-space: pre-wrap; line-height: 1.75; margin-bottom: 32px;" th:text="${post.content}">본문 내용이 들어가는 자리입니다.</div>
 
 		<!-- 📍 약속 / 추천 장소 지도 표시 영역 (위도/경도 존재 시 노출) -->
-		<div th:if="${post.latitude != null and post.longitude != null}" 
-			style="margin-top: 25px; background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
-			<h3 style="font-size: 18px; margin-bottom: 10px;">📍 약속 / 추천 장소</h3>
-			<p style="color: var(--text-sub); margin-bottom: 12px; font-size: 14px;">
-				<strong th:text="${post.placeName}" style="color: var(--text-main);">장소명</strong> 
+		<div th:if="${post.latitude != null and post.longitude != null}" style="margin-top: 32px; background: var(--surface); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border-light);">
+			<h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-main);">📍 약속 / 추천 장소</h3>
+			<p style="color: var(--text-sub); margin-bottom: 14px; font-size: 14px;">
+				<strong th:text="${post.placeName}" style="color: var(--primary-color);">장소명</strong> 
 				(<span th:text="${post.placeAddress}">주소</span>)
 			</p>
 			
 			<!-- 지도가 뿌려지는 영역 -->
-			<div id="map" style="width: 100%; height: 320px; border-radius: 8px; border: 1px solid #cbd5e1;"></div>
+			<div id="map" style="width: 100%; height: 320px; border-radius: 12px; border: 1px solid var(--border-color);"></div>
 		</div>
 
-		<hr
-			style="border: none; border-top: 1px solid var(--border-color); margin: 30px 0;">
+		<hr style="border: none; border-top: 1px solid var(--border-light); margin: 36px 0;">
 
 		<!-- 💬 댓글 섹션 -->
-		<h3>
-			💬 댓글 (<span th:text="${#lists.size(comments)}">0</span>)
+		<h3 style="font-size: 20px; margin-bottom: 20px;">
+			💬 댓글 (<span th:text="${#lists.size(comments)}" style="color: var(--primary-color);">0</span>)
 		</h3>
 
 		<!-- 댓글 작성 폼 (로그인한 사용자만) -->
-		<div sec:authorize="isAuthenticated()"
-			style="margin-top: 15px; margin-bottom: 25px;">
-			<form th:action="@{/posts/{postId}/comments(postId=${post.id})}"
-				th:object="${commentForm}" method="post">
-				<div style="display: flex; gap: 10px;">
-					<textarea th:field="*{content}" class="form-control" rows="2"
-						placeholder="댓글을 입력하세요..." required style="flex: 1;"></textarea>
-					<button type="submit" class="btn btn-primary"
-						style="width: auto; padding: 0 20px;">등록</button>
+		<div sec:authorize="isAuthenticated()" style="margin-bottom: 28px;">
+			<form th:action="@{/posts/{postId}/comments(postId=${post.id})}" th:object="${commentForm}" method="post">
+				<div style="display: flex; gap: 10px; align-items: flex-start;">
+					<textarea th:field="*{content}" class="form-control" rows="2" placeholder="댓글을 입력하세요..." required style="flex: 1; resize: vertical; min-height: 60px;"></textarea>
+					<button type="submit" class="btn btn-primary" style="width: auto; height: 60px; padding: 0 24px;">등록</button>
 				</div>
 			</form>
 		</div>
-		<div sec:authorize="isAnonymous()"
-			style="margin-top: 15px; margin-bottom: 25px; color: var(--text-sub);">
-			댓글을 작성하려면 <a th:href="@{/members/login}"
-				style="color: var(--primary-color);">로그인</a>이 필요합니다.
+
+		<!-- 비로그인 안내 -->
+		<div sec:authorize="isAnonymous()" style="margin-bottom: 28px; padding: 14px 18px; background: var(--surface); border-radius: 12px; font-size: 14px; color: var(--text-sub);">
+			댓글을 작성하려면 <a th:href="@{/members/login}" style="color: var(--primary-color); font-weight: 700; text-decoration: none;">로그인</a>이 필요합니다.
 		</div>
 
 		<!-- 댓글 목록 -->
 		<div style="display: flex; flex-direction: column; gap: 12px;">
-			<div th:each="c : ${comments}"
-				style="background: #f8fafc; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-				<div
-					style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; color: var(--text-sub);">
-					<strong th:text="${c.writerNickname}"
-						style="color: var(--text-main);">작성자</strong>
-					<div style="display: flex; align-items: center; gap: 10px;">
-						<span
-							th:text="${#temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-07</span>
+			<div th:each="c : ${comments}" style="background: #ffffff; padding: 16px; border-radius: 14px; border: 1px solid var(--border-light); box-shadow: var(--shadow-sm);">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; color: var(--text-sub);">
+					<strong th:text="${c.writerNickname}" style="color: var(--text-main); font-size: 14px;">작성자</strong>
+					<div style="display: flex; align-items: center; gap: 12px;">
+						<span th:text="${#temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}" style="color: var(--text-faint);">2026-03-07</span>
 
-						<!-- 댓글 삭제 버튼 (c.owner 조건으로 단순화) -->
-						<form th:if="${c.owner}"
-							th:action="@{/posts/{postId}/comments/{commentId}/delete(postId=${post.id}, commentId=${c.id})}"
-							method="post" style="display: inline;">
-							<button type="submit" onclick="return confirm('댓글을 삭제하시겠습니까?');"
-								style="background: none; border: none; color: #ef4444; font-size: 12px; cursor: pointer; padding: 0;">삭제</button>
+						<!-- 댓글 삭제 버튼 -->
+						<form th:if="${c.owner}" th:action="@{/posts/{postId}/comments/{commentId}/delete(postId=${post.id}, commentId=${c.id})}" method="post" style="display: inline;">
+							<button type="submit" onclick="return confirm('댓글을 삭제하시겠습니까?');" style="background: none; border: none; color: #ef4444; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0;">삭제</button>
 						</form>
 					</div>
 				</div>
-				<div th:text="${c.content}"
-					style="white-space: pre-wrap; font-size: 14px;">댓글 내용</div>
+				<div th:text="${c.content}" style="white-space: pre-wrap; font-size: 14px; color: var(--text-main); line-height: 1.6;">댓글 내용</div>
 			</div>
 
-			<div th:if="${#lists.isEmpty(comments)}"
-				style="color: var(--text-sub); font-size: 14px; text-align: center; padding: 15px;">
-				첫 번째 댓글을 작성해 보세요!</div>
+			<!-- 댓글이 없을 경우 -->
+			<div th:if="${#lists.isEmpty(comments)}" style="color: var(--text-faint); font-size: 14px; text-align: center; padding: 32px 0; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border-color);">
+				첫 번째 댓글을 작성해 보세요!
+			</div>
 		</div>
 
-		<div style="margin-top: 30px;">
-			<a th:href="@{/posts}" class="btn btn-secondary"
-				style="width: auto; text-decoration: none;"
-				th:text="#{post.back_to_list}">📋 목록으로 돌아가기</a>
+		<!-- 하단 버튼 영역 -->
+		<div style="margin-top: 36px;">
+			<a th:href="@{/posts}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.back_to_list}">📋 목록으로 돌아가기</a>
 		</div>
 	</div>
 
-<!-- 🗺️ Google Maps JS API (th:inline="javascript" 추가) -->
+	<!-- 🗺️ Google Maps JS API (th:inline="javascript" 추가) -->
 	<script th:if="${post.latitude != null and post.longitude != null}" th:inline="javascript">
 		function initMap() {
 			/*[[${post.latitude}]]와 [[${post.longitude}]]를 안전하게 바인딩합니다*/
@@ -153,9 +140,9 @@
 			});
 		}
 	</script>
-<script th:if="${post.latitude != null and post.longitude != null}"
-        th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" 
-        async defer>
-</script>
+	<script th:if="${post.latitude != null and post.longitude != null}"
+	        th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" 
+	        async defer>
+	</script>
 </body>
 </html>

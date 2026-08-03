@@ -7,88 +7,77 @@
 </head>
 <body>
 	<div class="container" style="max-width: 800px;">
-		<h2 th:text="#{post.write}" style="margin-bottom: 20px;">✍️ 게시글
-			작성</h2>
+		<span class="eyebrow">Community</span>
+		<h2 th:text="#{post.write}" style="margin-bottom: 24px;">✍️ 게시글 작성</h2>
 
 		<form th:action="@{/posts/new}" th:object="${postForm}" method="post">
+			
+			<!-- 지역 선택 -->
 			<div class="form-group">
-				<label th:text="#{post.region}">지역</label> <select
-					th:field="*{region}" class="form-control" required>
-					<option value="" th:text="#{post.select.region}">-- 지역 선택
-						--</option>
-					<option th:each="r : ${regions}" th:value="${r}"
-						th:text="${r.displayName}">도쿄</option>
+				<label th:text="#{post.region}">지역</label>
+				<select th:field="*{region}" class="form-control" required>
+					<option value="" th:text="#{post.select.region}">-- 지역 선택 --</option>
+					<option th:each="r : ${regions}" th:value="${r}" th:text="${r.displayName}">도쿄</option>
 				</select>
 			</div>
 
+			<!-- 카테고리 선택 -->
 			<div class="form-group">
-				<label th:text="#{post.category}">카테고리</label> <select
-					th:field="*{category}" class="form-control" required>
-					<option value="" th:text="#{post.select.category}">-- 카테고리
-						선택 --</option>
-					<option th:each="c : ${categories}" th:value="${c}"
-						th:text="${c.displayName}">동행</option>
+				<label th:text="#{post.category}">카테고리</label>
+				<select th:field="*{category}" class="form-control" required>
+					<option value="" th:text="#{post.select.category}">-- 카테고리 선택 --</option>
+					<option th:each="c : ${categories}" th:value="${c}" th:text="${c.displayName}">동행</option>
 				</select>
 			</div>
 
+			<!-- 제목 -->
 			<div class="form-group">
-				<label th:text="#{post.title}">제목</label> <input type="text"
-					th:field="*{title}" class="form-control" placeholder="제목을 입력하세요"
-					required />
+				<label th:text="#{post.title}">제목</label>
+				<input type="text" th:field="*{title}" class="form-control" placeholder="제목을 입력하세요" required />
 			</div>
 
 			<!-- 📍 위치 선택 영역 (Google Maps) -->
-			<div class="form-group"
-				style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-				<label
-					style="font-weight: 600; margin-bottom: 10px; display: block;">📍
-					약속 / 추천 장소 선택 (선택사항)</label>
+			<div class="form-group" style="background: var(--surface); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border-light); margin-bottom: 22px;">
+				<label style="font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: block;">📍 약속 / 추천 장소 선택 (선택사항)</label>
 
 				<!-- 검색창 -->
-				<input id="pac-input" class="form-control" type="text"
-					placeholder="장소를 검색하세요 (예: 도쿄 타워, 오사카역)"
-					style="margin-bottom: 10px;">
+				<input id="pac-input" class="form-control" type="text" placeholder="장소를 검색하세요 (예: 도쿄 타워, 오사카역)" style="margin-bottom: 12px; background-color: #ffffff;">
 
 				<!-- 지도 표시 영역 -->
-				<div id="map"
-					style="width: 100%; height: 300px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 10px;"></div>
+				<div id="map" style="width: 100%; height: 320px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px;"></div>
 
 				<!-- 선택된 장소 정보 표시 및 hidden input -->
 				<div style="display: flex; gap: 10px;">
-					<input type="text" id="placeName" th:field="*{placeName}"
-						class="form-control" placeholder="장소명" readonly
-						style="background: #ffffff;" /> <input type="text"
-						id="placeAddress" th:field="*{placeAddress}" class="form-control"
-						placeholder="주소" readonly style="background: #ffffff;" />
+					<input type="text" id="placeName" th:field="*{placeName}" class="form-control" placeholder="장소명" readonly style="background: #ffffff;" />
+					<input type="text" id="placeAddress" th:field="*{placeAddress}" class="form-control" placeholder="주소" readonly style="background: #ffffff;" />
 				</div>
 
 				<!-- 폼 전송용 위도/경도 hidden 필드 -->
-				<input type="hidden" id="latitude" th:field="*{latitude}" /> <input
-					type="hidden" id="longitude" th:field="*{longitude}" />
+				<input type="hidden" id="latitude" th:field="*{latitude}" />
+				<input type="hidden" id="longitude" th:field="*{longitude}" />
 			</div>
 
+			<!-- 내용 -->
 			<div class="form-group">
 				<label th:text="#{post.content}">내용</label>
-				<textarea th:field="*{content}" class="form-control" rows="8"
-					placeholder="내용을 입력하세요" required></textarea>
+				<textarea th:field="*{content}" class="form-control" rows="8" placeholder="내용을 입력하세요" required></textarea>
 			</div>
 
-			<div style="display: flex; gap: 10px; margin-top: 20px;">
-				<button type="submit" class="btn btn-primary" style="flex: 1;"
-					th:text="#{btn.save}">등록</button>
-				<a href="/posts" class="btn btn-secondary"
-					style="width: auto; text-decoration: none;" th:text="#{btn.cancel}">취소</a>
-			</div>
+			<!-- 내 여행 일정 선택 -->
 			<div class="form-group">
-				<label th:text="#{post.schedule.select}">🗓️ 내 여행 일정 선택
-					(선택사항)</label> <select name="travelScheduleId" class="form-control">
-					<option value="" th:text="#{post.schedule.none}">-- 일정 선택
-						안함 --</option>
-					<option th:each="s : ${mySchedules}" th:value="${s.id}"
-						th:text="${s.title} + ' (' + ${s.startDate} + ' ~ ' + ${s.endDate} + ')'">
-						도쿄 3박 4일 일정</option>
+				<label th:text="#{post.schedule.select}">🗓️ 내 여행 일정 선택 (선택사항)</label>
+				<select name="travelScheduleId" class="form-control">
+					<option value="" th:text="#{post.schedule.none}">-- 일정 선택 안함 --</option>
+					<option th:each="s : ${mySchedules}" th:value="${s.id}" th:text="${s.title} + ' (' + ${s.startDate} + ' ~ ' + ${s.endDate} + ')'">도쿄 3박 4일 일정</option>
 				</select>
 			</div>
+
+			<!-- 버튼 영역 -->
+			<div style="display: flex; gap: 12px; margin-top: 28px;">
+				<button type="submit" class="btn btn-primary" style="flex: 1;" th:text="#{btn.save}">등록</button>
+				<a href="/posts" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{btn.cancel}">취소</a>
+			</div>
+			
 		</form>
 	</div>
 

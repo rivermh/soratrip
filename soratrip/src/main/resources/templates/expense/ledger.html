@@ -6,44 +6,52 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <div class="container">
-        <h2 th:text="#{expense.title}">💰 가계부</h2>
+    <div class="container" style="max-width: 850px;">
+        <span class="eyebrow">Finance</span>
+        <h2 th:text="#{expense.title}" style="margin-bottom: 24px;">💰 가계부</h2>
 
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
-            <p style="font-weight: bold; font-size: 20px; margin: 0 0 8px 0;">
-                <span th:text="#{expense.total}">총 지출</span>:
-                <span th:text="${#numbers.formatDecimal(summary.total, 0, 'COMMA', 0, 'POINT')}">0</span>
+        <!-- 지출 요약 카드 -->
+        <div style="background: var(--primary-soft); border: 1px solid #c9e0fb; border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; box-shadow: var(--shadow-sm);">
+            <p style="font-weight: 800; font-size: 22px; margin: 0 0 12px 0; color: var(--text-main); display: flex; align-items: center; justify-content: space-between;">
+                <span th:text="#{expense.total}">총 지출</span>
+                <span style="color: var(--primary-color);">
+                    <span th:text="${#numbers.formatDecimal(summary.total, 0, 'COMMA', 0, 'POINT')}">0</span>
+                </span>
             </p>
-            <div th:unless="${summary.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <span th:each="entry : ${summary.byCategory}" class="badge"
+            <div th:unless="${summary.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                <span th:each="entry : ${summary.byCategory}" class="badge" style="background-color: #ffffff; color: var(--primary-color); border-color: var(--border-color); padding: 6px 14px; font-size: 13px;"
                       th:text="${entry.key.displayName} + ': ' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: 0</span>
             </div>
         </div>
 
-        <table class="styled-table">
+        <!-- 지출 내역 테이블 -->
+        <table class="styled-table" style="margin-bottom: 28px;">
             <thead>
                 <tr>
-                    <th>일자</th>
-                    <th th:text="#{expense.category}">분류</th>
-                    <th th:text="#{expense.amount}">금액</th>
-                    <th th:text="#{expense.memo}">메모</th>
+                    <th style="width: 15%;">일자</th>
+                    <th style="width: 20%;" th:text="#{expense.category}">분류</th>
+                    <th style="width: 25%; text-align: right;" th:text="#{expense.amount}">금액</th>
+                    <th style="width: 40%;" th:text="#{expense.memo}">메모</th>
                 </tr>
             </thead>
             <tbody>
                 <tr th:each="e : ${expenses}">
-                    <td th:text="${e.scheduleDay.dayNumber} + '일차'">1일차</td>
-                    <td th:text="${e.category.displayName}">분류</td>
-                    <td th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</td>
-                    <td th:text="${e.memo}">메모</td>
+                    <td th:text="${e.scheduleDay.dayNumber} + '일차'" style="font-weight: 600; color: var(--text-main);">1일차</td>
+                    <td>
+                        <span class="badge" style="background: var(--surface); color: var(--text-sub); border-color: var(--border-color);" th:text="${e.category.displayName}">분류</span>
+                    </td>
+                    <td style="text-align: right; font-weight: 700; color: var(--text-main);" th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</td>
+                    <td th:text="${e.memo}" style="color: var(--text-sub);">메모</td>
                 </tr>
                 <tr th:if="${#lists.isEmpty(expenses)}">
-                    <td colspan="4" style="text-align: center; color: var(--text-sub); padding: 30px;" th:text="#{expense.empty}">등록된 지출 내역이 없습니다.</td>
+                    <td colspan="4" style="text-align: center; color: var(--text-faint); padding: 40px 20px;" th:text="#{expense.empty}">등록된 지출 내역이 없습니다.</td>
                 </tr>
             </tbody>
         </table>
 
-        <div style="margin-top: 25px;">
-            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" th:text="#{post.back_to_list}">📋 일정으로 돌아가기</a>
+        <!-- 하단 버튼 영역 -->
+        <div>
+            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.back_to_list}">📋 일정으로 돌아가기</a>
         </div>
     </div>
 </body>

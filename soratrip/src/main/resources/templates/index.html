@@ -3,57 +3,59 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{site.title}">SoraTrip</title>
+    <title th:text="#{site.title}">SoraTrip - 한일 여행 & 동행</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <!-- 1. 통합 네비게이션 바 -->
-    <div class="navbar">
-        <h2 style="margin: 0;">
-            <a th:href="@{/}" style="text-decoration: none; color: var(--primary-color); margin: 0; font-weight: 700; letter-spacing: -0.02em;">✈️ SoraTrip</a>
-        </h2>
 
-        <div style="display: flex; align-items: center; gap: 12px;">
+    <!-- 1. 네비게이션 바 -->
+    <header class="navbar">
+        <a th:href="@{/}" class="logo">✈️ SoraTrip</a>
+
+        <nav style="display: flex; align-items: center; gap: 12px;">
             <!-- 로그인 상태일 때 메뉴 -->
             <div sec:authorize="isAuthenticated()" style="display: flex; align-items: center; gap: 8px;">
-                <a th:href="@{/schedules}" class="btn btn-secondary" style="padding: 7px 13px; font-size: 13px;" th:text="#{nav.schedule}">내 일정</a>
-                <a th:href="@{/posts}" class="btn btn-secondary" style="padding: 7px 13px; font-size: 13px;" th:text="#{post.list.title}">여행 & 동행</a>
-                <a th:href="@{/members/mypage}" class="btn btn-secondary" style="padding: 7px 13px; font-size: 13px;" th:text="#{nav.mypage}">마이페이지</a>
+                <a th:href="@{/schedules}" class="btn btn-secondary" th:text="#{nav.schedule}">🗓️ 내 일정</a>
+                <a th:href="@{/posts}" class="btn btn-secondary" th:text="#{post.list.title}">✈️ 여행 & 동행 게시판</a>
+                <a th:href="@{/members/mypage}" class="btn btn-secondary" th:text="#{nav.mypage}">마이페이지</a>
                 <form th:action="@{/members/logout}" method="post" style="display: inline;">
-                    <button type="submit" class="btn btn-secondary" style="padding: 7px 13px; font-size: 13px; background-color: #fbe7e0; color: #c0492c; border-color: #f2d3c6;" th:text="#{nav.logout}">로그아웃</button>
+                    <button type="submit" class="btn btn-secondary" th:text="#{nav.logout}">로그아웃</button>
                 </form>
             </div>
 
             <!-- 비로그인 상태일 때 메뉴 -->
-            <div sec:authorize="isAnonymous()" style="display: flex; gap: 6px;">
-                <a th:href="@{/members/login}" class="btn btn-primary" style="width: auto; padding: 7px 16px; font-size: 13px;" th:text="#{nav.login}">로그인</a>
-                <a th:href="@{/members/join}" class="btn btn-secondary" style="padding: 7px 16px; font-size: 13px;" th:text="#{nav.join}">회원가입</a>
+            <div sec:authorize="isAnonymous()" style="display: flex; gap: 8px;">
+                <a th:href="@{/members/login}" class="btn btn-primary" th:text="#{nav.login}">로그인</a>
+                <a th:href="@{/members/join}" class="btn btn-secondary" th:text="#{nav.join}">회원가입</a>
             </div>
 
-            <span style="color: #d8cdb4;">|</span>
+            <span style="color: var(--border-color);">|</span>
 
             <!-- 언어 변경 -->
-            <div style="font-size: 13px; display: flex; gap: 4px;">
-                <a th:href="@{/(lang='ko')}" th:text="#{lang.ko}" style="color: var(--text-sub); text-decoration: none; font-weight: 500;">한국어</a>
-                <a th:href="@{/(lang='ja')}" th:text="#{lang.ja}" style="color: var(--text-sub); text-decoration: none; font-weight: 500;">日本語</a>
+            <div style="display: flex; gap: 8px; font-size: 13px;">
+                <a th:href="@{''(lang='ko')}" th:text="#{lang.ko}">한국어</a>
+                <a th:href="@{''(lang='ja')}" th:text="#{lang.ja}">日本語</a>
             </div>
-        </div>
-    </div>
+        </nav>
+    </header>
 
-    <!-- 2. 메인 컨테이너 영역 -->
-    <div class="container" style="text-align: center; padding: 64px 20px;">
-        <h1 th:text="#{welcome.message}" style="font-size: 32px; display: inline-block;">환영 메시지</h1>
-        <p th:text="#{sub.message}" style="color: var(--text-sub); margin-bottom: 30px; font-size: 16px;">서브 메시지</p>
+    <!-- 2. 메인 히어로 컨테이너 영역 -->
+    <main class="container hero" style="text-align: center;">
+        <span class="eyebrow">Sky Blue Journey</span>
 
-        <!-- 환영 인구문 (로그인 유저용) -->
-        <div sec:authorize="isAuthenticated()" style="margin-bottom: 25px;">
-            <p style="font-size: 16px; font-weight: 600; color: var(--accent-color);" th:text="#{nav.welcome(${#authentication.name})}">OO님 환영합니다!</p>
+        <h1 th:text="#{welcome.message}">✈️ SoraTrip에 오신 것을 환영합니다!</h1>
+        <p th:text="#{sub.message}" style="margin-bottom: 24px;">한국과 일본을 잇는 자유로운 여행 & 동행 플랫폼</p>
+
+        <!-- 환영 문구 (로그인 유저용) -->
+        <div sec:authorize="isAuthenticated()" style="margin-bottom: 24px;">
+            <span class="badge" th:text="#{nav.welcome(${#authentication.name})}">OO님 환영합니다!</span>
         </div>
 
         <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
-            <a th:href="@{/schedules}" class="btn btn-primary" style="width: auto; padding: 13px 30px; font-size: 15px;">내 일정 관리하기</a>
-            <a th:href="@{/posts}" class="btn btn-secondary" style="width: auto; padding: 13px 30px; font-size: 15px;">여행 & 동행 게시판</a>
+            <a th:href="@{/schedules}" class="btn btn-primary" th:text="#{nav.schedule}">🗓️ 내 일정</a>
+            <a th:href="@{/posts}" class="btn btn-secondary" th:text="#{main.board_btn}">✈️ 여행 & 동행 게시판 보러가기</a>
         </div>
-    </div>
+    </main>
+
 </body>
 </html>

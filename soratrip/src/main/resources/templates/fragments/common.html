@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!-- 공통 Head 프래그먼트 (메타 태그 및 CSS 마스터 파일 로드) -->
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:replace="${title}">SoraTrip - 한일 여행 & 동행</title>
+    <!-- CSS 마스터 파일 단 하나만 로드 -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+</body>
+</html>

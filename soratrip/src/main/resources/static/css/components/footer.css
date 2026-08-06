@@ -1,0 +1,51 @@
+/* ==========================================
+   Footer Component
+   ========================================== */
+.footer {
+  max-width: 1080px;
+  margin: 48px auto 0;
+  padding: 32px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: var(--text-sub);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.footer-links a:hover {
+  color: var(--primary-color);
+}
+
+.footer-copyright {
+  color: var(--text-faint);
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    margin-top: 32px;
+    padding: 24px 16px;
+  }
+  
+  .footer-links {
+    gap: 12px;
+  }
+}

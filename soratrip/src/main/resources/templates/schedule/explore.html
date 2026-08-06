@@ -2,8 +2,53 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{site.title}">SoraTrip - 일정 둘러보기</title>
+    <title th:text="#{schedule.explore.title} + ' - SoraTrip'">🧭 다른 사람의 여행 일정 둘러보기 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        /* 필터 칩 기본 및 활성화 스타일 */
+        .filter-chip {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: #e2e8f0;
+            color: #475569;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        .filter-chip.active {
+            background: #0284c7;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* 일반 태그 배지 */
+        .badge-style {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+
+        /* 🛗 이동 편의 & 배리어프리 전용 태그 배지 (포인트 색상) */
+        .badge-transit {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+            display: inline-block;
+            margin-right: 4px;
+            margin-bottom: 4px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -13,62 +58,93 @@
         </div>
 
         <!-- 지역 / 태그 필터 -->
-        <div style="background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px;">
-            <div class="filter-group">
-                <strong style="font-size: 14px; margin-right: 5px;" th:text="#{post.region}">지역:</strong>
-                <a th:href="@{/schedules/explore(tag=${selectedTag})}" class="filter-chip">전체</a>
+        <div style="background: #f8fafc; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+            <!-- 지역 필터 -->
+            <div class="filter-group" style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
+                <strong style="font-size: 14px; min-width: 50px; color: #334155;" th:text="#{post.region}">지역:</strong>
+                <a th:href="@{/schedules/explore(tag=${selectedTag})}"
+                   class="filter-chip"
+                   th:classappend="${selectedRegion == null} ? 'active'"
+                   th:text="#{post.filter.all}">전체</a>
                 <a th:each="r : ${regions}"
                    th:href="@{/schedules/explore(region=${r}, tag=${selectedTag})}"
-                   th:text="${r.displayName}" class="filter-chip">지역</a>
+                   th:text="${r.displayName}"
+                   class="filter-chip"
+                   th:classappend="${selectedRegion == r} ? 'active'">지역</a>
             </div>
-            <div class="filter-group" style="margin-bottom: 0;">
-                <strong style="font-size: 14px; margin-right: 5px;" th:text="#{schedule.tags.label}">태그:</strong>
-                <a th:href="@{/schedules/explore(region=${selectedRegion})}" class="filter-chip">전체</a>
+
+            <!-- 태그 필터 -->
+            <div class="filter-group" style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 0;">
+                <strong style="font-size: 14px; min-width: 50px; color: #334155;" th:text="#{schedule.tags.label}">태그:</strong>
+                <a th:href="@{/schedules/explore(region=${selectedRegion})}"
+                   class="filter-chip"
+                   th:classappend="${selectedTag == null} ? 'active'"
+                   th:text="#{post.filter.all}">전체</a>
                 <a th:each="t : ${tags}"
                    th:href="@{/schedules/explore(region=${selectedRegion}, tag=${t})}"
-                   th:text="${t.displayName}" class="filter-chip">태그</a>
+                   th:text="${t.displayName}"
+                   class="filter-chip"
+                   th:classappend="${selectedTag == t} ? 'active'">태그</a>
             </div>
         </div>
 
-        <div th:if="${schedules.totalElements == 0}" style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 12px;" th:text="#{schedule.explore.empty}">
-            아직 공개된 여행 일정이 없습니다.
+        <!-- 일정 검색 결과 없음 -->
+        <div th:if="${schedules.totalElements == 0}" style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 12px; border: 1px dashed var(--border-color);" th:text="#{schedule.explore.empty}">
+            아직 조건에 맞는 공개 여행 일정이 없습니다.
         </div>
 
-        <div th:unless="${schedules.totalElements == 0}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;">
-            <div th:each="s : ${schedules}" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px;">
-                <span th:text="${s.region.displayName}" style="background: #e0f2fe; color: #0369a1; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px;">TOKYO</span>
-                <h3 style="margin: 10px 0 6px 0; font-size: 18px;">
-                    <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}" style="text-decoration: none; color: #1e293b;">3박 4일 도쿄 여행</a>
-                </h3>
-                <p style="font-size: 14px; color: #64748b; margin-bottom: 10px;">
-                    📅 <span th:text="${s.startDate}">2026-08-01</span> ~ <span th:text="${s.endDate}">2026-08-04</span>
-                </p>
-                <div style="margin-bottom: 16px;">
-                    <span th:each="t : ${s.tags}" th:text="${t.displayName}" class="badge" style="margin-right: 4px;">태그</span>
+        <!-- 일정 카드 목록 -->
+        <div th:unless="${schedules.totalElements == 0}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            <div th:each="s : ${schedules}" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span th:text="${s.region.displayName}" style="background: #0284c7; color: white; font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 4px;">TOKYO</span>
+                        <span style="font-size: 12px; color: #94a3b8;" th:text="${s.member.nickname}">작성자</span>
+                    </div>
+
+                    <h3 style="margin: 6px 0; font-size: 18px; line-height: 1.3;">
+                        <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}" style="text-decoration: none; color: #0f172a;">3박 4일 도쿄 여행</a>
+                    </h3>
+
+                    <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                        📅 <span th:text="${s.startDate}">2026-08-01</span> ~ <span th:text="${s.endDate}">2026-08-04</span>
+                    </p>
+
+                    <!-- 태그 노출 (이동 편의 태그 특화 강조) -->
+                    <div style="margin-bottom: 16px;">
+                        <th:block th:each="t : ${s.tags}">
+                            <!-- ELEVATOR, STROLLER, WHEELCHAIR, HEAVY_LUGGAGE 등 이동 관련 태그는 파란 배지로 강조 -->
+                            <span th:if="${#strings.contains(t.name(), 'ELEVATOR') or #strings.contains(t.name(), 'LUGGAGE') or #strings.contains(t.name(), 'STROLLER') or #strings.contains(t.name(), 'WHEELCHAIR') or #strings.contains(t.name(), 'TRANSIT')}"
+                                  th:text="${t.displayName}" class="badge-transit">이동태그</span>
+                            <span th:unless="${#strings.contains(t.name(), 'ELEVATOR') or #strings.contains(t.name(), 'LUGGAGE') or #strings.contains(t.name(), 'STROLLER') or #strings.contains(t.name(), 'WHEELCHAIR') or #strings.contains(t.name(), 'TRANSIT')}"
+                                  th:text="${t.displayName}" class="badge-style">일반태그</span>
+                        </th:block>
+                    </div>
                 </div>
-                <a th:href="@{/schedules/{id}(id=${s.id})}" class="btn btn-secondary" style="display: block; text-align: center; font-size: 14px;" th:text="#{schedule.explore.view}">상세 일정 보기</a>
+
+                <a th:href="@{/schedules/{id}(id=${s.id})}" class="btn btn-secondary" style="display: block; text-align: center; font-size: 14px; margin-top: 10px;" th:text="#{schedule.explore.view}">상세 일정 보기</a>
             </div>
         </div>
 
         <!-- 페이징 -->
-        <div th:if="${schedules.totalPages > 1}" style="display: flex; justify-content: center; gap: 5px; margin-top: 25px;">
+        <div th:if="${schedules.totalPages > 1}" style="display: flex; justify-content: center; gap: 5px; margin-top: 30px;">
             <a th:if="${schedules.hasPrevious()}"
                th:href="@{/schedules/explore(page=${schedules.number - 1}, region=${selectedRegion}, tag=${selectedTag})}"
-               class="btn btn-secondary" style="width: auto; padding: 5px 12px;">이전</a>
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;" th:text="#{page.prev}">이전</a>
 
             <span th:each="pageNumber : ${#numbers.sequence(0, schedules.totalPages - 1)}">
                 <a th:href="@{/schedules/explore(page=${pageNumber}, region=${selectedRegion}, tag=${selectedTag})}"
                    th:text="${pageNumber + 1}"
-                   th:style="${pageNumber == schedules.number} ? 'background: var(--primary-color); color: white; border-radius: 4px; padding: 5px 10px; text-decoration: none;' : 'padding: 5px 10px; text-decoration: none; color: var(--text-main);'">1</a>
+                   th:style="${pageNumber == schedules.number} ? 'background: #0284c7; color: white; border-radius: 4px; padding: 5px 10px; text-decoration: none; font-weight: bold;' : 'padding: 5px 10px; text-decoration: none; color: #334155;'">1</a>
             </span>
 
             <a th:if="${schedules.hasNext()}"
                th:href="@{/schedules/explore(page=${schedules.number + 1}, region=${selectedRegion}, tag=${selectedTag})}"
-               class="btn btn-secondary" style="width: auto; padding: 5px 12px;">다음</a>
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;" th:text="#{page.next}">다음</a>
         </div>
 
         <div style="margin-top: 30px;">
-            <a href="/" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
+            <a th:href="@{/}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
         </div>
     </div>
 </body>

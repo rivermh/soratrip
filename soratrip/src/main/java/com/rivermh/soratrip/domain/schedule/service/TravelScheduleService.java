@@ -4,7 +4,9 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,17 +14,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.rivermh.soratrip.domain.member.entity.Member;
+import com.rivermh.soratrip.domain.member.entity.Role;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
 import com.rivermh.soratrip.domain.post.entity.Region;
 import com.rivermh.soratrip.domain.schedule.dto.ScheduleDayForm;
 import com.rivermh.soratrip.domain.schedule.dto.ScheduleItemForm;
+import com.rivermh.soratrip.domain.schedule.dto.ScheduleOrderUpdateRequest;
 import com.rivermh.soratrip.domain.schedule.dto.TravelScheduleForm;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleDay;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleItem;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
-import com.rivermh.soratrip.domain.member.entity.Role;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,7 +37,7 @@ public class TravelScheduleService {
     private final TravelScheduleRepository travelScheduleRepository;
     private final MemberRepository memberRepository;
 
- // 회원이 없으면 자동으로 DB에 가입시키는 도우미 메서드 (소셜 로그인 방어 로직)
+    // 회원이 없으면 자동으로 DB에 가입시키는 도우미 메서드 (소셜 로그인 방어 로직)
     private Member getOrRegisterMember(String email) {
         return memberRepository.findByEmail(email)
                 .orElseGet(() -> {
@@ -54,7 +57,7 @@ public class TravelScheduleService {
                 });
     }
 
-    // 일정 등록
+    // 일정 등록 (이동 태그 저장 포함)
     @Transactional
     public Long createSchedule(TravelScheduleForm form, String email) {
         Member member = getOrRegisterMember(email);
@@ -65,6 +68,7 @@ public class TravelScheduleService {
                 .region(form.getRegion())
                 .startDate(form.getStartDate())
                 .endDate(form.getEndDate())
+                .tags(form.getTags() != null ? new HashSet<>(form.getTags()) : new HashSet<>()) // 태그 세팅 추가
                 .build();
 
         // 날짜 계산 (시작일 ~ 종료일 차이 기반으로 N일차 생성)
@@ -197,5 +201,40 @@ public class TravelScheduleService {
         }
 
         return travelScheduleRepository.save(copy).getId();
+    }
+    
+ // 1. 순서 변경 일괄 업데이트
+    @Transactional
+    public void updateItemOrder(Long scheduleId, ScheduleOrderUpdateRequest request, String email) {
+        TravelSchedule schedule = travelScheduleRepository.findByIdWithDetails(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+
+        // 소유자 검증
+        if (!schedule.getMember().getEmail().equals(email)) {
+            throw new IllegalStateException("해당 일정을 수정할 권한이 없습니다.");
+        }
+
+        // 빠르게 요소를 찾기 위한 Map 생성
+        Map<Long, ScheduleItem> itemMap = schedule.getDays().stream()
+                .flatMap(day -> day.getItems().stream())
+                .collect(Collectors.toMap(ScheduleItem::getId, item -> item));
+
+        if (request.getItems() != null) {
+            for (ScheduleOrderUpdateRequest.ItemOrderDto itemOrder : request.getItems()) {
+                ScheduleItem item = itemMap.get(itemOrder.getItemId());
+                if (item != null) {
+                    item.setVisitOrder(itemOrder.getVisitOrder());
+                }
+            }
+        }
+    }
+
+    // 2. 장소 단건 삭제 (별도 repository 없이 TravelSchedule 객체를 통해 삭제)
+    @Transactional
+    public void deleteScheduleItem(Long itemId, String email) {
+        // 1) 전체 공개/개인 일정을 조회하며 해당 itemId가 속한 일정을 탐색
+        // (또는 ScheduleItem을 포함하고 있는 TravelSchedule을 도메인 로직으로 처리)
+        ScheduleItem targetItem = null;
+        
     }
 }

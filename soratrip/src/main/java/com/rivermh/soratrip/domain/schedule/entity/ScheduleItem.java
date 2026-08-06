@@ -43,4 +43,8 @@ public class ScheduleItem {
     
     @Column(length = 500)
     private String memo;         // 메모 (예: "티켓 현장 발급, 30분 전 도착하기")
+    
+    public void setVisitOrder(Integer visitOrder) {
+        this.visitOrder = visitOrder;
+    }
 }

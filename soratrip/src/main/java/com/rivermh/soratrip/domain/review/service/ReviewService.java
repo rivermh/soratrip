@@ -36,12 +36,21 @@ public class ReviewService {
 
         reviewRepository.findByScheduleDayId(dayId)
                 .ifPresentOrElse(
-                        review -> review.updateContent(dto.getContent(), dto.getRating()),
+                        review -> review.updateReview(
+                                dto.getContent(),
+                                dto.getRating(),
+                                dto.getHasElevator(),
+                                dto.getIsFlatPath(),
+                                dto.getHasLuggageStorage()
+                        ),
                         () -> reviewRepository.save(Review.builder()
                                 .travelSchedule(day.getTravelSchedule())
                                 .scheduleDay(day)
                                 .content(dto.getContent())
                                 .rating(dto.getRating())
+                                .hasElevator(dto.getHasElevator())
+                                .isFlatPath(dto.getIsFlatPath())
+                                .hasLuggageStorage(dto.getHasLuggageStorage())
                                 .build()));
     }
 

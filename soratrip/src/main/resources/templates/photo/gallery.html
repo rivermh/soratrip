@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{photo.title}">SoraTrip - 사진</title>
+    <title th:text="#{photo.title}">📷 사진 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -28,7 +28,7 @@
 
         <!-- 하단 버튼 영역 -->
         <div>
-            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.back_to_list}">📋 일정으로 돌아가기</a>
+            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{photo.back_to_schedule}">📋 일정으로 돌아가기</a>
         </div>
     </div>
 </body>

@@ -63,7 +63,7 @@ public class TravelSchedule {
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "schedule_tags", joinColumns = @JoinColumn(name = "travel_schedule_id"))
     @Enumerated(EnumType.STRING)
-    @Column(name = "tag", nullable = false)
+    @Column(name = "tag", length = 50, nullable = false)
     @Builder.Default
     private Set<ScheduleTag> tags = new HashSet<>();
 
@@ -81,5 +81,19 @@ public class TravelSchedule {
     public void updateTags(Set<ScheduleTag> tags) {
         this.tags.clear();
         this.tags.addAll(tags);
+    }
+    
+    // 좋아요
+    @Builder.Default
+    private int likeCount = 0;
+
+    public void increaseLikeCount() {
+        this.likeCount++;
+    }
+
+    public void decreaseLikeCount() {
+        if (this.likeCount > 0) {
+            this.likeCount--;
+        }
     }
 }

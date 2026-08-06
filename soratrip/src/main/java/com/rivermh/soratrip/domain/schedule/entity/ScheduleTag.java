@@ -18,7 +18,14 @@ public enum ScheduleTag {
     SHOPPING("쇼핑", "ショッピング"),
     BUDGET("가성비 여행", "低予算旅行"),
     LUXURY("럭셔리 여행", "高級旅行"),
-    RELAXATION("휴양", "リラックス");
+    RELAXATION("휴양", "リラックス"),
+
+    // --- [이동 스트레스 제로 / 배리어프리 태그 신규 추가] ---
+    ELEVATOR_PRIORITY("🛗 엘리베이터 우선", "エレベーター優先"),
+    STAIR_FREE("🧑‍🦽 계단 없음/평지 추천", "階段なし・バリアフリー"),
+    HEAVY_LUGGAGE("🧳 대형 캐리어 추천", "大型スーツケース歓迎"),
+    STROLLER_FRIENDLY("👶 유모차 이동 수월", "ベビーカーOK"),
+    SENIOR_EASY("👵 부모님/시니어 동반 추천", "シニア・ゆったり");
 
     private final String koName;
     private final String jaName;

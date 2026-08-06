@@ -43,17 +43,35 @@ public class Review extends BaseTimeEntity {
 
     private Integer rating; // 1~5, 선택 입력
 
+    // --- [이동 스트레스 제로 / 접근성 평가 항목 추가] ---
+    @Column(nullable = false)
+    private Boolean hasElevator; // 엘리베이터/에스컬레이터 원활 여부
+
+    @Column(nullable = false)
+    private Boolean isFlatPath; // 계단 없음 / 경사 완만 여부
+
+    @Column(nullable = false)
+    private Boolean hasLuggageStorage; // 캐리어/짐 보관 용이 여부
+
     @Builder
-    public Review(TravelSchedule travelSchedule, ScheduleDay scheduleDay, String content, Integer rating) {
+    public Review(TravelSchedule travelSchedule, ScheduleDay scheduleDay, String content, Integer rating,
+                  Boolean hasElevator, Boolean isFlatPath, Boolean hasLuggageStorage) {
         this.travelSchedule = travelSchedule;
         this.scheduleDay = scheduleDay;
         this.content = content;
         this.rating = rating;
+        this.hasElevator = hasElevator != null ? hasElevator : false;
+        this.isFlatPath = isFlatPath != null ? isFlatPath : false;
+        this.hasLuggageStorage = hasLuggageStorage != null ? hasLuggageStorage : false;
     }
 
     // 후기 내용 수정 (같은 날짜 재작성 시 upsert)
-    public void updateContent(String content, Integer rating) {
+    public void updateReview(String content, Integer rating, 
+                             Boolean hasElevator, Boolean isFlatPath, Boolean hasLuggageStorage) {
         this.content = content;
         this.rating = rating;
+        this.hasElevator = hasElevator != null ? hasElevator : false;
+        this.isFlatPath = isFlatPath != null ? isFlatPath : false;
+        this.hasLuggageStorage = hasLuggageStorage != null ? hasLuggageStorage : false;
     }
 }

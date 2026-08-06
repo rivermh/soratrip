@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
 <meta charset="UTF-8">
-<title th:text="#{post.write} + ' - SoraTrip'">✍️ 글쓰기</title>
+<title th:text="#{post.write} + ' - SoraTrip'">✍️ 글쓰기 - SoraTrip</title>
 <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -33,23 +33,31 @@
 			<!-- 제목 -->
 			<div class="form-group">
 				<label th:text="#{post.title}">제목</label>
-				<input type="text" th:field="*{title}" class="form-control" placeholder="제목을 입력하세요" required />
+				<input type="text" th:field="*{title}" class="form-control" 
+				       th:placeholder="#{post.title.placeholder}"
+				       placeholder="제목을 입력하세요" required />
 			</div>
 
 			<!-- 📍 위치 선택 영역 (Google Maps) -->
 			<div class="form-group" style="background: var(--surface); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border-light); margin-bottom: 22px;">
-				<label style="font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: block;">📍 약속 / 추천 장소 선택 (선택사항)</label>
+				<label style="font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: block;" th:text="#{post.place.label}">📍 약속 / 추천 장소 선택 (선택사항)</label>
 
 				<!-- 검색창 -->
-				<input id="pac-input" class="form-control" type="text" placeholder="장소를 검색하세요 (예: 도쿄 타워, 오사카역)" style="margin-bottom: 12px; background-color: #ffffff;">
+				<input id="pac-input" class="form-control" type="text" 
+				       th:placeholder="#{post.place.search.placeholder}"
+				       placeholder="장소를 검색하세요 (예: 도쿄 타워, 오사카역)" style="margin-bottom: 12px; background-color: #ffffff;">
 
 				<!-- 지도 표시 영역 -->
 				<div id="map" style="width: 100%; height: 320px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 12px;"></div>
 
 				<!-- 선택된 장소 정보 표시 및 hidden input -->
 				<div style="display: flex; gap: 10px;">
-					<input type="text" id="placeName" th:field="*{placeName}" class="form-control" placeholder="장소명" readonly style="background: #ffffff;" />
-					<input type="text" id="placeAddress" th:field="*{placeAddress}" class="form-control" placeholder="주소" readonly style="background: #ffffff;" />
+					<input type="text" id="placeName" th:field="*{placeName}" class="form-control" 
+					       th:placeholder="#{post.place.name.placeholder}"
+					       placeholder="장소명" readonly style="background: #ffffff;" />
+					<input type="text" id="placeAddress" th:field="*{placeAddress}" class="form-control" 
+					       th:placeholder="#{post.place.address.placeholder}"
+					       placeholder="주소" readonly style="background: #ffffff;" />
 				</div>
 
 				<!-- 폼 전송용 위도/경도 hidden 필드 -->
@@ -60,7 +68,9 @@
 			<!-- 내용 -->
 			<div class="form-group">
 				<label th:text="#{post.content}">내용</label>
-				<textarea th:field="*{content}" class="form-control" rows="8" placeholder="내용을 입력하세요" required></textarea>
+				<textarea th:field="*{content}" class="form-control" rows="8" 
+				          th:placeholder="#{post.content.placeholder}"
+				          placeholder="내용을 입력하세요" required></textarea>
 			</div>
 
 			<!-- 내 여행 일정 선택 -->

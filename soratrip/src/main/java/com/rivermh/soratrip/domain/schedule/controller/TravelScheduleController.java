@@ -31,9 +31,11 @@ import com.rivermh.soratrip.domain.photo.service.PhotoService;
 import com.rivermh.soratrip.domain.post.entity.Region;
 import com.rivermh.soratrip.domain.review.entity.Review;
 import com.rivermh.soratrip.domain.review.service.ReviewService;
+import com.rivermh.soratrip.domain.schedule.dto.AiScheduleRequest;
 import com.rivermh.soratrip.domain.schedule.dto.TravelScheduleForm;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
+import com.rivermh.soratrip.domain.schedule.service.GeminiScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.ScheduleRecommendationService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
 
@@ -50,6 +52,7 @@ public class TravelScheduleController {
     private final ExpenseService expenseService;
     private final PhotoService photoService;
     private final ReviewService reviewService;
+    private final GeminiScheduleService geminiScheduleService;
 
     // 1. 내 여행 일정 목록 페이지
     @GetMapping
@@ -109,10 +112,15 @@ public class TravelScheduleController {
         return "schedule/explore";
     }
 
-    // 4-1. 취향 태그 기반 맞춤 일정 추천
+ // 4-1. 취향 태그 기반 맞춤 일정 추천 (로그인 검증 및 소셜/일반 로그인 통합 이메일 추출)
     @GetMapping("/recommended")
-    public String recommended(Model model, Principal principal) {
-        model.addAttribute("schedules", scheduleRecommendationService.recommendFor(principal.getName()));
+    public String recommended(Model model, @AuthenticationPrincipal Object principal) {
+        String email = extractEmail(principal);
+        if (email == null) {
+            return "redirect:/members/login";
+        }
+
+        model.addAttribute("schedules", scheduleRecommendationService.recommendFor(email));
         return "schedule/recommended";
     }
 
@@ -207,5 +215,27 @@ public class TravelScheduleController {
             return userDetails.getUsername();
         }
         return null;
+    }
+    
+ // 10. AI 일정 자동 생성 폼
+    @GetMapping("/ai-new")
+    public String aiCreateForm(Model model) {
+        model.addAttribute("aiRequest", new AiScheduleRequest());
+        model.addAttribute("regions", Region.values());
+        model.addAttribute("tags", ScheduleTag.values());
+        return "schedule/ai-form";
+    }
+
+    // AI 일정 자동 생성 처리
+    @PostMapping("/ai-new")
+    public String createAiSchedule(@ModelAttribute("aiRequest") AiScheduleRequest aiRequest,
+                                   @AuthenticationPrincipal Object principal) {
+        String email = extractEmail(principal);
+        if (email == null) {
+            return "redirect:/members/login";
+        }
+
+        Long scheduleId = geminiScheduleService.createScheduleWithAi(aiRequest, email);
+        return "redirect:/schedules/" + scheduleId;
     }
 }

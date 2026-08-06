@@ -30,7 +30,12 @@ public class PostResponseDto {
 	private Double latitude;
 	private Double longitude;
 
-	public PostResponseDto(Post post) {
+	// 💡 좋아요 관련 정보 추가
+	private int likeCount;
+	private boolean liked;
+
+	// 기본 생성자 (Post + likeCount + liked)
+	public PostResponseDto(Post post, int likeCount, boolean liked) {
 		this.id = post.getId();
 		this.title = post.getTitle();
 		this.content = post.getContent();
@@ -44,10 +49,17 @@ public class PostResponseDto {
 		this.writerEmail = post.getWriter().getEmail();
 		this.createdAt = post.getCreatedAt();
 
-		// 위치 데이터 바인딩
 		this.placeName = post.getPlaceName();
 		this.placeAddress = post.getPlaceAddress();
 		this.latitude = post.getLatitude();
 		this.longitude = post.getLongitude();
+
+		this.likeCount = likeCount;
+		this.liked = liked;
+	}
+
+	// 좋아요 정보가 필요 없는 기존 호출 대응용 생성자
+	public PostResponseDto(Post post) {
+		this(post, 0, false);
 	}
 }

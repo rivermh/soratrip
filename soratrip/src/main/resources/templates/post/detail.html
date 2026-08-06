@@ -3,7 +3,12 @@
 	xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
 <meta charset="UTF-8">
-<title th:text="${post.title} + ' - SoraTrip'">게시글 상세</title>
+<title th:text="${post.title} + ' - SoraTrip'">게시글 상세 - SoraTrip</title>
+
+<!-- Security CSRF 메타 태그 (비동기 POST 필수) -->
+<meta name="_csrf" th:content="${_csrf?.token}"/>
+<meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
+
 <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -39,7 +44,7 @@
 			</p>
 			<p style="margin: 0; font-weight: 500;">
 				👥 <strong th:text="#{post.recruitment}">모집 인원:</strong> 
-				<span th:text="${post.recruitmentCount}" style="color: var(--primary-color); font-weight: 700;"></span>명
+				<span th:text="${post.recruitmentCount}" style="color: var(--primary-color); font-weight: 700;"></span><span th:text="#{post.recruitment.unit}">명</span>
 			</p>
 		</div>
 
@@ -48,7 +53,7 @@
 
 		<!-- 📍 약속 / 추천 장소 지도 표시 영역 (위도/경도 존재 시 노출) -->
 		<div th:if="${post.latitude != null and post.longitude != null}" style="margin-top: 32px; background: var(--surface); padding: 20px; border-radius: var(--radius); border: 1px solid var(--border-light);">
-			<h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-main);">📍 약속 / 추천 장소</h3>
+			<h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-main);" th:text="#{post.place.title}">📍 약속 / 추천 장소</h3>
 			<p style="color: var(--text-sub); margin-bottom: 14px; font-size: 14px;">
 				<strong th:text="${post.placeName}" style="color: var(--primary-color);">장소명</strong> 
 				(<span th:text="${post.placeAddress}">주소</span>)
@@ -58,26 +63,40 @@
 			<div id="map" style="width: 100%; height: 320px; border-radius: 12px; border: 1px solid var(--border-color);"></div>
 		</div>
 
+		<!-- ❤️ 좋아요 버튼 영역 (초기 liked 상태 반영) -->
+		<div style="text-align: center; margin: 36px 0 20px 0;">
+			<button id="likeBtn" type="button" th:onclick="'togglePostLike(' + ${post.id} + ')'"
+			        th:style="${post.liked} 
+			            ? 'display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; border-radius: 50px; border: 1px solid #e11d48; background-color: #e11d48; color: #ffffff; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;'
+			            : 'display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; border-radius: 50px; border: 1px solid #fca5a5; background-color: #fff1f2; color: #e11d48; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;'">
+				<span>❤️</span>
+				<span>좋아요</span>
+				<span id="likeCount" th:text="${post.likeCount}">0</span>
+			</button>
+		</div>
+
 		<hr style="border: none; border-top: 1px solid var(--border-light); margin: 36px 0;">
 
 		<!-- 💬 댓글 섹션 -->
 		<h3 style="font-size: 20px; margin-bottom: 20px;">
-			💬 댓글 (<span th:text="${#lists.size(comments)}" style="color: var(--primary-color);">0</span>)
+			💬 <span th:text="#{comment.title}">댓글</span> (<span th:text="${#lists.size(comments)}" style="color: var(--primary-color);">0</span>)
 		</h3>
 
 		<!-- 댓글 작성 폼 (로그인한 사용자만) -->
 		<div sec:authorize="isAuthenticated()" style="margin-bottom: 28px;">
 			<form th:action="@{/posts/{postId}/comments(postId=${post.id})}" th:object="${commentForm}" method="post">
 				<div style="display: flex; gap: 10px; align-items: flex-start;">
-					<textarea th:field="*{content}" class="form-control" rows="2" placeholder="댓글을 입력하세요..." required style="flex: 1; resize: vertical; min-height: 60px;"></textarea>
-					<button type="submit" class="btn btn-primary" style="width: auto; height: 60px; padding: 0 24px;">등록</button>
+					<textarea th:field="*{content}" class="form-control" rows="2" 
+					          th:placeholder="#{comment.placeholder}"
+					          placeholder="댓글을 입력하세요..." required style="flex: 1; resize: vertical; min-height: 60px;"></textarea>
+					<button type="submit" class="btn btn-primary" style="width: auto; height: 60px; padding: 0 24px;" th:text="#{comment.submit}">등록</button>
 				</div>
 			</form>
 		</div>
 
 		<!-- 비로그인 안내 -->
 		<div sec:authorize="isAnonymous()" style="margin-bottom: 28px; padding: 14px 18px; background: var(--surface); border-radius: 12px; font-size: 14px; color: var(--text-sub);">
-			댓글을 작성하려면 <a th:href="@{/members/login}" style="color: var(--primary-color); font-weight: 700; text-decoration: none;">로그인</a>이 필요합니다.
+			<span th:text="#{comment.login_required.prefix}">댓글을 작성하려면 </span><a th:href="@{/members/login}" style="color: var(--primary-color); font-weight: 700; text-decoration: none;" th:text="#{member.login}">로그인</a><span th:text="#{comment.login_required.suffix}">이 필요합니다.</span>
 		</div>
 
 		<!-- 댓글 목록 -->
@@ -90,7 +109,7 @@
 
 						<!-- 댓글 삭제 버튼 -->
 						<form th:if="${c.owner}" th:action="@{/posts/{postId}/comments/{commentId}/delete(postId=${post.id}, commentId=${c.id})}" method="post" style="display: inline;">
-							<button type="submit" onclick="return confirm('댓글을 삭제하시겠습니까?');" style="background: none; border: none; color: #ef4444; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0;">삭제</button>
+							<button type="submit" onclick="return confirm('댓글을 삭제하시겠습니까?');" style="background: none; border: none; color: #ef4444; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0;" th:text="#{comment.delete}">삭제</button>
 						</form>
 					</div>
 				</div>
@@ -98,7 +117,7 @@
 			</div>
 
 			<!-- 댓글이 없을 경우 -->
-			<div th:if="${#lists.isEmpty(comments)}" style="color: var(--text-faint); font-size: 14px; text-align: center; padding: 32px 0; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border-color);">
+			<div th:if="${#lists.isEmpty(comments)}" style="color: var(--text-faint); font-size: 14px; text-align: center; padding: 32px 0; background: var(--surface); border-radius: 14px; border: 1px dashed var(--border-color);" th:text="#{comment.empty}">
 				첫 번째 댓글을 작성해 보세요!
 			</div>
 		</div>
@@ -109,10 +128,60 @@
 		</div>
 	</div>
 
-	<!-- 🗺️ Google Maps JS API (th:inline="javascript" 추가) -->
+	<!-- ❤️ 좋아요 토글 스크립트 -->
+	<script>
+		function togglePostLike(postId) {
+			const tokenMeta = document.querySelector("meta[name='_csrf']");
+			const headerMeta = document.querySelector("meta[name='_csrf_header']");
+
+			const headers = { 'Content-Type': 'application/json' };
+			if (tokenMeta && headerMeta && tokenMeta.content && headerMeta.content) {
+				headers[headerMeta.content] = tokenMeta.content;
+			}
+
+			fetch(`/api/posts/${postId}/like`, {
+				method: 'POST',
+				headers: headers
+			})
+			.then(response => {
+				if (response.status === 401 || response.status === 403) {
+					alert('로그인이 필요한 기능입니다.');
+					return null;
+				}
+				if (!response.ok) {
+					throw new Error('좋아요 처리 중 오류가 발생했습니다.');
+				}
+				return response.json();
+			})
+			.then(data => {
+				if (!data) return;
+
+				const likeCountEl = document.getElementById('likeCount');
+				const likeBtn = document.getElementById('likeBtn');
+
+				if (likeCountEl) likeCountEl.innerText = data.likeCount;
+
+				if (likeBtn) {
+					if (data.liked) {
+						likeBtn.style.backgroundColor = '#e11d48';
+						likeBtn.style.color = '#ffffff';
+						likeBtn.style.borderColor = '#e11d48';
+					} else {
+						likeBtn.style.backgroundColor = '#fff1f2';
+						likeBtn.style.color = '#e11d48';
+						likeBtn.style.borderColor = '#fca5a5';
+					}
+				}
+			})
+			.catch(error => {
+				console.error('Error:', error);
+			});
+		}
+	</script>
+
+	<!-- 🗺️ Google Maps JS API -->
 	<script th:if="${post.latitude != null and post.longitude != null}" th:inline="javascript">
 		function initMap() {
-			/*[[${post.latitude}]]와 [[${post.longitude}]]를 안전하게 바인딩합니다*/
 			const lat = /*[[${post.latitude}]]*/ 35.681236;
 			const lng = /*[[${post.longitude}]]*/ 139.767125;
 			const placeName = /*[[${post.placeName}]]*/ '장소명';

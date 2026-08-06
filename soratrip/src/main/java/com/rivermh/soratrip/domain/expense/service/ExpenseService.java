@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.rivermh.soratrip.domain.expense.dto.ExpenseCreateDto;
 import com.rivermh.soratrip.domain.expense.dto.ExpenseSummaryDto;
+import com.rivermh.soratrip.domain.expense.entity.Currency;
 import com.rivermh.soratrip.domain.expense.entity.Expense;
 import com.rivermh.soratrip.domain.expense.entity.ExpenseCategory;
 import com.rivermh.soratrip.domain.expense.repository.ExpenseCategoryTotal;
@@ -27,6 +28,9 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final ScheduleDayRepository scheduleDayRepository;
 
+    // 기본 환율 설정 (100엔당 900원 기준 -> 1엔 = 9원)
+    private static final BigDecimal DEFAULT_JPY_EXCHANGE_RATE = new BigDecimal("900.00");
+
     // 지출 등록
     @Transactional
     public Long createExpense(Long scheduleId, Long dayId, ExpenseCreateDto dto, String email) {
@@ -40,11 +44,21 @@ public class ExpenseService {
             throw new IllegalStateException("본인의 일정에만 지출을 등록할 수 있습니다.");
         }
 
+        Currency currency = dto.getCurrency() != null ? dto.getCurrency() : Currency.JPY;
+        BigDecimal exchangeRate = dto.getExchangeRate();
+
+        // 엔화 선택 시 환율 미입력 상태면 기본 환율(900.00) 적용
+        if (currency == Currency.JPY && (exchangeRate == null || exchangeRate.compareTo(BigDecimal.ZERO) <= 0)) {
+            exchangeRate = DEFAULT_JPY_EXCHANGE_RATE;
+        }
+
         Expense expense = Expense.builder()
                 .travelSchedule(day.getTravelSchedule())
                 .scheduleDay(day)
                 .category(dto.getCategory())
+                .currency(currency)
                 .amount(dto.getAmount())
+                .exchangeRate(exchangeRate)
                 .memo(dto.getMemo())
                 .build();
 
@@ -61,14 +75,28 @@ public class ExpenseService {
         return expenseRepository.findByTravelScheduleIdWithDay(scheduleId);
     }
 
-    // 일정 전체 지출 요약 (총액 + 카테고리별)
+    // 일정 전체 지출 요약 (원화 환산 총액 + 순수 엔화 총액 + 카테고리별 원화 합계)
     public ExpenseSummaryDto getScheduleSummary(Long scheduleId) {
-        BigDecimal total = expenseRepository.sumTotalByScheduleId(scheduleId);
+        List<Expense> expenses = expenseRepository.findByTravelScheduleIdWithDay(scheduleId);
+
+        BigDecimal totalKrw = BigDecimal.ZERO;
+        BigDecimal totalJpy = BigDecimal.ZERO;
         Map<ExpenseCategory, BigDecimal> byCategory = new EnumMap<>(ExpenseCategory.class);
-        for (ExpenseCategoryTotal row : expenseRepository.sumByCategory(scheduleId)) {
-            byCategory.put(row.getCategory(), row.getTotal());
+
+        for (Expense e : expenses) {
+            // 원화 총액 합산
+            totalKrw = totalKrw.add(e.getAmountKrw());
+
+            // 순수 엔화 합산
+            if (e.getCurrency() == Currency.JPY) {
+                totalJpy = totalJpy.add(e.getAmount());
+            }
+
+            // 카테고리별 원화 합산
+            byCategory.merge(e.getCategory(), e.getAmountKrw(), BigDecimal::add);
         }
-        return new ExpenseSummaryDto(total, byCategory);
+
+        return new ExpenseSummaryDto(totalKrw, totalJpy, byCategory);
     }
 
     // 지출 삭제

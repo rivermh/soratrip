@@ -2,67 +2,88 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>새 여행 일정 만들기 - SoraTrip</title>
+    <title th:text="#{schedule.form.title} + ' - SoraTrip'">새 여행 일정 만들기 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
     <div class="container" style="max-width: 800px;">
-        <h2 style="margin-bottom: 20px;">🗺️ 새 여행 일정 짜기</h2>
+        <h2 style="margin-bottom: 20px;" th:text="#{schedule.form.header}">🗺️ 새 여행 일정 짜기</h2>
 
         <form th:action="@{/schedules/new}" th:object="${scheduleForm}" method="post" id="scheduleForm">
             <div class="form-group">
-                <label>일정 제목</label>
-                <input type="text" th:field="*{title}" class="form-control" placeholder="예: 3박 4일 도쿄 알찬 여행" required />
+                <label th:text="#{schedule.form.title_label}">일정 제목</label>
+                <input type="text" th:field="*{title}" class="form-control" 
+                       th:placeholder="#{schedule.form.title_placeholder}"
+                       placeholder="예: 3박 4일 도쿄 알찬 여행" required />
             </div>
 
             <div style="display: flex; gap: 16px; margin-bottom: 20px;">
                 <div style="flex: 1;">
-                    <label>여행 지역</label>
+                    <label th:text="#{post.region}">여행 지역</label>
                     <select th:field="*{region}" class="form-control" required>
-                        <option value="">-- 선택 --</option>
+                        <option value="" th:text="#{schedule.form.select_region}">-- 선택 --</option>
                         <option th:each="r : ${regions}" th:value="${r}" th:text="${r}">TOKYO</option>
                     </select>
                 </div>
                 <div style="flex: 1;">
-                    <label>시작일</label>
+                    <label th:text="#{schedule.form.start_date}">시작일</label>
                     <input type="date" th:field="*{startDate}" class="form-control" required />
                 </div>
                 <div style="flex: 1;">
-                    <label>종료일</label>
+                    <label th:text="#{schedule.form.end_date}">종료일</label>
                     <input type="date" th:field="*{endDate}" class="form-control" required />
+                </div>
+            </div>
+
+            <!-- 🏷️ 여행 스타일 및 이동 편의 태그 선택 영역 (신규 추가) -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-weight: bold; margin-bottom: 8px; display: block; font-size: 14px; color: #334155;">🏷️ 여행 스타일 & 이동 편의 태그 (선택)</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; background: #f8fafc; padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div th:each="tag : ${T(com.rivermh.soratrip.domain.schedule.entity.ScheduleTag).values()}" style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <input type="checkbox" th:field="*{tags}" th:value="${tag}" th:id="${'tag_' + tag}" style="cursor: pointer; width: 16px; height: 16px;" />
+                        <label th:for="${'tag_' + tag}" th:text="${tag.displayName}" style="cursor: pointer; margin-bottom: 0; color: #0f172a;">혼자여행</label>
+                    </div>
                 </div>
             </div>
 
             <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border-color);" />
 
-            <h4>📍 방문 장소 검색 & 추가 (1일차 기본)</h4>
+            <h4 th:text="#{schedule.form.place_search_title}">📍 방문 장소 검색 & 추가 (1일차 기본)</h4>
             <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-                <input id="pac-input" class="form-control" type="text" placeholder="검색할 장소명을 입력하세요 (예: 도쿄 타워)" style="margin-bottom: 10px;">
+                <input id="pac-input" class="form-control" type="text" 
+                       th:placeholder="#{schedule.form.place_search_placeholder}"
+                       placeholder="검색할 장소명을 입력하세요 (예: 도쿄 타워)" style="margin-bottom: 10px;">
                 <div id="map" style="width: 100%; height: 250px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 12px;"></div>
                 
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="selectedPlaceName" class="form-control" placeholder="선택된 장소명" readonly />
-                    <input type="text" id="selectedPlaceAddress" class="form-control" placeholder="주소" readonly />
+                    <input type="text" id="selectedPlaceName" class="form-control" 
+                           th:placeholder="#{schedule.form.place_name_placeholder}"
+                           placeholder="선택된 장소명" readonly />
+                    <input type="text" id="selectedPlaceAddress" class="form-control" 
+                           th:placeholder="#{schedule.form.place_address_placeholder}"
+                           placeholder="주소" readonly />
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <input type="time" id="selectedTime" class="form-control" style="width: 150px;" />
-                    <input type="text" id="selectedMemo" class="form-control" placeholder="메모 (예: 오픈시간 맞춰 방문)" />
-                    <button type="button" class="btn btn-primary" onclick="addPlaceToSchedule()" style="white-space: nowrap;">➕ 장소 추가</button>
+                    <input type="text" id="selectedMemo" class="form-control" 
+                           th:placeholder="#{schedule.form.memo_placeholder}"
+                           placeholder="메모 (예: 오픈시간 맞춰 방문)" />
+                    <button type="button" class="btn btn-primary" onclick="addPlaceToSchedule()" style="white-space: nowrap;" th:text="#{schedule.form.add_place_btn}">➕ 장소 추가</button>
                 </div>
             </div>
 
             <!-- 추가된 장소 리스트가 동적으로 담길 영역 -->
-            <h4>📋 추가된 일정 장소</h4>
+            <h4 th:text="#{schedule.form.added_places_title}">📋 추가된 일정 장소</h4>
             <div id="addedItemsList" style="margin-bottom: 20px;">
-                <p id="emptyMsg" style="color: #94a3b8; font-size: 14px;">지도를 통해 장소를 검색하고 '장소 추가' 버튼을 눌러주세요.</p>
+                <p id="emptyMsg" style="color: #94a3b8; font-size: 14px;" th:text="#{schedule.form.empty_places_msg}">지도를 통해 장소를 검색하고 '장소 추가' 버튼을 눌러주세요.</p>
             </div>
 
             <!-- 백엔드로 넘길 Hidden Inputs Container -->
             <div id="hiddenInputsContainer"></div>
 
             <div style="display: flex; gap: 10px; margin-top: 30px;">
-                <button type="submit" class="btn btn-primary" style="flex: 1;">일정 저장하기</button>
-                <a href="/schedules" class="btn btn-secondary">취소</a>
+                <button type="submit" class="btn btn-primary" style="flex: 1;" th:text="#{schedule.form.save_btn}">일정 저장하기</button>
+                <a th:href="@{/schedules}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{btn.cancel}">취소</a>
             </div>
         </form>
     </div>

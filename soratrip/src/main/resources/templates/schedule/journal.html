@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${journal.schedule.title} + ' - ' + #{journal.title}">여행 일지</title>
+    <title th:text="${journal.schedule.title} + ' - ' + #{journal.title}">여행 일지 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -16,24 +16,29 @@
             </div>
         </div>
 
-        <!-- 전체 지출 요약 -->
+        <!-- 전체 지출 요약 (엔화/원화 이중 표기) -->
         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 30px;">
-            <h3 style="margin: 0 0 8px 0;" th:text="#{expense.title}">💰 가계부</h3>
-            <p style="font-weight: bold; font-size: 20px; margin: 0 0 8px 0;">
-                <span th:text="#{expense.total}">총 지출</span>:
-                <span th:text="${#numbers.formatDecimal(journal.total, 0, 'COMMA', 0, 'POINT')}">0</span>
-            </p>
-            <div th:unless="${journal.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <span th:each="entry : ${journal.byCategory}" class="badge"
-                      th:text="${entry.key.displayName} + ': ' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: 0</span>
+            <h3 style="margin: 0 0 8px 0;" th:text="#{expense.title}">💰 가계부 요약</h3>
+            <div style="font-weight: bold; font-size: 20px; margin: 0 0 8px 0; color: #15803d; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span>
+                    <span th:text="#{expense.total}">총 지출</span>:
+                    ₩ <span th:text="${#numbers.formatDecimal(journal.totalKrw != null ? journal.totalKrw : (journal.total != null ? journal.total : 0), 0, 'COMMA', 0, 'POINT')}">0</span>
+                </span>
+                <span th:if="${journal.totalJpy != null and journal.totalJpy > 0}" style="font-size: 15px; color: #0369a1; font-weight: 600; background: #e0f2fe; padding: 2px 10px; border-radius: 20px;">
+                    (엔화 사용: ¥ <span th:text="${#numbers.formatDecimal(journal.totalJpy, 0, 'COMMA', 0, 'POINT')}">0</span>)
+                </span>
+            </div>
+            <div th:unless="${journal.byCategory == null or journal.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span th:each="entry : ${journal.byCategory}" class="badge" style="background: #ffffff; border: 1px solid #86efac; color: #166534;"
+                      th:text="${entry.key.displayName} + ': ₩' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: ₩0</span>
             </div>
         </div>
 
         <!-- 일자별 여행 일지 -->
-        <h3>🗓️ 일자별 기록</h3>
+        <h3>🗓️ <span th:text="#{journal.daily_records}">일자별 기록</span></h3>
         <div th:each="day : ${journal.schedule.days}" style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
             <h4 style="color: #0f172a; margin-bottom: 12px;">
-                <span th:text="${day.dayNumber}">1</span>일차
+                <span th:text="${day.dayNumber}">1</span><span th:text="#{schedule.day_title}">일차</span>
                 <span style="font-size: 14px; color: #64748b; font-weight: normal;" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
             </h4>
 
@@ -52,24 +57,41 @@
                 </div>
             </div>
 
-            <!-- 후기 -->
+            <!-- 후기 및 이동 편의 평가 배지 -->
             <div th:if="${journal.reviewByDay.get(day.id) != null}" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;">
-                <strong style="font-size: 13px; color: #64748b;" th:text="#{review.title}">📝 오늘의 후기</strong>
-                <p style="margin-top: 6px;" th:text="${journal.reviewByDay.get(day.id).content}">후기 내용</p>
+                <strong style="font-size: 13px; color: #64748b; display: block; margin-bottom: 6px;" th:text="#{review.title}">📝 오늘의 후기</strong>
+                
+                <!-- 이동 편의 배지 노출 -->
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                    <span th:if="${journal.reviewByDay.get(day.id).hasElevator}" style="background: #e0f2fe; color: #0369a1; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🛗 엘리베이터/에스컬레이터 원활</span>
+                    <span th:if="${journal.reviewByDay.get(day.id).isFlatPath}" style="background: #dcfce7; color: #15803d; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🧑‍🦽 계단 없음 / 평지</span>
+                    <span th:if="${journal.reviewByDay.get(day.id).hasLuggageStorage}" style="background: #fef3c7; color: #b45309; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🧳 짐 보관 용이</span>
+                </div>
+
+                <p style="margin: 0; font-size: 14px; color: #334155;" th:text="${journal.reviewByDay.get(day.id).content}">후기 내용</p>
             </div>
 
-            <!-- 지출 -->
-            <div th:unless="${#lists.isEmpty(journal.expensesByDay.get(day.id))}" style="font-size: 13px; color: #475569;">
-                <div th:each="e : ${journal.expensesByDay.get(day.id)}">
-                    💰 <span th:text="${e.category.displayName}">분류</span> -
-                    <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
+            <!-- 지출 (통화별 표기 및 원화 환산) -->
+            <div th:unless="${#lists.isEmpty(journal.expensesByDay.get(day.id))}" style="font-size: 13px; color: #475569; background: #f1f5f9; padding: 8px 12px; border-radius: 6px;">
+                <div th:each="e : ${journal.expensesByDay.get(day.id)}" style="margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center;">
+                    <span>
+                        💰 <span th:text="${e.category.displayName}">분류</span>
+                        <span th:if="${e.memo != null and !#strings.isEmpty(e.memo)}" th:text="' - ' + ${e.memo}" style="color: #64748b; font-size: 12px;"></span>
+                    </span>
+                    <span style="font-weight: 600;">
+                        <span th:text="${e.currency != null ? e.currency.symbol : '¥'}">¥</span>
+                        <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
+                        <span th:if="${e.currency != null and e.currency.name() == 'JPY'}" style="color: #64748b; font-size: 11px; font-weight: normal;">
+                            (≈ ₩<span th:text="${#numbers.formatDecimal(e.amountKrw, 0, 'COMMA', 0, 'POINT')}">0</span>)
+                        </span>
+                    </span>
                 </div>
             </div>
         </div>
 
         <div style="margin-top: 30px; display: flex; gap: 8px;">
-            <a th:href="@{/schedules/{id}(id=${journal.schedule.id})}" class="btn btn-secondary" th:text="#{post.back_to_list}">📋 일정으로 돌아가기</a>
-            <a th:if="${owner}" th:href="@{/portfolio/{id}(id=${journal.schedule.member.id})}" class="btn btn-secondary" th:text="#{portfolio.title}">🖼️ 내 포트폴리오</a>
+            <a th:href="@{/schedules/{id}(id=${journal.schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{journal.back_to_schedule}">📋 일정으로 돌아가기</a>
+            <a th:if="${owner}" th:href="@{/portfolio/{id}(id=${journal.schedule.member.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{portfolio.my_portfolio}">🖼️ 내 포트폴리오</a>
         </div>
     </div>
 </body>

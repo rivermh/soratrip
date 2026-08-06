@@ -2,13 +2,15 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="${schedule.title} + ' - SoraTrip'">여행 일정 상세보기</title>
+    <title th:text="${schedule.title} + ' - SoraTrip'">여행 일정 상세보기 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!-- Sortable.js (드래그 앤 드롭 라이브러리 추가) -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
     <div class="container" style="max-width: 900px;">
         <div style="margin-bottom: 20px;">
-            <span th:text="${schedule.region}" style="background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 10px; border-radius: 6px;">TOKYO</span>
+            <span th:text="${schedule.region.displayName}" style="background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 10px; border-radius: 6px;">TOKYO</span>
             <span th:if="${schedule.public}" class="badge" th:text="#{schedule.settings.public_badge}">공개</span>
             <h2 th:text="${schedule.title}" style="margin-top: 10px;">도쿄 3박 4일 일정</h2>
             <p style="color: #64748b;">📅 <span th:text="${schedule.startDate}">2026-08-01</span> ~ <span th:text="${schedule.endDate}">2026-08-04</span></p>
@@ -25,14 +27,19 @@
 
         <!-- 여행 전체 가계부 요약 -->
         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 8px 0;" th:text="#{expense.title}">💰 가계부</h3>
-            <p style="font-weight: bold; font-size: 18px; margin: 0 0 6px 0;">
-                <span th:text="#{expense.total}">총 지출</span>:
-                <span th:text="${#numbers.formatDecimal(expenseSummary.total, 0, 'COMMA', 0, 'POINT')}">0</span>
-            </p>
+            <h3 style="margin: 0 0 8px 0;" th:text="#{expense.title}">💰 가계부 요약</h3>
+            <div style="font-weight: bold; font-size: 18px; margin: 0 0 8px 0; color: #15803d; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span>
+                    <span th:text="#{expense.total}">총 지출</span>:
+                    ₩ <span th:text="${#numbers.formatDecimal(expenseSummary.totalKrw, 0, 'COMMA', 0, 'POINT')}">0</span>
+                </span>
+                <span th:if="${expenseSummary.totalJpy > 0}" style="font-size: 15px; color: #0369a1; font-weight: 600; background: #e0f2fe; padding: 2px 10px; border-radius: 20px;">
+                    (엔화 사용: ¥ <span th:text="${#numbers.formatDecimal(expenseSummary.totalJpy, 0, 'COMMA', 0, 'POINT')}">0</span>)
+                </span>
+            </div>
             <div th:unless="${expenseSummary.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <span th:each="entry : ${expenseSummary.byCategory}" class="badge"
-                      th:text="${entry.key.displayName} + ': ' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: 0</span>
+                <span th:each="entry : ${expenseSummary.byCategory}" class="badge" style="background: #ffffff; border: 1px solid #86efac; color: #166534;"
+                      th:text="${entry.key.displayName} + ': ₩' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: ₩0</span>
             </div>
         </div>
 
@@ -40,47 +47,93 @@
         <div id="map" style="width: 100%; height: 350px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 30px;"></div>
 
         <!-- 일차별 일정 타임라인 -->
-        <h3>🗓️ 일차별 일정</h3>
+        <h3>🗓️ <span th:text="#{schedule.day_title}">일차별 일정</span></h3>
         <div th:each="day : ${schedule.days}" style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-            <h4 style="color: #0f172a; margin-bottom: 12px;">
-                <span th:text="${day.dayNumber}">1</span>일차 
-                <span style="font-size: 14px; color: #64748b; font-weight: normal;" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
-            </h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4 style="color: #0f172a; margin: 0;">
+                    <span th:text="${day.dayNumber}">1</span><span th:text="#{schedule.day_title}">일차</span> 
+                    <span style="font-size: 14px; color: #64748b; font-weight: normal;" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+                </h4>
+                <!-- 소유자인 경우 순서 저장 버튼 노출 -->
+                <button th:if="${owner}" type="button" class="btn btn-secondary" style="width: auto; padding: 4px 10px; font-size: 12px;" 
+                        th:onclick="'saveDayOrder(' + ${day.id} + ')'">💾 순서 저장</button>
+            </div>
 
-            <div th:if="${#lists.isEmpty(day.items)}" style="color: #94a3b8; font-size: 14px;">
+            <div th:if="${#lists.isEmpty(day.items)}" style="color: #94a3b8; font-size: 14px;" th:text="#{schedule.empty_places}">
                 등록된 장소가 없습니다.
             </div>
 
-            <div th:unless="${#lists.isEmpty(day.items)}" style="display: flex; flex-direction: column; gap: 10px;">
-                <div th:each="item : ${day.items}" style="background: white; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong style="font-size: 16px;" th:text="${item.visitOrder} + '. ' + ${item.placeName}">1. 도쿄 타워</strong>
-                        <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" style="font-size: 13px; color: #0284c7; margin-left: 8px;">⏰ 10:00</span>
-                        <div style="font-size: 13px; color: #64748b; margin-top: 4px;" th:text="${item.placeAddress}">주소 정보</div>
-                        <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" style="font-size: 13px; color: #059669; margin-top: 2px;" th:text="'📝 메모: ' + ${item.memo}">메모 내용</div>
+            <!-- 드래그 앤 드롭 영역 (itemList-일차ID) -->
+            <div th:unless="${#lists.isEmpty(day.items)}" 
+                 th:id="'itemList-' + ${day.id}" 
+                 class="item-list-container" 
+                 th:data-day-id="${day.id}"
+                 style="display: flex; flex-direction: column; gap: 10px;">
+                
+                <div th:each="item : ${day.items}" 
+                     class="schedule-item-card"
+                     th:data-id="${item.id}"
+                     th:data-lat="${item.latitude}"
+                     th:data-lng="${item.longitude}"
+                     th:data-name="${item.placeName}"
+                     style="background: white; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
+                    
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <!-- 손잡이 아이콘 (소유자 전용) -->
+                        <span th:if="${owner}" class="drag-handle" style="cursor: grab; color: #94a3b8; font-size: 18px; user-select: none;">☰</span>
+                        
+                        <div>
+                            <strong style="font-size: 16px;">
+                                <span class="order-badge" th:text="${item.visitOrder}">1</span>. 
+                                <span th:text="${item.placeName}">도쿄 타워</span>
+                            </strong>
+                            <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" style="font-size: 13px; color: #0284c7; margin-left: 8px;">⏰ 10:00</span>
+                            <div style="font-size: 13px; color: #64748b; margin-top: 4px;" th:text="${item.placeAddress}">주소 정보</div>
+                            <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" style="font-size: 13px; color: #059669; margin-top: 2px;">
+                                📝 <span th:text="#{schedule.memo}">메모</span>: <span th:text="${item.memo}">메모 내용</span>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- 삭제 버튼 (소유자 전용) -->
+                    <button th:if="${owner}" type="button" class="btn btn-secondary" 
+                            style="width: auto; padding: 4px 8px; font-size: 12px; color: #ef4444; border-color: #fca5a5;" 
+                            th:onclick="'deleteScheduleItem(' + ${item.id} + ', this)'">삭제</button>
                 </div>
             </div>
 
             <!-- 일자별 가계부 -->
             <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
                 <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{expense.title}">💰 가계부</h5>
-                <div th:each="e : ${expensesByDay?.get(day.id)}" style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px;">
+                
+                <div th:each="e : ${expensesByDay?.get(day.id)}" style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #f1f5f9;">
                     <span th:text="${e.category.displayName} + (${e.memo != null and !#strings.isEmpty(e.memo)} ? ' - ' + ${e.memo} : '')">분류 - 메모</span>
-                    <span style="display: flex; align-items: center; gap: 6px;">
-                        <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 600;">
+                            <span th:text="${e.currency.symbol}">¥</span>
+                            <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
+                        </span>
+                        <span th:if="${e.currency.name() == 'JPY'}" style="color: #64748b; font-size: 11px;">
+                            (≈ ₩<span th:text="${#numbers.formatDecimal(e.amountKrw, 0, 'COMMA', 0, 'POINT')}">0</span>)
+                        </span>
                         <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses/{eid}/delete(sid=${schedule.id},did=${day.id},eid=${e.id})}" method="post" style="display: inline;">
-                            <button type="submit" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;">✕</button>
+                            <button type="submit" class="btn btn-secondary" style="width: auto; padding: 1px 6px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">✕</button>
                         </form>
                     </span>
                 </div>
-                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses(sid=${schedule.id},did=${day.id})}" method="post" style="display: flex; gap: 6px; margin-top: 8px;">
-                    <select name="category" class="form-control" style="flex: 1;">
+
+                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses(sid=${schedule.id},did=${day.id})}" method="post" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; background: #f1f5f9; padding: 8px; border-radius: 8px;">
+                    <select name="category" class="form-control" style="flex: 1.2; min-width: 90px;" required>
                         <option th:each="c : ${expenseCategories}" th:value="${c}" th:text="${c.displayName}">분류</option>
                     </select>
-                    <input type="number" name="amount" class="form-control" placeholder="금액" style="flex: 1;" required>
-                    <input type="text" name="memo" class="form-control" placeholder="메모" style="flex: 2;">
-                    <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{expense.add}">추가</button>
+                    <select name="currency" class="form-control" style="flex: 1; min-width: 80px;">
+                        <option value="JPY" selected>JPY (¥)</option>
+                        <option value="KRW">KRW (₩)</option>
+                    </select>
+                    <input type="number" step="any" name="amount" class="form-control" th:placeholder="#{expense.amount.placeholder}" placeholder="금액" style="flex: 1.2; min-width: 90px;" required>
+                    <input type="number" step="0.01" name="exchangeRate" class="form-control" placeholder="환율(100엔당 원, 기본900)" style="flex: 1.5; min-width: 130px; font-size: 12px;">
+                    <input type="text" name="memo" class="form-control" th:placeholder="#{expense.memo.placeholder}" placeholder="메모" style="flex: 2; min-width: 120px;">
+                    <button type="submit" class="btn btn-primary" style="width: auto; min-width: 60px;" th:text="#{expense.add}">추가</button>
                 </form>
             </div>
 
@@ -97,7 +150,7 @@
                 </div>
                 <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos(sid=${schedule.id},did=${day.id})}" method="post" enctype="multipart/form-data" style="display: flex; gap: 6px; margin-top: 8px;">
                     <input type="file" name="file" accept="image/*" required>
-                    <input type="text" name="caption" class="form-control" placeholder="설명 (선택)" style="flex: 1;">
+                    <input type="text" name="caption" class="form-control" th:placeholder="#{photo.caption.placeholder}" placeholder="설명 (선택)" style="flex: 1;">
                     <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{photo.upload}">업로드</button>
                 </form>
             </div>
@@ -105,8 +158,28 @@
             <!-- 일자별 후기 -->
             <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
                 <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{review.title}">📝 오늘의 후기</h5>
+                
+                <div th:if="${reviewByDay.get(day.id) != null}" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                    <span th:if="${reviewByDay.get(day.id).hasElevator}" style="background: #e0f2fe; color: #0369a1; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🛗 엘리베이터/에스컬레이터 원활</span>
+                    <span th:if="${reviewByDay.get(day.id).isFlatPath}" style="background: #dcfce7; color: #15803d; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🧑‍🦽 계단 없음 / 평지</span>
+                    <span th:if="${reviewByDay.get(day.id).hasLuggageStorage}" style="background: #fef3c7; color: #b45309; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🧳 짐 보관 용이</span>
+                </div>
+
                 <div th:if="${!owner}" style="font-size: 14px; color: #334155;" th:text="${reviewByDay.get(day.id)?.content}">후기 내용</div>
+                
                 <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/review(sid=${schedule.id},did=${day.id})}" method="post">
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; font-size: 13px; color: #334155; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+                        <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="hasElevator" value="true" th:checked="${reviewByDay.get(day.id)?.hasElevator}"> 🛗 엘리베이터 원활
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="isFlatPath" value="true" th:checked="${reviewByDay.get(day.id)?.isFlatPath}"> 🧑‍🦽 계단 없음 / 평지
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                            <input type="checkbox" name="hasLuggageStorage" value="true" th:checked="${reviewByDay.get(day.id)?.hasLuggageStorage}"> 🧳 짐 보관 용이
+                        </label>
+                    </div>
+
                     <textarea name="content" class="form-control" rows="2" th:text="${reviewByDay.get(day.id)?.content}" th:placeholder="#{review.content}"></textarea>
                     <button type="submit" class="btn btn-secondary" style="width: auto; margin-top: 6px;" th:text="#{review.save}">후기 저장</button>
                 </form>
@@ -114,54 +187,200 @@
         </div>
 
         <div style="margin-top: 30px;">
-            <a href="/schedules" class="btn btn-secondary">📋 내 일정 목록으로</a>
+            <a th:href="@{/schedules}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{schedule.back_to_list}">📋 내 일정 목록으로</a>
         </div>
     </div>
 
-    <!-- Map Script (순환 참조 방지 및 안전한 데이터 바인딩 적용) -->
+    <!-- Map Script & Sortable.js (실시간 순서 변경 & 지도 동선 갱신) -->
     <script th:inline="javascript">
         /*<![CDATA[*/
-        // Entity 전체 객체 대신 필요한 위도/경도/장소명/순서만 뽑아서 배열 생성
-        const mapItems = [
+        const scheduleId = /*[[${schedule.id}]]*/ 1;
+        const isOwner = /*[[${owner}]]*/ false;
+
+        const scheduleDaysData = [
             /*[# th:each="day : ${schedule.days}"]*/
-                /*[# th:each="item : ${day.items}"]*/
-                {
-                    placeName: /*[[${item.placeName}]]*/ '',
-                    visitOrder: /*[[${item.visitOrder}]]*/ 1,
-                    lat: /*[[${item.latitude}]]*/ null,
-                    lng: /*[[${item.longitude}]]*/ null
-                },
-                /*[/]*/
+            {
+                dayNumber: /*[[${day.dayNumber}]]*/ 1,
+                items: [
+                    /*[# th:each="item : ${day.items}"]*/
+                    {
+                        placeName: /*[[${item.placeName}]]*/ '',
+                        placeAddress: /*[[${item.placeAddress}]]*/ '',
+                        visitOrder: /*[[${item.visitOrder}]]*/ 1,
+                        lat: /*[[${item.latitude}]]*/ null,
+                        lng: /*[[${item.longitude}]]*/ null
+                    },
+                    /*[/]*/
+                ]
+            },
             /*[/]*/
         ];
         /*]]>*/
 
+        let map;
+        let markers = [];
+        let polylines = [];
+
         function initMap() {
-            const bounds = new google.maps.LatLngBounds();
             const defaultLoc = { lat: 35.681236, lng: 139.767125 };
-            const map = new google.maps.Map(document.getElementById("map"), { zoom: 11, center: defaultLoc });
+            map = new google.maps.Map(document.getElementById("map"), { 
+                zoom: 12, 
+                center: defaultLoc,
+                mapTypeControl: false,
+                streetViewControl: false
+            });
 
-            let hasMarkers = false;
+            renderMapElements();
 
-            mapItems.forEach(item => {
-                if (item.lat !== null && item.lng !== null) {
-                    const pos = { lat: Number(item.lat), lng: Number(item.lng) };
-                    new google.maps.Marker({
-                        position: pos,
-                        map: map,
-                        title: item.placeName,
-                        label: String(item.visitOrder)
+            // 소유자인 경우 Sortable.js 드래그 앤 드롭 활성화
+            if (isOwner) {
+                document.querySelectorAll('.item-list-container').forEach(container => {
+                    new Sortable(container, {
+                        animation: 150,
+                        handle: '.drag-handle',
+                        onEnd: function() {
+                            updateUIBadges(container);
+                            renderMapElements(); // 드래그 완료 시 지도 동선 즉시 업데이트
+                        }
                     });
-                    bounds.extend(pos);
-                    hasMarkers = true;
+                });
+            }
+        }
+
+        // 화면 뱃지 번호(1., 2., 3...) 재정렬
+        function updateUIBadges(container) {
+            const items = container.querySelectorAll('.schedule-item-card');
+            items.forEach((item, idx) => {
+                const badge = item.querySelector('.order-badge');
+                if (badge) badge.textContent = idx + 1;
+            });
+        }
+
+        // 지도 마커 및 Polyline 재렌더링
+        function renderMapElements() {
+            if (!map) return;
+
+            // 기존 마커 & 선 제거
+            markers.forEach(m => m.setMap(null));
+            polylines.forEach(p => p.setMap(null));
+            markers = [];
+            polylines = [];
+
+            const bounds = new google.maps.LatLngBounds();
+            const infoWindow = new google.maps.InfoWindow();
+            let hasValidMarkers = false;
+
+            const dayColors = ['#0284c7', '#16a34a', '#d97706', '#9333ea', '#dc2626', '#0891b2'];
+
+            document.querySelectorAll('.item-list-container').forEach((container, dayIdx) => {
+                const color = dayColors[dayIdx % dayColors.length];
+                const dayPath = [];
+                const dayNumber = dayIdx + 1;
+
+                const items = container.querySelectorAll('.schedule-item-card');
+                items.forEach((item, idx) => {
+                    const lat = parseFloat(item.dataset.lat);
+                    const lng = parseFloat(item.dataset.lng);
+                    const name = item.dataset.name;
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const pos = { lat: lat, lng: lng };
+                        dayPath.push(pos);
+                        bounds.extend(pos);
+                        hasValidMarkers = true;
+
+                        const marker = new google.maps.Marker({
+                            position: pos,
+                            map: map,
+                            title: name,
+                            label: {
+                                text: `${dayNumber}-${idx + 1}`,
+                                color: "#ffffff",
+                                fontWeight: "bold",
+                                fontSize: "12px"
+                            }
+                        });
+
+                        marker.addListener("click", () => {
+                            infoWindow.setContent(`
+                                <div style="padding: 6px 8px; max-width: 200px;">
+                                    <span style="background: ${color}; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
+                                        Day ${dayNumber} - ${idx + 1}번
+                                    </span>
+                                    <h4 style="margin: 6px 0 2px 0; font-size: 14px; color: #0f172a;">${name}</h4>
+                                </div>
+                            `);
+                            infoWindow.open(map, marker);
+                        });
+
+                        markers.push(marker);
+                    }
+                });
+
+                if (dayPath.length >= 2) {
+                    const polyline = new google.maps.Polyline({
+                        path: dayPath,
+                        geodesic: true,
+                        strokeColor: color,
+                        strokeOpacity: 0.8,
+                        strokeWeight: 4
+                    });
+                    polyline.setMap(map);
+                    polylines.push(polyline);
                 }
             });
 
-            if (hasMarkers) {
+            if (hasValidMarkers) {
                 map.fitBounds(bounds);
             }
         }
+
+        // 서버에 변경된 순서 저장 (PATCH /api/schedules/{id}/order)
+        function saveDayOrder(dayId) {
+            const container = document.getElementById(`itemList-${dayId}`);
+            if (!container) return;
+
+            const items = container.querySelectorAll('.schedule-item-card');
+            const payload = { items: [] };
+
+            items.forEach((item, index) => {
+                payload.items.push({
+                    itemId: parseInt(item.dataset.id),
+                    visitOrder: index + 1
+                });
+            });
+
+            fetch(`/api/schedules/${scheduleId}/order`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (res.ok) alert('순서가 저장되었습니다!');
+                else alert('저장에 실패했습니다.');
+            })
+            .catch(err => alert('오류가 발생했습니다: ' + err));
+        }
+
+        // 장소 삭제 (DELETE /api/schedules/items/{itemId})
+        function deleteScheduleItem(itemId, btnBtn) {
+            if (!confirm('이 장소를 삭제하시겠습니까?')) return;
+
+            fetch(`/api/schedules/items/${itemId}`, { method: 'DELETE' })
+            .then(res => {
+                if (res.ok) {
+                    const card = btnBtn.closest('.schedule-item-card');
+                    const container = card.closest('.item-list-container');
+                    card.remove();
+                    updateUIBadges(container);
+                    renderMapElements(); // 삭제 후 지도 갱신
+                } else {
+                    alert('삭제에 실패했습니다.');
+                }
+            })
+            .catch(err => alert('오류가 발생했습니다: ' + err));
+        }
     </script>
-	<script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" async defer></script>
+    <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" async defer></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{site.title}">SoraTrip - 여행 게시판</title>
+    <title th:text="#{post.list.title} + ' - SoraTrip'">✈️ 여행 & 동행 게시판 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -30,8 +30,10 @@
                 <input type="hidden" name="region" th:if="${selectedRegion != null}" th:value="${selectedRegion}">
                 <input type="hidden" name="category" th:if="${selectedCategory != null}" th:value="${selectedCategory}">
                 
-                <input type="text" name="keyword" th:value="${keyword}" class="form-control" placeholder="제목이나 내용으로 검색해 보세요..." style="flex: 1;" />
-                <button type="submit" class="btn btn-primary" style="width: auto; padding: 0 24px; font-weight: 600;">검색</button>
+                <input type="text" name="keyword" th:value="${keyword}" class="form-control" 
+                       th:placeholder="#{post.search.placeholder}"
+                       placeholder="제목이나 내용으로 검색해 보세요..." style="flex: 1;" />
+                <button type="submit" class="btn btn-primary" style="width: auto; padding: 0 24px; font-weight: 600;" th:text="#{post.search.btn}">검색</button>
             </form>
 
             <!-- 지역 필터 -->
@@ -39,7 +41,8 @@
                 <strong style="font-size: 14px; color: var(--text-sub); margin-right: 6px; min-width: 42px;" th:text="#{post.region}">지역:</strong>
                 <a th:href="@{/posts(category=${selectedCategory}, keyword=${keyword})}" 
                    class="filter-chip" 
-                   th:classappend="${selectedRegion == null || selectedRegion == ''} ? 'active' : ''">전체</a>
+                   th:classappend="${selectedRegion == null || selectedRegion == ''} ? 'active' : ''"
+                   th:text="#{post.filter.all}">전체</a>
                 <a th:each="r : ${regions}" 
                    th:href="@{/posts(region=${r}, category=${selectedCategory}, keyword=${keyword})}" 
                    th:text="${r.displayName}" 
@@ -52,7 +55,8 @@
                 <strong style="font-size: 14px; color: var(--text-sub); margin-right: 6px; min-width: 42px;" th:text="#{post.category}">분류:</strong>
                 <a th:href="@{/posts(region=${selectedRegion}, keyword=${keyword})}" 
                    class="filter-chip"
-                   th:classappend="${selectedCategory == null || selectedCategory == ''} ? 'active' : ''">전체</a>
+                   th:classappend="${selectedCategory == null || selectedCategory == ''} ? 'active' : ''"
+                   th:text="#{post.filter.all}">전체</a>
                 <a th:each="c : ${categories}" 
                    th:href="@{/posts(region=${selectedRegion}, category=${c}, keyword=${keyword})}" 
                    th:text="${c.displayName}" 
@@ -93,7 +97,7 @@
             <!-- 이전 페이지 -->
             <a th:if="${posts.hasPrevious()}"
                th:href="@{/posts(page=${posts.number - 1}, region=${selectedRegion}, category=${selectedCategory}, keyword=${keyword})}"
-               class="btn btn-secondary" style="width: auto; padding: 6px 14px; font-size: 13px;">이전</a>
+               class="btn btn-secondary" style="width: auto; padding: 6px 14px; font-size: 13px;" th:text="#{page.prev}">이전</a>
 
             <!-- 페이지 번호 -->
             <span th:each="pageNumber : ${#numbers.sequence(0, posts.totalPages - 1)}">
@@ -108,7 +112,7 @@
             <!-- 다음 페이지 -->
             <a th:if="${posts.hasNext()}"
                th:href="@{/posts(page=${posts.number + 1}, region=${selectedRegion}, category=${selectedCategory}, keyword=${keyword})}"
-               class="btn btn-secondary" style="width: auto; padding: 6px 14px; font-size: 13px;">다음</a>
+               class="btn btn-secondary" style="width: auto; padding: 6px 14px; font-size: 13px;" th:text="#{page.next}">다음</a>
         </div>
 
         <!-- 하단 홈 이동 버튼 -->

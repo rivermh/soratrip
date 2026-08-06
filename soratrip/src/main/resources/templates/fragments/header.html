@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<header th:fragment="header" class="navbar">
+    <a th:href="@{/}" class="logo">✈️ SoraTrip</a>
+
+    <nav class="navbar-nav">
+        <!-- 로그인 상태 -->
+        <div sec:authorize="isAuthenticated()" class="navbar-menu">
+            <a th:href="@{/schedules/ai-new}" class="btn btn-ai">🤖 AI 일정 만들기</a>
+            <a th:href="@{/schedules}" class="nav-link" th:text="#{nav.schedule}">🗓️ 내 일정</a>
+            <a th:href="@{/posts}" class="nav-link" th:text="#{post.list.title}">✈️ 여행 & 동행 게시판</a>
+            <a th:href="@{/members/mypage}" class="nav-link" th:text="#{nav.mypage}">마이페이지</a>
+            <form th:action="@{/members/logout}" method="post">
+                <button type="submit" class="nav-link nav-link--muted" th:text="#{nav.logout}">로그아웃</button>
+            </form>
+        </div>
+
+        <!-- 비로그인 상태 -->
+        <div sec:authorize="isAnonymous()" class="navbar-menu">
+            <a th:href="@{/members/login}" class="btn btn-primary" th:text="#{nav.login}">로그인</a>
+            <a th:href="@{/members/join}" class="btn btn-secondary" th:text="#{nav.join}">회원가입</a>
+        </div>
+
+        <!-- 언어 선택 -->
+        <div class="navbar-lang">
+            <a th:href="@{''(lang='ko')}" th:text="#{lang.ko}">한국어</a>
+            <a th:href="@{''(lang='ja')}" th:text="#{lang.ja}">日本語</a>
+        </div>
+    </nav>
+</header>
+</html>

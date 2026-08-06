@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{site.title}">SoraTrip - 일정 복사</title>
+    <title th:text="#{schedule.copy.title} + ' - SoraTrip'">📋 이 일정을 내 일정으로 복사하기 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -22,7 +22,7 @@
         </form>
 
         <div style="margin-top: 20px;">
-            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" th:text="#{post.cancel}">취소</a>
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" th:text="#{btn.cancel}">취소</a>
         </div>
     </div>
 </body>

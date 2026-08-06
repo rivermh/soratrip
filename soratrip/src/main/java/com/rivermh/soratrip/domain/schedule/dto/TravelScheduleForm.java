@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.rivermh.soratrip.domain.post.entity.Region;
+import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,6 +27,9 @@ public class TravelScheduleForm {
 
     @NotNull(message = "종료일을 입력해 주세요.")
     private LocalDate endDate;
+
+    // 일정 관련 선택 태그 (이동 편의 태그 포함)
+    private List<ScheduleTag> tags = new ArrayList<>();
 
     private List<ScheduleDayForm> days = new ArrayList<>();
 }

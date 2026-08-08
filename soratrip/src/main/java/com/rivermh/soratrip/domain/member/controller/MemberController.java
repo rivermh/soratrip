@@ -3,7 +3,10 @@ package com.rivermh.soratrip.domain.member.controller;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.rivermh.soratrip.domain.bookmark.repository.ScheduleBookmarkRepository;
 import com.rivermh.soratrip.domain.comment.repository.CommentRepository;
+import com.rivermh.soratrip.domain.like.repository.PostLikeRepository;
+import com.rivermh.soratrip.domain.like.repository.ScheduleLikeRepository;
 import com.rivermh.soratrip.domain.member.dto.MemberJoinDto;
 import com.rivermh.soratrip.domain.member.dto.MemberProfileDto;
 import com.rivermh.soratrip.domain.member.service.MemberService;
@@ -29,6 +32,9 @@ public class MemberController {
     private final PostRepository postRepository;
     private final CommentRepository commentRepository;
     private final SchedulePortfolioService schedulePortfolioService;
+    private final PostLikeRepository postLikeRepository;
+    private final ScheduleLikeRepository scheduleLikeRepository;
+    private final ScheduleBookmarkRepository scheduleBookmarkRepository;
 
     // 회원가입 페이지 요청
     @GetMapping("/join")
@@ -61,6 +67,11 @@ public class MemberController {
         // 내가 쓴 글 / 작성한 댓글 목록 모델에 추가
         model.addAttribute("myPosts", postRepository.findByWriterEmailOrderByIdDesc(email));
         model.addAttribute("myComments", commentRepository.findByWriterEmailOrderByIdDesc(email));
+
+        // 좋아요 및 북마크 목록 모델에 추가 (이메일 기준 조회 메서드 활용)
+        model.addAttribute("myPostLikes", postLikeRepository.findByMemberEmailOrderByIdDesc(email));
+        model.addAttribute("myScheduleLikes", scheduleLikeRepository.findByMemberEmailOrderByIdDesc(email));
+        model.addAttribute("myBookmarks", scheduleBookmarkRepository.findByMemberEmailOrderByCreatedAtDesc(email));
 
         // 여행 취향 태그 (추천 기능용)
         model.addAttribute("tags", ScheduleTag.values());

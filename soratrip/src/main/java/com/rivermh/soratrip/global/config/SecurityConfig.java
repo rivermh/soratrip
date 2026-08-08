@@ -27,7 +27,11 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/members/join", "/members/login", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/uploads/**").permitAll()
+                .requestMatchers("/", "/members/join", "/members/login", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/error", "/uploads/**").permitAll()
+                // WebSocket 핸드셰이크 경로 허용 (인증된 사용자만 연결 가능하도록 authenticated() 처리 또는 permitAll())
+                .requestMatchers("/ws/chat/**").authenticated() 
+                // 채팅 관련 REST API 경로 인증 설정
+                .requestMatchers("/api/chat/**").authenticated()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -35,15 +39,14 @@ public class SecurityConfig {
                 .loginProcessingUrl("/members/login")
                 .usernameParameter("email")
                 .defaultSuccessUrl("/", true)
-                .failureUrl("/members/login?error") // 로그인 실패 시 ?error 파라미터 전달
+                .failureUrl("/members/login?error")
                 .permitAll()
             )
-            // OAuth2 소셜 로그인 설정 추가
             .oauth2Login(oauth2 -> oauth2
-                .loginPage("/members/login") // 구글 로그인 요청 시에도 커스텀 로그인 페이지 활용
+                .loginPage("/members/login")
                 .defaultSuccessUrl("/", true)
                 .userInfoEndpoint(userInfo -> userInfo
-                    .userService(customOAuth2UserService) // 구글 유저 정보를 처리할 서비스 등록
+                    .userService(customOAuth2UserService)
                 )
             )
             .logout(logout -> logout

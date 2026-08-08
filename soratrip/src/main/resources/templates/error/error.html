@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오류가 발생했습니다 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .error-container {
+            max-width: 500px;
+            margin: 80px auto;
+            text-align: center;
+            padding: 40px 24px;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+        .error-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+        .error-code {
+            display: inline-block;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+        .error-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+        .error-message {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-container">
+            <div class="error-icon">🧭</div>
+            
+            <!-- HTTP 상태 코드 표시 -->
+            <div class="error-code" th:text="${status != null ? 'HTTP ' + status : 'ERROR'}">HTTP 500</div>
+            
+            <!-- 상황별 맞춤 메시지 -->
+            <h2 class="error-title" th:switch="${status}">
+                <span th:case="404">페이지를 찾을 수 없습니다</span>
+                <span th:case="403">접근 권한이 없습니다</span>
+                <span th:case="500">일시적인 시스템 오류입니다</span>
+                <span th:case="*">요청을 처리할 수 없습니다</span>
+            </h2>
+
+            <p class="error-message" th:switch="${status}">
+                <span th:case="404">요청하신 페이지가 삭제되었거나 주소가 변경되었을 수 있습니다.</span>
+                <span th:case="403">해당 페이지에 접근할 권한이 없습니다.</span>
+                <span th:case="500">서버 처리 중 오류가 발생했습니다.<br>잠시 후 다시 시도해 주세요.</span>
+                <span th:case="*">서비스 이용에 불편을 드려 죄송합니다.</span>
+            </p>
+
+            <div class="btn-group">
+                <a href="javascript:history.back()" class="btn" style="background: #e2e8f0; color: #334155;">⬅️ 이전 페이지</a>
+                <a href="/" class="btn btn-primary">🏠 메인으로 가기</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -57,10 +57,11 @@ file:
   upload-dir: uploads
 
 # 9. 로그 출력 설정
+# 9. 로그 출력 설정
 logging:
   level:
-    com.rivermh.soratrip: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.springframework.security: DEBUG
-    # Hibernate 6.x(Spring Boot 3) 바인딩 파라미터 확인용 로그 (필요시 사용)
-    org.hibernate.orm.jdbc.bind: TRACE
+    root: INFO
+    com.rivermh.soratrip: INFO # 애플리케이션 로그를 INFO로 변경 (필요할 때만 DEBUG)
+    org.hibernate.SQL: INFO # 실행되는 SQL문 출력 끄기 (ON: DEBUG)
+    org.springframework.security: INFO # 시큐리티 디버그 로그 끄기
+    org.hibernate.orm.jdbc.bind: INFO # SQL 파라미터 값 바인딩(TRACE) 로그 끄기

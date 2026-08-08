@@ -1,29 +1,34 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- 1. 공통 Head 프래그먼트 연결 -->
+<head th:replace="~{fragments/common :: head(~{::title})}">
     <title th:text="#{member.login} + ' - SoraTrip'">로그인 - SoraTrip</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
 
-    <!-- 중앙 정렬 폼 컨테이너 -->
-    <main class="container form-container" style="margin-top: 50px;">
+    <!-- 2. 공통 Header 프래그먼트 연결 -->
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <!-- 3. 로그인 중앙 폼 컨테이너 -->
+    <main class="container form-container">
         
         <!-- 상단 헤딩 & 브랜드 포인트 -->
-        <div style="text-align: center; margin-bottom: 24px;">
+        <div class="form-header">
             <span class="eyebrow">Welcome Back</span>
             <h2><span th:text="#{member.login.title}">🔑 로그인</span></h2>
         </div>
 
         <!-- ⚠️ 로그인 실패 시 에러 알림 -->
-        <div th:if="${param.error}" style="background-color: var(--accent-soft); border: 1px solid #ffd8bf; color: var(--accent-hover); padding: 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        <div th:if="${param.error}" class="alert alert-error">
             <span>⚠️</span>
             <span th:text="#{member.login_error}">아이디 또는 비밀번호가 일치하지 않습니다.</span>
         </div>
 
         <!-- ℹ️ 로그아웃 성공 알림 -->
-        <div th:if="${param.logout}" style="background-color: var(--primary-soft); border: 1px solid #cce3fc; color: var(--primary-hover); padding: 12px 16px; border-radius: 12px; font-size: 14px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+        <div th:if="${param.logout}" class="alert alert-success">
             <span>✨</span>
             <span th:text="#{member.logout_success}">성공적으로 로그아웃되었습니다.</span>
         </div>
@@ -42,12 +47,12 @@
                        placeholder="비밀번호를 입력하세요" />
             </div>
 
-            <button type="submit" class="btn btn-primary" style="margin-top: 6px;" th:text="#{member.login}">로그인</button>
+            <button type="submit" class="btn btn-primary" th:text="#{member.login}">로그인</button>
         </form>
 
         <!-- 구글 소셜 로그인 버튼 -->
-        <div style="margin-top: 16px;">
-            <a th:href="@{/oauth2/authorization/google}" class="btn btn-secondary" style="width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;">
+        <div class="social-login-group">
+            <a th:href="@{/oauth2/authorization/google}" class="btn btn-secondary">
                 <svg width="18" height="18" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -59,12 +64,15 @@
         </div>
 
         <!-- 하단 회원가입 안내 링크 -->
-        <div style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--text-sub);">
+        <div class="form-footer">
             <span th:text="#{member.no_account}">아직 계정이 없으신가요?</span> 
-            <a th:href="@{/members/join}" style="color: var(--primary-color); font-weight: 600; text-decoration: none;" th:text="#{member.join}">회원가입</a>
+            <a th:href="@{/members/join}" th:text="#{member.join}">회원가입</a>
         </div>
 
     </main>
+
+    <!-- 4. 공통 Footer 프래그먼트 연결 -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 
 </body>
 </html>

@@ -5,6 +5,7 @@ import com.rivermh.soratrip.domain.member.entity.Member;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ScheduleLikeRepository extends JpaRepository<ScheduleLike, Long> {
@@ -13,4 +14,6 @@ public interface ScheduleLikeRepository extends JpaRepository<ScheduleLike, Long
     
     // 💡 추가: 특정 일정의 총 좋아요 수 카운트
     int countByTravelSchedule(TravelSchedule travelSchedule);
+    
+    List<ScheduleLike> findByMemberEmailOrderByIdDesc(String email);
 }

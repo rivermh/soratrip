@@ -1,7 +1,8 @@
-.form-container {
-  max-width: 440px;
-}
+/* ==========================================
+   Forms Component & Auth Pages
+   ========================================== */
 
+/* 1. 기본 폼 구성 요소 */
 .form-group {
   margin-bottom: 24px;
 }
@@ -59,4 +60,41 @@ select.form-control {
   background-repeat: no-repeat;
   background-position: right 16px center;
   padding-right: 40px;
+}
+
+/* 2. 인증/로그인 전용 레이아웃 */
+.form-container {
+  max-width: 440px;
+  margin: 40px auto 0;
+}
+
+.form-header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.form-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-sub);
+}
+
+.form-footer a {
+  color: var(--primary-color);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
+
+.social-login-group {
+  margin-top: 16px;
+}
+
+.social-login-group .btn {
+  width: 100%;
 }

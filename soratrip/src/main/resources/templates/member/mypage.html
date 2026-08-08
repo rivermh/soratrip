@@ -1,12 +1,18 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- 1. 공통 Head 프래그먼트 연결 -->
+<head th:replace="~{fragments/common :: head(~{::title})}">
     <title th:text="#{member.mypage.title} + ' - SoraTrip'">👤 마이페이지 - SoraTrip</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
 
+    <!-- 2. 공통 Header 프래그먼트 연결 -->
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <!-- 3. 마이페이지 메인 컨텐츠 -->
     <main class="container" style="max-width: 840px;">
         
         <!-- 상단 헤더 -->
@@ -153,12 +159,102 @@
             </table>
         </section>
 
+        <!-- 4. 내가 좋아요 한 게시글 목록 -->
+        <section style="margin-bottom: 36px;">
+            <h3 style="margin-bottom: 16px; font-size: 18px;">
+                ❤️ 내가 좋아요 한 게시글 (<span th:text="${#lists.size(myPostLikes)}">0</span>)
+            </h3>
+            
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">지역</th>
+                        <th>제목</th>
+                        <th style="width: 22%;">좋아요 일시</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="like : ${myPostLikes}">
+                        <td><span class="badge" th:text="${like.post.region.displayName}">도쿄</span></td>
+                        <td>
+                            <a th:href="@{/posts/{id}(id=${like.post.id})}" th:text="${like.post.title}" style="color: var(--text-main); font-weight: 600; text-decoration: none;">게시글 제목</a>
+                        </td>
+                        <td th:text="${#temporals.format(like.createdAt, 'yyyy-MM-dd')}" style="color: var(--text-sub); font-size: 13px;">2026-07-23</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(myPostLikes)}">
+                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);">좋아요한 게시글이 없습니다.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 5. 내가 좋아요 한 여행 일정 목록 -->
+        <section style="margin-bottom: 36px;">
+            <h3 style="margin-bottom: 16px; font-size: 18px;">
+                💖 내가 좋아요 한 일정 (<span th:text="${#lists.size(myScheduleLikes)}">0</span>)
+            </h3>
+            
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">지역</th>
+                        <th>제목</th>
+                        <th style="width: 28%;">기간</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="like : ${myScheduleLikes}">
+                        <td><span class="badge" th:text="${like.travelSchedule.region.displayName}">도쿄</span></td>
+                        <td>
+                            <a th:href="@{/schedules/{id}(id=${like.travelSchedule.id})}" th:text="${like.travelSchedule.title}" style="color: var(--text-main); font-weight: 600; text-decoration: none;">일정 제목</a>
+                        </td>
+                        <td th:text="${like.travelSchedule.startDate} + ' ~ ' + ${like.travelSchedule.endDate}" style="color: var(--text-sub); font-size: 13px;">2026-08-01 ~ 2026-08-04</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(myScheduleLikes)}">
+                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);">좋아요한 일정이 없습니다.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 6. 내가 북마크 한 여행 일정 목록 -->
+        <section style="margin-bottom: 36px;">
+            <h3 style="margin-bottom: 16px; font-size: 18px;">
+                🔖 내가 북마크 한 일정 (<span th:text="${#lists.size(myBookmarks)}">0</span>)
+            </h3>
+            
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">지역</th>
+                        <th>제목</th>
+                        <th style="width: 28%;">기간</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="bm : ${myBookmarks}">
+                        <td><span class="badge" th:text="${bm.travelSchedule.region.displayName}">도쿄</span></td>
+                        <td>
+                            <a th:href="@{/schedules/{id}(id=${bm.travelSchedule.id})}" th:text="${bm.travelSchedule.title}" style="color: var(--text-main); font-weight: 600; text-decoration: none;">일정 제목</a>
+                        </td>
+                        <td th:text="${bm.travelSchedule.startDate} + ' ~ ' + ${bm.travelSchedule.endDate}" style="color: var(--text-sub); font-size: 13px;">2026-08-01 ~ 2026-08-04</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(myBookmarks)}">
+                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);">북마크한 일정이 없습니다.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
         <!-- 하단 홈 버튼 -->
         <div style="margin-top: 32px; text-align: center;">
             <a th:href="@{/}" class="btn btn-secondary" style="width: auto; padding: 12px 28px;" th:text="#{nav.home}">🏠 메인으로</a>
         </div>
 
     </main>
+
+    <!-- 4. 공통 Footer 프래그먼트 연결 -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 
 </body>
 </html>

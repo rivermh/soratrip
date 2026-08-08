@@ -1,17 +1,22 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- 1. 공통 Head 프래그먼트 연결 -->
+<head th:replace="~{fragments/common :: head(~{::title})}">
     <title th:text="#{member.join.title}">📝 회원가입 - SoraTrip</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
 
-    <!-- 중앙 정렬 폼 컨테이너 -->
-    <main class="container form-container" style="margin-top: 40px;">
+    <!-- 2. 공통 Header 프래그먼트 연결 -->
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <!-- 3. 회원가입 중앙 폼 컨테이너 -->
+    <main class="container form-container">
         
         <!-- 상단 헤딩 & 브랜드 포인트 -->
-        <div style="text-align: center; margin-bottom: 28px;">
+        <div class="form-header">
             <span class="eyebrow">Join SoraTrip</span>
             <h2 th:text="#{member.join.title}">📝 회원가입</h2>
         </div>
@@ -38,16 +43,19 @@
                        placeholder="사용할 닉네임을 입력하세요" />
             </div>
 
-            <button type="submit" class="btn btn-primary" style="margin-top: 10px;" th:text="#{btn.join}">가입하기</button>
+            <button type="submit" class="btn btn-primary" th:text="#{btn.join}">가입하기</button>
         </form>
 
         <!-- 하단 로그인 안내 링크 -->
-        <div style="margin-top: 24px; text-align: center; font-size: 14px; color: var(--text-sub);">
+        <div class="form-footer">
             <span th:text="#{member.has_account}">이미 계정이 있으신가요?</span>
-            <a th:href="@{/members/login}" style="color: var(--primary-color); font-weight: 600; text-decoration: none;" th:text="#{nav.login}">로그인</a>
+            <a th:href="@{/members/login}" th:text="#{nav.login}">로그인</a>
         </div>
 
     </main>
+
+    <!-- 4. 공통 Footer 프래그먼트 연결 -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 
 </body>
 </html>

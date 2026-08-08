@@ -2,10 +2,14 @@ package com.rivermh.soratrip.domain.member.entity;
 
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.global.entity.BaseTimeEntity;
+import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -17,6 +21,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -29,22 +34,22 @@ import lombok.NoArgsConstructor;
 @Table(name = "members")
 public class Member extends BaseTimeEntity {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "member_id")
-	private Long id;
-	
-	@Column(nullable = false, unique = true)
-	private String email;
-	
-	private String password; // 일반 회원가입용 (소셜 가입자는 null 가능)
-	
-	@Column(nullable = false)
-	private String nickname;
-	
-	private String profileImage;
-	
-	@Enumerated(EnumType.STRING)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "member_id")
+    private Long id;
+    
+    @Column(nullable = false, unique = true)
+    private String email;
+    
+    private String password; // 일반 회원가입용 (소셜 가입자는 null 가능)
+    
+    @Column(nullable = false)
+    private String nickname;
+    
+    private String profileImage;
+    
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role; // USER, ADMIN 등
 
@@ -66,11 +71,14 @@ public class Member extends BaseTimeEntity {
     @Column(name = "tag", nullable = false)
     private Set<ScheduleTag> preferredTags = new HashSet<>();
 
+ // --- 회원과 여행 일정 양방향 연관관계 ---
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TravelSchedule> schedules = new ArrayList<>();
+
     @Builder
     public Member(String email, String password, String nickname,
-    		String profileImage, Role role, String provider, String providerId,
-    		String bio, 
-            String languageLevel, String nationality) {
+            String profileImage, Role role, String provider, String providerId,
+            String bio, String languageLevel, String nationality) {
         this.email = email;
         this.password = password;
         this.nickname = nickname;
@@ -82,8 +90,8 @@ public class Member extends BaseTimeEntity {
         this.languageLevel = languageLevel;
         this.nationality = nationality;
     }
-	
- // 프로필 정보 수정 메서드
+    
+    // 프로필 정보 수정 메서드
     public void updateProfile(String nickname, String bio, String languageLevel, String nationality) {
         this.nickname = nickname;
         this.bio = bio;

@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="UTF-8">
+
+<!-- 1. 공통 Head 프래그먼트 연결 -->
+<head th:replace="~{fragments/common :: head(~{::title})}">
     <title th:text="#{post.list.title} + ' - SoraTrip'">✈️ 여행 & 동행 게시판 - SoraTrip</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
 
+    <!-- 2. 공통 Header 프래그먼트 연결 -->
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <!-- 3. 게시판 목록 메인 컨텐츠 -->
     <main class="container" style="max-width: 900px;">
         
         <!-- 상단 헤더 & 글쓰기 버튼 -->
@@ -121,6 +126,9 @@
         </div>
 
     </main>
+
+    <!-- 4. 공통 Footer 프래그먼트 연결 -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 
 </body>
 </html>

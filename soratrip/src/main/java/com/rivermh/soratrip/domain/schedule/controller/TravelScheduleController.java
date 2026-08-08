@@ -23,9 +23,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.rivermh.soratrip.domain.bookmark.repository.ScheduleBookmarkRepository;
 import com.rivermh.soratrip.domain.expense.entity.Expense;
 import com.rivermh.soratrip.domain.expense.entity.ExpenseCategory;
 import com.rivermh.soratrip.domain.expense.service.ExpenseService;
+import com.rivermh.soratrip.domain.member.entity.Member;
+import com.rivermh.soratrip.domain.member.repository.MemberRepository;
 import com.rivermh.soratrip.domain.photo.entity.Photo;
 import com.rivermh.soratrip.domain.photo.service.PhotoService;
 import com.rivermh.soratrip.domain.post.entity.Region;
@@ -35,7 +38,7 @@ import com.rivermh.soratrip.domain.schedule.dto.AiScheduleRequest;
 import com.rivermh.soratrip.domain.schedule.dto.TravelScheduleForm;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
-import com.rivermh.soratrip.domain.schedule.service.GeminiScheduleService;
+import com.rivermh.soratrip.domain.schedule.service.GroqScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.ScheduleRecommendationService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
 
@@ -52,7 +55,11 @@ public class TravelScheduleController {
     private final ExpenseService expenseService;
     private final PhotoService photoService;
     private final ReviewService reviewService;
-    private final GeminiScheduleService geminiScheduleService;
+    private final GroqScheduleService groqScheduleService;
+    
+    // 북마크 조회를 위해 추가된 의존성
+    private final ScheduleBookmarkRepository scheduleBookmarkRepository;
+    private final MemberRepository memberRepository;
 
     // 1. 내 여행 일정 목록 페이지
     @GetMapping
@@ -124,7 +131,7 @@ public class TravelScheduleController {
         return "schedule/recommended";
     }
 
- // 5. 여행 일정 상세 보기 페이지 (Google Maps 연동)
+ // 5. 여행 일정 상세 보기 페이지 (Google Maps 및 북마크 연동)
     @GetMapping("/{id}")
     public String detailSchedule(@PathVariable("id") Long id,
                                  @AuthenticationPrincipal Object principal,
@@ -147,6 +154,16 @@ public class TravelScheduleController {
         }
         */
 
+        // 북마크 상태 및 총 개수 조회 로직 추가
+        boolean bookmarked = false;
+        if (email != null) {
+            Member member = memberRepository.findByEmail(email).orElse(null);
+            if (member != null) {
+                bookmarked = scheduleBookmarkRepository.existsByMemberAndTravelSchedule(member, schedule);
+            }
+        }
+        int bookmarkCount = scheduleBookmarkRepository.countByTravelSchedule(schedule);
+
         // 일자별 지출/사진/후기를 미리 그룹핑해서 전달 (일자마다 개별 조회하는 N+1 방지)
         Map<Long, List<Expense>> expensesByDay = expenseService.getExpensesForSchedule(id).stream()
                 .collect(Collectors.groupingBy(e -> e.getScheduleDay().getId()));
@@ -161,6 +178,8 @@ public class TravelScheduleController {
 
         model.addAttribute("schedule", schedule);
         model.addAttribute("owner", owner);
+        model.addAttribute("bookmarked", bookmarked);       // 추가된 북마크 여부
+        model.addAttribute("bookmarkCount", bookmarkCount); // 추가된 북마크 총 개수
         model.addAttribute("expensesByDay", expensesByDay);
         model.addAttribute("photosByDay", photosByDay);
         model.addAttribute("reviewByDay", reviewByDay);
@@ -226,16 +245,27 @@ public class TravelScheduleController {
         return "schedule/ai-form";
     }
 
-    // AI 일정 자동 생성 처리
+ // AI 일정 자동 생성 처리
     @PostMapping("/ai-new")
-    public String createAiSchedule(@ModelAttribute("aiRequest") AiScheduleRequest aiRequest,
+    public String createAiSchedule(@Valid @ModelAttribute("aiRequest") AiScheduleRequest aiRequest,
+                                   BindingResult bindingResult,
+                                   Model model, // 👈 Model 추가
                                    @AuthenticationPrincipal Object principal) {
+        
+        // 💡 유효성 검사 실패 시
+        if (bindingResult.hasErrors()) {
+            // ⚠️ 폼 화면을 다시 그릴 때 필요한 데이터들을 다시 넣어주어야 에러 x
+            model.addAttribute("regions", Region.values()); // 본인 프로젝트의 지역 목록 Enum에 맞게 수정
+            model.addAttribute("tags", ScheduleTag.values()); // 본인 프로젝트의 태그 목록 Enum에 맞게 수정
+            return "schedule/ai-form"; 
+        }
+
         String email = extractEmail(principal);
         if (email == null) {
             return "redirect:/members/login";
         }
 
-        Long scheduleId = geminiScheduleService.createScheduleWithAi(aiRequest, email);
+        Long scheduleId = groqScheduleService.createScheduleWithAi(aiRequest, email);
         return "redirect:/schedules/" + scheduleId;
     }
 }

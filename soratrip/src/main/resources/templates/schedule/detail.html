@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title th:text="${schedule.title} + ' - SoraTrip'">여행 일정 상세보기 - SoraTrip</title>
+    
+    <!-- Spring Security CSRF Meta 태그 (null 안전 처리) -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
+
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <!-- Sortable.js (드래그 앤 드롭 라이브러리 추가) -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -12,8 +17,21 @@
         <div style="margin-bottom: 20px;">
             <span th:text="${schedule.region.displayName}" style="background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 10px; border-radius: 6px;">TOKYO</span>
             <span th:if="${schedule.public}" class="badge" th:text="#{schedule.settings.public_badge}">공개</span>
-            <h2 th:text="${schedule.title}" style="margin-top: 10px;">도쿄 3박 4일 일정</h2>
-            <p style="color: #64748b;">📅 <span th:text="${schedule.startDate}">2026-08-01</span> ~ <span th:text="${schedule.endDate}">2026-08-04</span></p>
+            
+            <!-- 일정 제목 및 북마크 버튼 영역 -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+                <h2 th:text="${schedule.title}" style="margin: 0;">도쿄 3박 4일 일정</h2>
+                
+                <!-- 북마크 버튼 UI -->
+                <button id="bookmarkBtn" type="button" onclick="toggleBookmark()" 
+                        style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                    <span id="bookmarkIcon" th:text="${bookmarked != null and bookmarked ? '🔖' : '🏷️'}">🏷️</span>
+                    <span id="bookmarkText" th:text="${bookmarked != null and bookmarked ? '북마크 취소' : '북마크'}">북마크</span>
+                    <span id="bookmarkCount" style="font-weight: bold; color: #0284c7;" th:text="${bookmarkCount ?: 0}">0</span>
+                </button>
+            </div>
+
+            <p style="color: #64748b; margin-top: 8px;">📅 <span th:text="${schedule.startDate}">2026-08-01</span> ~ <span th:text="${schedule.endDate}">2026-08-04</span></p>
             <div th:unless="${#lists.isEmpty(schedule.tags)}" style="margin-top: 8px;">
                 <span th:each="t : ${schedule.tags}" th:text="${t.displayName}" class="badge" style="margin-right: 4px;">태그</span>
             </div>
@@ -191,7 +209,7 @@
         </div>
     </div>
 
-    <!-- Map Script & Sortable.js (실시간 순서 변경 & 지도 동선 갱신) -->
+    <!-- Map Script & Sortable.js & Bookmark Script -->
     <script th:inline="javascript">
         /*<![CDATA[*/
         const scheduleId = /*[[${schedule.id}]]*/ 1;
@@ -379,6 +397,52 @@
                 }
             })
             .catch(err => alert('오류가 발생했습니다: ' + err));
+        }
+
+        // 북마크 토글 함수 (POST /api/schedules/{scheduleId}/bookmark)
+        function toggleBookmark() {
+            const token = document.querySelector("meta[name='_csrf']")?.getAttribute("content");
+            const header = document.querySelector("meta[name='_csrf_header']")?.getAttribute("content");
+
+            const headers = { 'Content-Type': 'application/json' };
+            if (token && header) {
+                headers[header] = token;
+            }
+
+            fetch(`/api/schedules/${scheduleId}/bookmark`, {
+                method: 'POST',
+                headers: headers
+            })
+            .then(response => {
+                if (response.status === 401 || response.status === 403) {
+                    alert('로그인이 필요한 기능입니다.');
+                    return null;
+                }
+                if (!response.ok) {
+                    throw new Error('북마크 처리 실패');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data) return;
+
+                const iconEl = document.getElementById('bookmarkIcon');
+                const textEl = document.getElementById('bookmarkText');
+                const countEl = document.getElementById('bookmarkCount');
+
+                if (data.bookmarked) {
+                    iconEl.textContent = '🔖';
+                    textEl.textContent = '북마크 취소';
+                } else {
+                    iconEl.textContent = '🏷️';
+                    textEl.textContent = '북마크';
+                }
+                countEl.textContent = data.bookmarkCount;
+            })
+            .catch(error => {
+                console.error('Bookmark Error:', error);
+                alert('북마크 처리 중 오류가 발생했습니다.');
+            });
         }
     </script>
     <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" async defer></script>

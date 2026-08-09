@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="#{schedule.form.title} + ' - SoraTrip'">새 여행 일정 만들기 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container" style="max-width: 800px;">
         <h2 style="margin-bottom: 20px;" th:text="#{schedule.form.header}">🗺️ 새 여행 일정 짜기</h2>
 
@@ -37,11 +41,11 @@
 
             <!-- 🏷️ 여행 스타일 및 이동 편의 태그 선택 영역 (신규 추가) -->
             <div class="form-group" style="margin-bottom: 20px;">
-                <label style="font-weight: bold; margin-bottom: 8px; display: block; font-size: 14px; color: #334155;">🏷️ 여행 스타일 & 이동 편의 태그 (선택)</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; background: #f8fafc; padding: 14px 18px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <div th:each="tag : ${T(com.rivermh.soratrip.domain.schedule.entity.ScheduleTag).values()}" style="display: flex; align-items: center; gap: 6px; font-size: 14px;">
-                        <input type="checkbox" th:field="*{tags}" th:value="${tag}" th:id="${'tag_' + tag}" style="cursor: pointer; width: 16px; height: 16px;" />
-                        <label th:for="${'tag_' + tag}" th:text="${tag.displayName}" style="cursor: pointer; margin-bottom: 0; color: #0f172a;">혼자여행</label>
+                <label style="font-weight: 700; margin-bottom: var(--space-2); display: block; font-size: var(--text-sm); color: var(--text-sub);" th:text="#{schedule.form.tags_label}">🏷️ 여행 스타일 & 이동 편의 태그 (선택)</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; background: var(--surface); padding: var(--space-4) var(--space-5); border-radius: var(--radius); border: 1px solid var(--border-color);">
+                    <div th:each="tag : ${T(com.rivermh.soratrip.domain.schedule.entity.ScheduleTag).values()}" style="display: flex; align-items: center; gap: 6px; font-size: var(--text-sm);">
+                        <input type="checkbox" th:field="*{tags}" th:value="${tag}" th:id="${'tag_' + tag}" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--primary-color);" />
+                        <label th:for="${'tag_' + tag}" th:text="${tag.displayName}" style="cursor: pointer; margin-bottom: 0; text-transform: none; color: var(--text-main);">혼자여행</label>
                     </div>
                 </div>
             </div>
@@ -49,33 +53,33 @@
             <hr style="margin: 30px 0; border: none; border-top: 1px solid var(--border-color);" />
 
             <h4 th:text="#{schedule.form.place_search_title}">📍 방문 장소 검색 & 추가 (1일차 기본)</h4>
-            <div style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-                <input id="pac-input" class="form-control" type="text" 
+            <div style="background: var(--surface); padding: var(--space-5); border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin-bottom: 20px;">
+                <input id="pac-input" class="form-control" type="text"
                        th:placeholder="#{schedule.form.place_search_placeholder}"
                        placeholder="검색할 장소명을 입력하세요 (예: 도쿄 타워)" style="margin-bottom: 10px;">
-                <div id="map" style="width: 100%; height: 250px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 12px;"></div>
-                
+                <div id="map" class="map-container" style="height: 250px; margin-bottom: 12px;"></div>
+
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="text" id="selectedPlaceName" class="form-control" 
+                    <input type="text" id="selectedPlaceName" class="form-control"
                            th:placeholder="#{schedule.form.place_name_placeholder}"
                            placeholder="선택된 장소명" readonly />
-                    <input type="text" id="selectedPlaceAddress" class="form-control" 
+                    <input type="text" id="selectedPlaceAddress" class="form-control"
                            th:placeholder="#{schedule.form.place_address_placeholder}"
                            placeholder="주소" readonly />
                 </div>
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <input type="time" id="selectedTime" class="form-control" style="width: 150px;" />
-                    <input type="text" id="selectedMemo" class="form-control" 
+                    <input type="text" id="selectedMemo" class="form-control"
                            th:placeholder="#{schedule.form.memo_placeholder}"
-                           placeholder="메모 (예: 오픈시간 맞춰 방문)" />
-                    <button type="button" class="btn btn-primary" onclick="addPlaceToSchedule()" style="white-space: nowrap;" th:text="#{schedule.form.add_place_btn}">➕ 장소 추가</button>
+                           placeholder="메모 (예: 오픈시간 맞춰 방문)" style="flex: 1; min-width: 160px;" />
+                    <button type="button" class="btn btn-primary" onclick="addPlaceToSchedule()" style="width: auto; white-space: nowrap;" th:text="#{schedule.form.add_place_btn}">➕ 장소 추가</button>
                 </div>
             </div>
 
             <!-- 추가된 장소 리스트가 동적으로 담길 영역 -->
             <h4 th:text="#{schedule.form.added_places_title}">📋 추가된 일정 장소</h4>
             <div id="addedItemsList" style="margin-bottom: 20px;">
-                <p id="emptyMsg" style="color: #94a3b8; font-size: 14px;" th:text="#{schedule.form.empty_places_msg}">지도를 통해 장소를 검색하고 '장소 추가' 버튼을 눌러주세요.</p>
+                <p id="emptyMsg" style="color: var(--text-faint); font-size: var(--text-sm);" th:text="#{schedule.form.empty_places_msg}">지도를 통해 장소를 검색하고 '장소 추가' 버튼을 눌러주세요.</p>
             </div>
 
             <!-- 백엔드로 넘길 Hidden Inputs Container -->
@@ -83,15 +87,17 @@
 
             <div style="display: flex; gap: 10px; margin-top: 30px;">
                 <button type="submit" class="btn btn-primary" style="flex: 1;" th:text="#{schedule.form.save_btn}">일정 저장하기</button>
-                <a th:href="@{/schedules}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{btn.cancel}">취소</a>
+                <a th:href="@{/schedules}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{btn.cancel}">취소</a>
             </div>
         </form>
     </div>
 
     <!-- Google Maps Scripts & Dynamic Add Logic -->
-    <script>
+    <script th:inline="javascript">
         let map, autocomplete, selectedPlace = null;
         let addedPlaces = [];
+        const deleteLabel = /*[[#{schedule.item.delete}]]*/ '삭제';
+        const emptyPlacesMsg = /*[[#{schedule.form.empty_places_msg}]]*/ "지도를 통해 장소를 검색하고 '장소 추가' 버튼을 눌러주세요.";
 
         function initMap() {
             const defaultLoc = { lat: 35.681236, lng: 139.767125 };
@@ -122,7 +128,7 @@
 
         function addPlaceToSchedule() {
             if (!selectedPlace) {
-                alert("먼저 지도 검색을 통해 장소를 선택해주세요.");
+                alert(/*[[#{schedule.form.no_place_selected}]]*/ "먼저 지도 검색을 통해 장소를 선택해주세요.");
                 return;
             }
 
@@ -148,7 +154,7 @@
             const hiddenDiv = document.getElementById("hiddenInputsContainer");
             
             if (addedPlaces.length === 0) {
-                listDiv.innerHTML = '<p id="emptyMsg" style="color: #94a3b8; font-size: 14px;">지도를 통해 장소를 검색하고 \'장소 추가\' 버튼을 눌러주세요.</p>';
+                listDiv.innerHTML = `<p id="emptyMsg" style="color: #94a3b8; font-size: 14px;">${emptyPlacesMsg}</p>`;
                 hiddenDiv.innerHTML = '';
                 return;
             }
@@ -165,7 +171,7 @@
                         <strong>${idx + 1}. ${p.name}</strong> ${p.time ? `<span style="color: #0284c7; font-size: 13px;">(${p.time})</span>` : ''}
                         <div style="font-size: 12px; color: #64748b;">${p.address} ${p.memo ? ` | 📝 ${p.memo}` : ''}</div>
                     </div>
-                    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="removePlace(${idx})">삭제</button>
+                    <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="removePlace(${idx})">${deleteLabel}</button>
                 `;
                 listDiv.appendChild(card);
 
@@ -187,5 +193,7 @@
         }
     </script>
 <script th:src="@{'https://maps.googleapis.com/maps/api/js?key=' + ${googleApiKey} + '&libraries=places&callback=initMap'}" async defer></script>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

@@ -4,7 +4,7 @@
 
 <!-- common.html 파일의 head 프래그먼트 불러오기 -->
 <head th:replace="~{fragments/common :: head(~{::title})}">
-    <title>실시간 여행 채팅</title>
+    <title th:text="#{chat.title}">실시간 여행 채팅</title>
 </head>
 
 <body>
@@ -22,36 +22,37 @@
                 <div class="sidebar">
                     <div class="sidebar-header">
                         <span class="connection-status" id="connectionStatus"></span>
-                        실시간 채팅
+                        <span th:text="#{chat.list_title}">실시간 채팅</span>
                     </div>
                     <div class="chat-rooms-list" id="chatRoomsList">
-                        <div class="status">채팅방이 없습니다</div>
+                        <div class="status" th:text="#{chat.rooms.empty}">채팅방이 없습니다</div>
                     </div>
                 </div>
 
                 <!-- 메인 채팅 (오른쪽) -->
                 <div class="main-chat">
-                    <div class="chat-header" id="chatHeader">채팅방을 선택하세요</div>
+                    <div class="chat-header" id="chatHeader" th:text="#{chat.header.select_room}">채팅방을 선택하세요</div>
                     <div class="messages-container" id="messagesContainer">
-                        <div class="status">메시지를 보내고 받으세요</div>
+                        <div class="status" th:text="#{chat.messages.empty}">메시지를 보내고 받으세요</div>
                     </div>
                     <div class="input-area">
-                        <input 
-                            type="text" 
-                            id="messageInput" 
+                        <input
+                            type="text"
+                            id="messageInput"
+                            th:placeholder="#{chat.message.placeholder}"
                             placeholder="메시지를 입력하세요..."
                             disabled
                         >
-                        <button id="sendButton" onclick="sendMessage()" disabled>전송</button>
+                        <button id="sendButton" onclick="sendMessage()" disabled th:text="#{chat.send}">전송</button>
                     </div>
                 </div>
             </div>
 
             <!-- 매칭 섹션 -->
             <div class="matching-section">
-                <h2>관심사가 비슷한 여행자들</h2>
+                <h2 th:text="#{chat.matching.title}">관심사가 비슷한 여행자들</h2>
                 <div class="users-grid" id="matchingUsers">
-                    <div class="status">로딩 중...</div>
+                    <div class="status" th:text="#{chat.loading}">로딩 중...</div>
                 </div>
             </div>
             
@@ -67,26 +68,26 @@
             width: 100%;
             display: grid;
             grid-template-columns: 300px 1fr;
-            gap: 20px;
-            height: 600px;
+            gap: var(--space-5);
+            height: min(640px, 75vh);
         }
 
         .sidebar {
-            background: white;
-            border-radius: 12px;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            border: 1px solid #eee;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
         }
 
         .sidebar-header {
-            background: #667eea;
-            color: white;
-            padding: 20px;
-            font-size: 16px;
-            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            color: var(--text-inverse);
+            padding: var(--space-5);
+            font-size: var(--text-base);
+            font-weight: 700;
             display: flex;
             align-items: center;
         }
@@ -94,70 +95,78 @@
         .chat-rooms-list {
             flex: 1;
             overflow-y: auto;
-            padding: 10px;
+            padding: var(--space-2);
         }
 
         .chat-room-item {
-            padding: 15px;
-            border-bottom: 1px solid #f5f5f5;
+            padding: var(--space-3) var(--space-4);
             cursor: pointer;
-            border-radius: 8px;
-            transition: background 0.3s;
-            margin-bottom: 5px;
+            border-radius: var(--radius);
+            transition: background var(--transition-fast), color var(--transition-fast);
+            margin-bottom: 4px;
+            border-left: 3px solid transparent;
         }
 
         .chat-room-item:hover {
-            background: #f8f9fa;
+            background: var(--surface);
         }
 
         .chat-room-item.active {
-            background: #667eea;
-            color: white;
+            background: var(--primary-soft);
+            border-left-color: var(--primary-color);
+        }
+
+        .chat-room-item.active .room-name {
+            color: var(--primary-color);
         }
 
         .room-name {
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-weight: 700;
+            font-size: var(--text-sm);
+            color: var(--text-main);
+            margin-bottom: 3px;
         }
 
         .room-preview {
-            font-size: 12px;
-            opacity: 0.8;
+            font-size: var(--text-xs);
+            color: var(--text-faint);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .main-chat {
-            background: white;
-            border-radius: 12px;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            border: 1px solid #eee;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
         }
 
         .chat-header {
-            background: #667eea;
-            color: white;
-            padding: 20px;
-            font-size: 16px;
-            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            color: var(--text-inverse);
+            padding: var(--space-5);
+            font-size: var(--text-base);
+            font-weight: 700;
         }
 
         .messages-container {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: var(--space-5);
             display: flex;
             flex-direction: column;
-            background: #fcfcfc;
+            gap: var(--space-1);
+            background: var(--bg-color);
         }
 
         .message {
-            margin-bottom: 15px;
-            animation: slideIn 0.3s ease-out;
+            margin-bottom: var(--space-4);
+            animation: slideIn 0.3s var(--ease-out);
+            max-width: 78%;
         }
 
         @keyframes slideIn {
@@ -167,46 +176,47 @@
 
         .message.own {
             align-self: flex-end;
-            max-width: 70%;
         }
 
         .message.other {
             align-self: flex-start;
-            max-width: 70%;
         }
 
         .message-content {
-            padding: 12px 16px;
-            border-radius: 12px;
+            padding: 11px 16px;
+            border-radius: var(--radius);
             word-wrap: break-word;
-            line-height: 1.4;
+            line-height: 1.5;
+            font-size: var(--text-sm);
+            box-shadow: var(--shadow-xs);
         }
 
         .message.own .message-content {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            color: var(--text-inverse);
             border-bottom-right-radius: 4px;
         }
 
         .message.other .message-content {
-            background: #e9ecef;
-            color: #333;
+            background: var(--surface-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border-light);
             border-bottom-left-radius: 4px;
         }
 
         .message-sender {
-            font-size: 11px;
-            color: #666;
+            font-size: 11.5px;
+            color: var(--text-sub);
             margin-bottom: 4px;
-            font-weight: bold;
+            font-weight: 700;
         }
 
         .message.other .message-sender { text-align: left; }
         .message.own .message-sender { text-align: right; }
 
         .message-time {
-            font-size: 10px;
-            color: #999;
+            font-size: 10.5px;
+            color: var(--text-faint);
             margin-top: 4px;
         }
 
@@ -214,94 +224,117 @@
         .message.other .message-time { text-align: left; }
 
         .input-area {
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
+            padding: var(--space-3) var(--space-5);
+            border-top: 1px solid var(--border-light);
             display: flex;
-            gap: 10px;
-            background: white;
+            gap: var(--space-2);
+            background: var(--card-bg);
+            padding-bottom: max(var(--space-3), var(--safe-area-bottom));
         }
 
         .input-area input {
             flex: 1;
-            padding: 12px 16px;
-            border: 1px solid #ddd;
-            border-radius: 24px;
-            font-size: 14px;
+            min-height: var(--touch-target);
+            padding: 12px 18px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-family: inherit;
             outline: none;
-            transition: border 0.3s;
+            background: var(--surface);
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
         }
 
         .input-area input:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--primary-color);
+            background: var(--surface-elevated);
+            box-shadow: 0 0 0 4px var(--primary-soft);
+        }
+
+        .input-area input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .input-area button {
-            background: #667eea;
-            color: white;
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            color: var(--text-inverse);
             border: none;
-            padding: 0 24px;
-            border-radius: 24px;
+            padding: 0 26px;
+            min-height: var(--touch-target);
+            border-radius: var(--radius-full);
             cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s;
+            font-weight: 700;
+            font-size: var(--text-sm);
+            box-shadow: 0 4px 14px var(--primary-glow);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast);
         }
 
-        .input-area button:hover {
-            background: #556cd6;
+        .input-area button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 22px var(--primary-glow);
+        }
+
+        .input-area button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            box-shadow: none;
         }
 
         .matching-section {
-            margin-top: 30px;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            border: 1px solid #eee;
+            margin-top: var(--space-6);
+            padding: var(--space-6);
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
         }
 
         .matching-section h2 {
-            font-size: 16px;
-            margin-bottom: 15px;
-            color: #333;
+            font-size: var(--text-md);
+            margin-bottom: var(--space-4);
+            color: var(--text-main);
         }
 
         .users-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: var(--space-3);
         }
 
         .user-card {
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            padding: var(--space-4);
+            background: var(--surface);
+            border-radius: var(--radius);
             cursor: pointer;
-            transition: all 0.3s;
-            border: 1px solid #eee;
+            transition: all var(--transition-base);
+            border: 1px solid var(--border-color);
         }
 
         .user-card:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
+            background: linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%);
+            border-color: transparent;
+            color: var(--text-inverse);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 22px var(--primary-glow);
         }
 
         .user-name {
-            font-weight: bold;
-            margin-bottom: 5px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            font-size: var(--text-sm);
         }
 
         .user-similarity {
-            font-size: 12px;
-            opacity: 0.8;
+            font-size: var(--text-xs);
+            opacity: 0.85;
         }
 
         .status {
             text-align: center;
-            padding: 20px;
-            color: #666;
-            font-size: 14px;
+            padding: var(--space-5);
+            color: var(--text-faint);
+            font-size: var(--text-sm);
         }
 
         .connection-status {
@@ -309,12 +342,13 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: #dc3545;
-            margin-right: 8px;
+            background: var(--color-error);
+            margin-right: var(--space-2);
         }
 
         .connection-status.connected {
-            background: #28a745;
+            background: var(--color-success);
+            box-shadow: 0 0 6px rgba(23, 166, 115, 0.6);
         }
 
         @media (max-width: 768px) {
@@ -323,7 +357,10 @@
                 height: auto;
             }
             .sidebar {
-                max-height: 250px;
+                max-height: 220px;
+            }
+            .main-chat {
+                min-height: 68vh;
             }
         }
     </style>
@@ -332,7 +369,18 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
-    <script>
+    <script th:inline="javascript">
+        // i18n 메시지 (properties 기반, JS에서 사용할 문구)
+        const I18N = {
+            roomsEmpty: /*[[#{chat.rooms.empty}]]*/ '채팅방이 없습니다',
+            messagesEmptyHistory: /*[[#{chat.messages.empty_history}]]*/ '아직 메시지가 없습니다',
+            roomDefaultTitle: /*[[#{chat.room.default_title}]]*/ '채팅방',
+            roomWithUser: /*[[#{chat.room.with_user}]]*/ '{0} 님과의 대화',
+            senderUnknown: /*[[#{chat.sender.unknown}]]*/ '상대방',
+            matchingEmpty: /*[[#{chat.matching.empty}]]*/ '매칭된 사용자가 없습니다',
+            similarity: /*[[#{chat.similarity}]]*/ '유사도: {0}%'
+        };
+
         // 전역 변수
         let stompClient = null;
         let currentChatRoomId = null;
@@ -389,7 +437,7 @@
                 .then(rooms => {
                     const container = document.getElementById('chatRoomsList');
                     if (rooms.length === 0) {
-                        container.innerHTML = '<div class="status">채팅방이 없습니다</div>';
+                        container.innerHTML = `<div class="status">${I18N.roomsEmpty}</div>`;
                         return;
                     }
 
@@ -415,7 +463,9 @@
             currentChatRoomId = roomId;
 
             // UI 헤더 이름 변경
-            document.getElementById('chatHeader').innerText = roomTitle ? `${roomTitle} 님과의 대화` : '채팅방';
+            document.getElementById('chatHeader').innerText = roomTitle
+                ? I18N.roomWithUser.replace('{0}', roomTitle)
+                : I18N.roomDefaultTitle;
 
             // 메시지 히스토리 로드
             loadMessages(roomId);
@@ -438,7 +488,7 @@
                     container.innerHTML = '';
 
                     if (messages.length === 0) {
-                        container.innerHTML = '<div class="status">아직 메시지가 없습니다</div>';
+                        container.innerHTML = `<div class="status">${I18N.messagesEmptyHistory}</div>`;
                         return;
                     }
 
@@ -498,7 +548,7 @@
             }) : '';
 
             messageElement.innerHTML = `
-                <div class="message-sender">${msg.senderName || '상대방'}</div>
+                <div class="message-sender">${msg.senderName || I18N.senderUnknown}</div>
                 <div class="message-content">${escapeHtml(msg.content)}</div>
                 <div class="message-time">${time}</div>
             `;
@@ -519,7 +569,7 @@
                 .then(users => {
                     const container = document.getElementById('matchingUsers');
                     if (users.length === 0) {
-                        container.innerHTML = '<div class="status">매칭된 사용자가 없습니다</div>';
+                        container.innerHTML = `<div class="status">${I18N.matchingEmpty}</div>`;
                         return;
                     }
 
@@ -529,7 +579,7 @@
                         userCard.className = 'user-card';
                         userCard.innerHTML = `
                             <div class="user-name">${user.nickname}</div>
-                            <div class="user-similarity">유사도: ${(user.similarity * 100).toFixed(0)}%</div>
+                            <div class="user-similarity">${I18N.similarity.replace('{0}', (user.similarity * 100).toFixed(0))}</div>
                         `;
                         userCard.onclick = () => createChatWithUser(user.id, user.nickname);
                         container.appendChild(userCard);

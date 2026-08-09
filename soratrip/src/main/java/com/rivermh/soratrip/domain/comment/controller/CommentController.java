@@ -2,6 +2,7 @@ package com.rivermh.soratrip.domain.comment.controller;
 
 import com.rivermh.soratrip.domain.comment.dto.CommentRequestDto;
 import com.rivermh.soratrip.domain.comment.service.CommentService;
+import com.rivermh.soratrip.global.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -20,7 +21,7 @@ public class CommentController {
     public String createComment(@PathVariable(name = "postId") Long postId,
                                 @ModelAttribute CommentRequestDto dto,
                                 @AuthenticationPrincipal Object principal) {
-        String email = extractEmail(principal);
+        String email = SecurityUtils.requireEmail(principal);
         commentService.createComment(postId, dto, email);
         return "redirect:/posts/" + postId;
     }
@@ -30,19 +31,8 @@ public class CommentController {
     public String deleteComment(@PathVariable(name = "postId") Long postId,
                                 @PathVariable(name = "commentId") Long commentId,
                                 @AuthenticationPrincipal Object principal) {
-        String email = extractEmail(principal);
+        String email = SecurityUtils.requireEmail(principal);
         commentService.deleteComment(commentId, email);
         return "redirect:/posts/" + postId;
     }
-
-    private String extractEmail(Object principal) {
-        if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User oAuth2User) {
-            return oAuth2User.getAttribute("email");
-        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-            return userDetails.getUsername();
-        }
-        throw new IllegalStateException("인증된 사용자 정보가 없습니다.");
-    }
-    
-    
 }

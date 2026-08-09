@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{settlement.title} + ' - SoraTrip'">💸 정산/더치페이 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container" style="max-width: 700px;">
+        <span class="eyebrow">Settlement</span>
+        <h2 th:text="#{settlement.title}" style="margin-bottom: 4px;">💸 정산/더치페이</h2>
+        <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-6);" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
+
+        <!-- 참여자 관리 -->
+        <div class="expense-summary" style="margin-bottom: var(--space-6);">
+            <h3 th:text="#{settlement.participants}" style="margin-bottom: var(--space-3);">참여자</h3>
+
+            <div th:if="${#lists.isEmpty(participants)}" class="empty-state" th:text="#{settlement.participant.empty}">
+                아직 참여자가 없습니다. 이름을 추가해주세요.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(participants)}" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-4);">
+                <span th:each="p : ${participants}" class="tag-chip" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span th:text="${p.name}">철수</span>
+                    <form th:action="@{/schedules/{sid}/settlement/participants/{pid}/delete(sid=${schedule.id},pid=${p.id})}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary btn-danger-ghost" style="padding: 0 4px; font-size: 11px;" th:title="#{settlement.participant.delete}">✕</button>
+                    </form>
+                </span>
+            </div>
+
+            <form th:action="@{/schedules/{id}/settlement/participants(id=${schedule.id})}" method="post" style="display: flex; gap: 8px;">
+                <input type="text" name="name" class="form-control" th:placeholder="#{settlement.participant.add.placeholder}" placeholder="이름 입력" required maxlength="30">
+                <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{settlement.participant.add}">추가</button>
+            </form>
+        </div>
+
+        <!-- 참여자별 정산 현황 -->
+        <div th:unless="${#lists.isEmpty(participants)}" class="expense-summary" style="margin-bottom: var(--space-6);">
+            <h3 th:text="#{settlement.balance.title}" style="margin-bottom: var(--space-3);">정산 현황</h3>
+            <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <div th:each="b : ${result.balances}" style="display: flex; justify-content: space-between; align-items: center; font-size: var(--text-sm);">
+                    <span th:text="${b.name}">철수</span>
+                    <strong th:if="${b.netAmount.signum() > 0}" style="color: var(--color-success);"
+                            th:text="#{settlement.balance.receive} + ' ₩' + ${#numbers.formatDecimal(b.netAmount, 0, 'COMMA', 0, 'POINT')}">받을 돈 ₩0</strong>
+                    <strong th:if="${b.netAmount.signum() < 0}" style="color: var(--color-danger, #e74c3c);"
+                            th:text="#{settlement.balance.owe} + ' ₩' + ${#numbers.formatDecimal(b.netAmount.abs(), 0, 'COMMA', 0, 'POINT')}">낼 돈 ₩0</strong>
+                    <span th:if="${b.netAmount.signum() == 0}" style="color: var(--text-faint);" th:text="#{settlement.balance.even}">정산 완료</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 최종 정산 결과 (누가 누구에게 얼마) -->
+        <div th:unless="${#lists.isEmpty(participants)}" class="expense-summary" style="margin-bottom: var(--space-6);">
+            <h3 th:text="#{settlement.result.title}" style="margin-bottom: var(--space-3);">정산 결과</h3>
+
+            <div th:if="${#lists.isEmpty(result.transactions)}" class="empty-state" th:text="#{settlement.result.empty}">
+                정산할 내역이 없습니다.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(result.transactions)}" style="display: flex; flex-direction: column; gap: var(--space-2);">
+                <div th:each="t : ${result.transactions}" class="badge" style="width: fit-content;">
+                    <span th:text="${t.fromName}">영희</span> → <span th:text="${t.toName}">철수</span>:
+                    <strong th:text="'₩' + ${#numbers.formatDecimal(t.amount, 0, 'COMMA', 0, 'POINT')}">₩0</strong>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{settlement.back}">📋 일정으로 돌아가기</a>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

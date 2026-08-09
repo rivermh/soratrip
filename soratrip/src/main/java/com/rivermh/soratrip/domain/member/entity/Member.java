@@ -104,4 +104,9 @@ public class Member extends BaseTimeEntity {
         this.preferredTags.clear();
         this.preferredTags.addAll(preferredTags);
     }
+
+    // 비밀번호 변경 (인코딩된 값을 받는다 — 인코딩 책임은 서비스 계층)
+    public void updatePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }

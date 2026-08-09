@@ -1,15 +1,22 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="#{schedule.copy.title} + ' - SoraTrip'">📋 이 일정을 내 일정으로 복사하기 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container form-container" style="max-width: 480px;">
-        <h2 th:text="#{schedule.copy.title}">📋 이 일정을 내 일정으로 복사하기</h2>
-        <p style="color: #64748b; margin-bottom: 20px;">
-            <strong th:text="${schedule.title}">3박 4일 도쿄 여행</strong>
+        <div class="form-header">
+            <span class="eyebrow">Copy Schedule</span>
+            <h2 th:text="#{schedule.copy.title}">📋 이 일정을 내 일정으로 복사하기</h2>
+        </div>
+        <p style="color: var(--text-sub); text-align: center; margin-bottom: var(--space-6); font-size: var(--text-sm);">
+            <strong th:text="${schedule.title}" style="color: var(--text-main);">3박 4일 도쿄 여행</strong><br>
             <span th:text="'(' + ${schedule.startDate} + ' ~ ' + ${schedule.endDate} + ')'">(2026-08-01 ~ 2026-08-04)</span>
         </p>
 
@@ -21,9 +28,11 @@
             <button type="submit" class="btn btn-primary" th:text="#{schedule.copy.submit}">✈️ 내 일정으로 복사하기</button>
         </form>
 
-        <div style="margin-top: 20px;">
-            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" th:text="#{btn.cancel}">취소</a>
+        <div class="form-footer">
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" th:text="#{btn.cancel}">취소</a>
         </div>
     </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

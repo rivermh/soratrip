@@ -50,7 +50,7 @@ public class GroqScheduleService {
         GeminiScheduleResponse aiResponse = callOpenRouterApi(prompt, request);
 
         // 3. 응답받은 데이터를 DB 엔티티로 변환 및 저장
-        LocalDate startDate = LocalDate.now().plusDays(1);
+        LocalDate startDate = request.getStartDate() != null ? request.getStartDate() : LocalDate.now().plusDays(1);
         LocalDate endDate = startDate.plusDays(request.getDaysCount() - 1);
 
         TravelSchedule schedule = TravelSchedule.builder()
@@ -64,11 +64,24 @@ public class GroqScheduleService {
                 .build();
 
         if (aiResponse.getDays() != null) {
+            // AI 응답의 dayNumber는 검증되지 않은 값이므로, null/범위 밖/중복은 걸러내고 진행한다
+            // (그대로 쓰면 NPE가 나거나 schedule의 startDate~endDate 범위를 벗어난 day가 조용히 생길 수 있음)
+            Set<Integer> seenDayNumbers = new HashSet<>();
             for (GeminiScheduleResponse.DayDto dayDto : aiResponse.getDays()) {
+                Integer dayNumber = dayDto.getDayNumber();
+                if (dayNumber == null || dayNumber < 1 || dayNumber > request.getDaysCount()) {
+                    log.warn("⚠️ AI 응답의 dayNumber가 유효하지 않아 건너뜁니다: {}", dayNumber);
+                    continue;
+                }
+                if (!seenDayNumbers.add(dayNumber)) {
+                    log.warn("⚠️ AI 응답에 중복된 dayNumber({})가 있어 건너뜁니다.", dayNumber);
+                    continue;
+                }
+
                 ScheduleDay day = ScheduleDay.builder()
                         .travelSchedule(schedule)
-                        .dayNumber(dayDto.getDayNumber())
-                        .visitDate(startDate.plusDays(dayDto.getDayNumber() - 1))
+                        .dayNumber(dayNumber)
+                        .visitDate(startDate.plusDays(dayNumber - 1))
                         .build();
 
                 if (dayDto.getItems() != null) {

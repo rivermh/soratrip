@@ -6,6 +6,8 @@ import com.rivermh.soratrip.domain.comment.entity.Comment;
 import com.rivermh.soratrip.domain.comment.repository.CommentRepository;
 import com.rivermh.soratrip.domain.member.entity.Member;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
+import com.rivermh.soratrip.domain.notification.entity.NotificationType;
+import com.rivermh.soratrip.domain.notification.service.NotificationService;
 import com.rivermh.soratrip.domain.post.entity.Post;
 import com.rivermh.soratrip.domain.post.repository.PostRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
 
     // 댓글 작성
     @Transactional
@@ -39,7 +42,9 @@ public class CommentService {
                 .writer(writer)
                 .build();
 
-        return commentRepository.save(comment).getId();
+        Long commentId = commentRepository.save(comment).getId();
+        notificationService.notify(post.getWriter(), writer, NotificationType.POST_COMMENT, post.getId(), post.getTitle());
+        return commentId;
     }
 
     // 게시글의 댓글 목록 조회

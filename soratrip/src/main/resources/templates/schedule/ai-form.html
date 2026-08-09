@@ -1,55 +1,75 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>🤖 AI 맞춤 일정 생성 - SoraTrip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{schedule.ai.page_title}">🤖 AI 맞춤 일정 생성 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-    <div class="container" style="max-width: 650px;">
-        <h2>🤖 AI 여행 일정 자동 생성</h2>
-        <p style="color: #64748b; font-size: 14px; margin-bottom: 24px;">
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container form-container" style="max-width: 650px;">
+        <span class="eyebrow">AI Planner</span>
+        <h2 style="margin-bottom: var(--space-2);" th:text="#{schedule.ai.title}">🤖 AI 여행 일정 자동 생성</h2>
+        <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-6);" th:text="#{schedule.ai.description}">
             원하는 조건과 이동 스타일을 입력하시면, AI가 지도 동선과 좌표가 연결된 최적의 일정을 자동으로 등록해 드립니다.
         </p>
 
-        <form th:action="@{/schedules/ai-new}" th:object="${aiRequest}" method="post" style="display: grid; gap: 16px;">
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 6px;">📍 여행 지역</label>
+        <form th:action="@{/schedules/ai-new}" th:object="${aiRequest}" method="post" style="display: grid; gap: var(--space-5);">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label th:text="#{schedule.ai.region_label}">📍 여행 지역</label>
                 <select th:field="*{region}" class="form-control" required>
                     <option th:each="r : ${regions}" th:value="${r}" th:text="${r.displayName}">지역 선택</option>
                 </select>
             </div>
 
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 6px;">📅 여행 기간 (일수)</label>
-                <input type="number" th:field="*{daysCount}" min="1" max="7" value="3" class="form-control" required placeholder="예: 3 (3일차)">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label th:text="#{schedule.form.start_date}">시작일</label>
+                <input type="date" th:field="*{startDate}" class="form-control" required>
+                <div class="error-message" th:if="${#fields.hasErrors('startDate')}">
+                    <span th:errors="*{startDate}"></span>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+                <label th:text="#{schedule.ai.days_label}">📅 여행 기간 (일수)</label>
+                <input type="number" th:field="*{daysCount}" min="1" max="7" value="3" class="form-control" required
+                       th:placeholder="#{schedule.ai.days_placeholder}" placeholder="예: 3 (3일차)">
                 <!-- 💡 7일 제한 안내 메모 추가 -->
-                <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">* AI 안정성 유지를 위해 여행 기간은 최대 7일까지 설정할 수 있습니다.</small>
+                <small class="hint-text" th:text="#{schedule.ai.days_hint}">* AI 안정성 유지를 위해 여행 기간은 최대 7일까지 설정할 수 있습니다.</small>
+                <div class="error-message" th:if="${#fields.hasErrors('daysCount')}">
+                    <span th:errors="*{daysCount}"></span>
+                </div>
             </div>
 
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 6px;">👥 동행자 타입</label>
-                <input type="text" th:field="*{companionType}" class="form-control" placeholder="예: 부모님 모시고, 혼자 여행, 아이 동반 등">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label th:text="#{schedule.ai.companion_label}">👥 동행자 타입</label>
+                <input type="text" th:field="*{companionType}" class="form-control"
+                       th:placeholder="#{schedule.ai.companion_placeholder}" placeholder="예: 부모님 모시고, 혼자 여행, 아이 동반 등">
             </div>
 
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 6px;">🧳 이동 스타일 및 취향 태그</label>
-                <div style="display: flex; flex-wrap: wrap; gap: 8px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <label th:each="t : ${tags}" style="font-size: 13px; display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                        <input type="checkbox" th:field="*{tags}" th:value="${t}">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label th:text="#{schedule.ai.tags_label}">🧳 이동 스타일 및 취향 태그</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; background: var(--surface); padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--border-color);">
+                    <label th:each="t : ${tags}" style="font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; padding: 6px 12px; border-radius: var(--radius-full); background: var(--surface-elevated); border: 1px solid var(--border-color); text-transform: none;">
+                        <input type="checkbox" th:field="*{tags}" th:value="${t}" style="accent-color: var(--primary-color);">
                         <span th:text="${t.displayName}">태그</span>
                     </label>
                 </div>
             </div>
 
-            <div>
-                <label style="font-weight: 600; display: block; margin-bottom: 6px;">📝 추가 요청사항 (선택)</label>
-                <textarea th:field="*{extraPrompt}" class="form-control" rows="3" placeholder="예: 계단이 많은 곳은 피해주세요, 하루 1.5만보 이하로 걷고 싶어요, 대형 캐리어 보관 가능한 곳 위주로 짜주세요."></textarea>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label th:text="#{schedule.ai.extra_label}">📝 추가 요청사항 (선택)</label>
+                <textarea th:field="*{extraPrompt}" class="form-control" rows="3"
+                          th:placeholder="#{schedule.ai.extra_placeholder}" placeholder="예: 계단이 많은 곳은 피해주세요, 하루 1.5만보 이하로 걷고 싶어요, 대형 캐리어 보관 가능한 곳 위주로 짜주세요."></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="margin-top: 10px; font-size: 16px; padding: 12px;">✨ AI 일정 생성 시작하기</button>
+            <button type="submit" class="btn btn-ai" style="font-size: var(--text-base); padding: 14px;" th:text="#{schedule.ai.submit_btn}">✨ AI 일정 생성 시작하기</button>
         </form>
     </div>
-    
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

@@ -3,8 +3,8 @@
 <footer th:fragment="footer" class="footer">
     <div class="footer-links">
         <a th:href="@{/}" class="footer-logo">✈️ SoraTrip</a>
-        <a th:href="@{/posts}">여행 & 동행 게시판</a>
-        <a th:href="@{/schedules}">내 일정</a>
+        <a th:href="@{/posts}" th:text="#{footer.nav.posts}">여행 & 동행 게시판</a>
+        <a th:href="@{/schedules}" th:text="#{footer.nav.schedule}">내 일정</a>
     </div>
     <p class="footer-copyright">
         &copy; 2026 SoraTrip. All rights reserved.

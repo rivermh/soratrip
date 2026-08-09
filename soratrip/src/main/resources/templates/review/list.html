@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{review.list.title} + ' - ' + ${schedule.title}">📝 후기 - SoraTrip</title>
+
+    <!-- Spring Security CSRF Meta 태그 (null 안전 처리) -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
+
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container" style="max-width: 850px;">
+        <span class="eyebrow">Review</span>
+        <h2 th:text="#{review.list.title}" style="margin-bottom: 4px;">📝 후기</h2>
+        <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-6);" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
+
+        <!-- 일자별로 묶어서 표시 -->
+        <div class="day-timeline">
+        <div th:each="day : ${schedule.days}" class="day-card">
+            <div class="day-card__header">
+                <h4 class="day-card__title">
+                    <span class="day-badge" th:text="${day.dayNumber}">1</span>
+                    <span th:text="#{schedule.day_title}">일차</span>
+                    <span class="day-date" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+                </h4>
+            </div>
+
+            <div th:if="${reviewByDay.get(day.id) != null}" class="review-badges">
+                <span th:if="${reviewByDay.get(day.id).hasElevator}" class="review-badge review-badge--elevator" th:text="#{review.badge.elevator}">🛗 엘리베이터/에스컬레이터 원활</span>
+                <span th:if="${reviewByDay.get(day.id).isFlatPath}" class="review-badge review-badge--flat" th:text="#{review.badge.flat}">🧑‍🦽 계단 없음 / 평지</span>
+                <span th:if="${reviewByDay.get(day.id).hasLuggageStorage}" class="review-badge review-badge--luggage" th:text="#{review.badge.luggage}">🧳 짐 보관 용이</span>
+            </div>
+
+            <div th:if="${!owner and reviewByDay.get(day.id) != null}" class="review-text" th:text="${reviewByDay.get(day.id).content}">후기 내용</div>
+            <div th:if="${!owner and reviewByDay.get(day.id) == null}" class="day-empty" th:text="#{review.empty}">아직 작성된 후기가 없습니다.</div>
+
+            <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/review(sid=${schedule.id},did=${day.id})}" method="post">
+                <div class="review-checklist">
+                    <label>
+                        <input type="checkbox" name="hasElevator" value="true" th:checked="${reviewByDay.get(day.id)?.hasElevator}"> <span th:text="#{review.check.elevator}">🛗 엘리베이터 원활</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="isFlatPath" value="true" th:checked="${reviewByDay.get(day.id)?.isFlatPath}"> <span th:text="#{review.check.flat}">🧑‍🦽 계단 없음 / 평지</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" name="hasLuggageStorage" value="true" th:checked="${reviewByDay.get(day.id)?.hasLuggageStorage}"> <span th:text="#{review.check.luggage}">🧳 짐 보관 용이</span>
+                    </label>
+                </div>
+
+                <textarea name="content" class="form-control" rows="2" th:text="${reviewByDay.get(day.id)?.content}" th:placeholder="#{review.content}"></textarea>
+                <button type="submit" class="btn btn-secondary" style="width: auto; margin-top: 6px;" th:text="#{review.save}">후기 저장</button>
+            </form>
+        </div>
+        </div>
+
+        <!-- 하단 버튼 영역 -->
+        <div style="margin-top: 30px;">
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{review.back_to_schedule}">📋 일정으로 돌아가기</a>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{error.title.403} + ' - SoraTrip'">접근 권한이 없습니다 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container">
+        <div class="error-container">
+            <div class="error-icon">🔒</div>
+            <div class="error-code" th:text="${status != null ? 'HTTP ' + status : 'HTTP 403'}">HTTP 403</div>
+
+            <h2 class="error-title" th:text="#{error.title.403}">접근 권한이 없습니다</h2>
+            <p class="error-message" th:text="#{error.message.403}">해당 페이지에 접근할 권한이 없습니다.</p>
+
+            <div class="btn-group">
+                <a href="javascript:history.back()" class="btn btn-secondary" th:text="#{error.back}">⬅️ 이전 페이지</a>
+                <a href="/" class="btn btn-primary" th:text="#{error.home}">🏠 메인으로 가기</a>
+            </div>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

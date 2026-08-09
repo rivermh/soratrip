@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{error.title.500} + ' - SoraTrip'">일시적인 시스템 오류입니다 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container">
+        <div class="error-container">
+            <div class="error-icon">🛠️</div>
+            <div class="error-code" th:text="${status != null ? 'HTTP ' + status : 'HTTP 500'}">HTTP 500</div>
+
+            <h2 class="error-title" th:text="#{error.title.500}">일시적인 시스템 오류입니다</h2>
+            <p class="error-message" th:utext="#{error.message.500}">서버 처리 중 오류가 발생했습니다.<br>잠시 후 다시 시도해 주세요.</p>
+
+            <div class="btn-group">
+                <a href="javascript:history.back()" class="btn btn-secondary" th:text="#{error.back}">⬅️ 이전 페이지</a>
+                <a href="/" class="btn btn-primary" th:text="#{error.home}">🏠 메인으로 가기</a>
+            </div>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

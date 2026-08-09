@@ -29,10 +29,6 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         // 서비스 구분을 위한 ID (google, kakao 등)
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        
-        // OAuth2 로그인 진행 시 키가 되는 필드값 (PK)
-        String userNameAttributeName = userRequest.getClientRegistration()
-                .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
 
         Map<String, Object> attributes = oAuth2User.getAttributes();
 
@@ -45,10 +41,14 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         // DB에 저장 또는 업데이트
         Member member = saveOrUpdate(email, name, picture, registrationId, providerId);
 
+        // Authentication.getName()/Principal.getName()이 provider의 PK(sub)가 아닌
+        // 이메일을 반환하도록 name attribute key를 "email"로 고정한다.
+        // (일반 로그인의 UserDetails.getUsername()도 이메일이므로, 로그인 방식과 무관하게
+        //  컨트롤러에서 Principal.getName()을 그대로 이메일로 사용할 수 있게 된다.)
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority(member.getRole().getKey())),
                 attributes,
-                userNameAttributeName);
+                "email");
     }
 
     private Member saveOrUpdate(String email, String nickname, String profileImage, String provider, String providerId) {

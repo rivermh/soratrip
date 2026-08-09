@@ -1,78 +1,112 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{expense.title}">💰 가계부 - SoraTrip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{expense.title} + ' - ' + ${schedule.title}">💰 가계부 - SoraTrip</title>
+
+    <!-- Spring Security CSRF Meta 태그 (null 안전 처리) -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
+
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container" style="max-width: 850px;">
         <span class="eyebrow">Finance</span>
-        <h2 th:text="#{expense.title}" style="margin-bottom: 24px;">💰 가계부</h2>
+        <h2 th:text="#{expense.title}" style="margin-bottom: 4px;">💰 가계부</h2>
+        <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-6);" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
 
         <!-- 지출 요약 카드 (원화 환산 총액 + 엔화 총사용액) -->
-        <div style="background: var(--primary-soft); border: 1px solid #c9e0fb; border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; box-shadow: var(--shadow-sm);">
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-                <span style="font-weight: 800; font-size: 22px; color: var(--text-main);" th:text="#{expense.total}">총 지출</span>
-                <div style="text-align: right;">
-                    <span style="color: var(--primary-color); font-weight: 800; font-size: 24px;">
-                        ₩ <span th:text="${#numbers.formatDecimal(summary.totalKrw != null ? summary.totalKrw : (summary.total != null ? summary.total : 0), 0, 'COMMA', 0, 'POINT')}">0</span>
-                    </span>
-                    <div th:if="${summary.totalJpy != null and summary.totalJpy > 0}" style="font-size: 14px; color: #0369a1; font-weight: 600; margin-top: 2px;">
-                        (엔화 사용량: ¥ <span th:text="${#numbers.formatDecimal(summary.totalJpy, 0, 'COMMA', 0, 'POINT')}">0</span>)
-                    </div>
-                </div>
+        <div class="expense-summary" style="margin-bottom: var(--space-6);">
+            <h3 th:text="#{expense.total}">총 지출</h3>
+            <div class="expense-summary__total">
+                <span>
+                    ₩ <span th:text="${#numbers.formatDecimal(summary.totalKrw, 0, 'COMMA', 0, 'POINT')}">0</span>
+                </span>
+                <span th:if="${summary.totalJpy > 0}" class="expense-summary__jpy"
+                      th:text="#{expense.jpy_total(${#numbers.formatDecimal(summary.totalJpy, 0, 'COMMA', 0, 'POINT')})}">(엔화 사용량: ¥ 0)</span>
             </div>
-
-            <div th:unless="${summary.byCategory == null or summary.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
-                <span th:each="entry : ${summary.byCategory}" class="badge" style="background-color: #ffffff; color: var(--primary-color); border-color: var(--border-color); padding: 6px 14px; font-size: 13px;"
+            <div th:unless="${summary.byCategory.isEmpty()}" class="expense-summary__categories">
+                <span th:each="entry : ${summary.byCategory}" class="badge"
                       th:text="${entry.key.displayName} + ': ₩' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: ₩0</span>
             </div>
         </div>
 
-        <!-- 지출 내역 테이블 (통화/환율/환산액 컬럼 보완) -->
-        <table class="styled-table" style="margin-bottom: 28px;">
-            <thead>
-                <tr>
-                    <th style="width: 12%;" th:text="#{expense.date}">일자</th>
-                    <th style="width: 16%;" th:text="#{expense.category}">분류</th>
-                    <th style="width: 20%; text-align: right;">사용 금액</th>
-                    <th style="width: 22%; text-align: right;">환율 / 환산금액</th>
-                    <th style="width: 30%;" th:text="#{expense.memo}">메모</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="e : ${expenses}">
-                    <td th:text="${e.scheduleDay.dayNumber} + '일차'" style="font-weight: 600; color: var(--text-main);">1일차</td>
-                    <td>
-                        <span class="badge" style="background: var(--surface); color: var(--text-sub); border-color: var(--border-color);" th:text="${e.category.displayName}">분류</span>
-                    </td>
-                    <!-- 사용 금액 (통화 기호 + 원본 금액) -->
-                    <td style="text-align: right; font-weight: 700; color: var(--text-main);">
-                        <span th:text="${e.currency != null ? e.currency.symbol : '¥'}">¥</span>
+        <!-- 일자별로 묶어서 표시 -->
+        <div class="day-timeline">
+        <div th:each="day : ${schedule.days}" class="day-card">
+            <div class="day-card__header">
+                <h4 class="day-card__title">
+                    <span class="day-badge" th:text="${day.dayNumber}">1</span>
+                    <span th:text="#{schedule.day_title}">일차</span>
+                    <span class="day-date" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+                </h4>
+            </div>
+
+            <div th:if="${#lists.isEmpty(expensesByDay.get(day.id))}" class="day-empty" th:text="#{expense.empty}">
+                등록된 지출 내역이 없습니다.
+            </div>
+
+            <div th:each="e : ${expensesByDay.get(day.id)}" class="expense-row">
+                <span th:text="${e.category.displayName} + (${e.memo != null and !#strings.isEmpty(e.memo)} ? ' - ' + ${e.memo} : '')">분류 - 메모</span>
+                <span class="expense-row__amount">
+                    <strong>
+                        <span th:text="${e.currency.symbol}">¥</span>
                         <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
-                    </td>
-                    <!-- 환율 및 원화 환산 금액 -->
-                    <td style="text-align: right; font-size: 13px;">
-                        <div style="font-weight: 600; color: #166534;">
-                            ≈ ₩<span th:text="${#numbers.formatDecimal(e.amountKrw != null ? e.amountKrw : e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
-                        </div>
-                        <div th:if="${e.currency != null and e.currency.name() == 'JPY' and e.exchangeRate != null}" style="font-size: 11px; color: #94a3b8;">
-                            (100¥ = <span th:text="${#numbers.formatDecimal(e.exchangeRate, 0, 'COMMA', 1, 'POINT')}">900</span>원)
-                        </div>
-                    </td>
-                    <td th:text="${e.memo}" style="color: var(--text-sub);">메모</td>
-                </tr>
-                <tr th:if="${#lists.isEmpty(expenses)}">
-                    <td colspan="5" style="text-align: center; color: var(--text-faint); padding: 40px 20px;" th:text="#{expense.empty}">등록된 지출 내역이 없습니다.</td>
-                </tr>
-            </tbody>
-        </table>
+                    </strong>
+                    <span th:if="${e.currency.name() == 'JPY'}" class="expense-row__krw-note">
+                        (≈ ₩<span th:text="${#numbers.formatDecimal(e.amountKrw, 0, 'COMMA', 0, 'POINT')}">0</span>)
+                    </span>
+                    <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses/{eid}/delete(sid=${schedule.id},did=${day.id},eid=${e.id})}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary btn-danger-ghost" style="padding: 1px 6px; font-size: 11px;">✕</button>
+                    </form>
+                </span>
+                <div th:if="${e.paidBy != null and !e.sharedWith.isEmpty()}" class="expense-row__krw-note" style="width: 100%; margin-top: 2px;">
+                    💸 <span th:text="${e.paidBy.name}">철수</span><span th:text="#{expense.paid_by.suffix}"> 냄</span>
+                    · <span th:text="#{expense.shared_with}">나눈 사람</span>: <span th:text="${#strings.listJoin(e.sharedWith.![name], ', ')}">철수, 영희</span>
+                </div>
+            </div>
+
+            <!-- 지출 등록 (소유자 전용) -->
+            <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses(sid=${schedule.id},did=${day.id})}" method="post" class="expense-form">
+                <select name="category" class="form-control" required>
+                    <option th:each="c : ${expenseCategories}" th:value="${c}" th:text="${c.displayName}">분류</option>
+                </select>
+                <select name="currency" class="form-control">
+                    <option value="JPY" selected>JPY (¥)</option>
+                    <option value="KRW">KRW (₩)</option>
+                </select>
+                <input type="number" step="any" name="amount" class="form-control" th:placeholder="#{expense.amount.placeholder}" placeholder="금액" required>
+                <input type="number" step="0.01" name="exchangeRate" class="form-control" th:placeholder="#{schedule.exchange_rate.placeholder}" placeholder="환율(100엔당 원, 기본900)">
+                <input type="text" name="memo" class="form-control" th:placeholder="#{expense.memo.placeholder}" placeholder="메모">
+
+                <div th:if="${!#lists.isEmpty(participants)}" class="expense-form__settlement" style="width: 100%; display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: 4px;">
+                    <select name="paidById" class="form-control" style="max-width: 160px;">
+                        <option value="" th:text="#{expense.paid_by.none}">정산 미대상</option>
+                        <option th:each="p : ${participants}" th:value="${p.id}" th:text="${p.name} + #{expense.paid_by.option_suffix}">철수님이 냄</option>
+                    </select>
+                    <span style="font-size: var(--text-xs); color: var(--text-faint);" th:text="#{expense.shared_with}">나눈 사람</span>
+                    <label th:each="p : ${participants}" style="display: inline-flex; align-items: center; gap: 2px; font-size: var(--text-xs);">
+                        <input type="checkbox" name="sharedWithIds" th:value="${p.id}">
+                        <span th:text="${p.name}">철수</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" th:text="#{expense.add}">추가</button>
+            </form>
+        </div>
+        </div>
 
         <!-- 하단 버튼 영역 -->
-        <div>
-            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{expense.back_to_schedule}">📋 일정으로 돌아가기</a>
+        <div style="margin-top: 30px;">
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{expense.back_to_schedule}">📋 일정으로 돌아가기</a>
         </div>
     </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

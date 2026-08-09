@@ -77,6 +77,11 @@ public class TravelSchedule {
         this.isPublic = isPublic;
     }
 
+    // 이메일 기준 소유자 여부 확인 (email이 null이어도 안전하게 false 반환)
+    public boolean isOwnedBy(String email) {
+        return member != null && member.getEmail().equals(email);
+    }
+
     // 태그 전체 교체
     public void updateTags(Set<ScheduleTag> tags) {
         this.tags.clear();

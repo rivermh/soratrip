@@ -1,0 +1,54 @@
+/* ==========================================
+   Error Pages — 404 / 403 / 500 / 공통 오류 페이지
+   ========================================== */
+.error-container {
+    max-width: 500px;
+    margin: var(--space-16) auto;
+    text-align: center;
+    padding: var(--space-10) var(--space-6);
+    background: var(--card-bg);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+}
+
+.error-icon {
+    font-size: 56px;
+    margin-bottom: var(--space-4);
+}
+
+.error-code {
+    display: inline-block;
+    background: var(--surface);
+    color: var(--text-sub);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    margin-bottom: var(--space-3);
+}
+
+.error-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: var(--space-2);
+}
+
+.error-message {
+    font-size: var(--text-sm);
+    color: var(--text-sub);
+    line-height: 1.6;
+    margin-bottom: var(--space-7);
+}
+
+.error-container .btn-group {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-container .btn-group .btn {
+    width: auto;
+}

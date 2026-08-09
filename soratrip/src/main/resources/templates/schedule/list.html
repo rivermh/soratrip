@@ -1,43 +1,50 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="#{schedule.list.title} + ' - SoraTrip'">🗓️ 내 여행 일정 목록 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container" style="max-width: 900px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div class="page-header-row">
             <h2 th:text="#{schedule.list.title}">🗓️ 내 여행 일정 목록</h2>
-            <div style="display: flex; gap: 8px;">
-                <a th:href="@{/schedules/explore}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{schedule.explore.title}">🧭 둘러보기</a>
-                <a th:href="@{/schedules/recommended}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{schedule.recommend.title}">✨ 추천</a>
-                <a th:href="@{/schedules/new}" class="btn btn-primary" style="width: auto; text-decoration: none;" th:text="#{schedule.new_btn}">➕ 새 일정 만들기</a>
+            <div class="page-actions">
+                <a th:href="@{/schedules/explore}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{schedule.explore.title}">🧭 둘러보기</a>
+                <a th:href="@{/schedules/recommended}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{schedule.recommend.title}">✨ 추천</a>
+                <a th:href="@{/schedules/new}" class="btn btn-primary" style="text-decoration: none;" th:text="#{schedule.new_btn}">➕ 새 일정 만들기</a>
             </div>
         </div>
 
         <!-- 일정 카드 목록 -->
-        <div th:if="${#lists.isEmpty(schedules)}" style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 12px;" th:text="#{schedule.list.empty}">
+        <div th:if="${#lists.isEmpty(schedules)}" class="empty-state" th:text="#{schedule.list.empty}">
             아직 등록된 여행 일정이 없습니다. 멋진 여행 계획을 세워보세요!
         </div>
 
-        <div th:unless="${#lists.isEmpty(schedules)}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;">
-            <div th:each="s : ${schedules}" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; transition: transform 0.2s;"
-                 onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-                <span th:text="${s.region}" style="background: #e0f2fe; color: #0369a1; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px;">TOKYO</span>
-                <h3 style="margin: 10px 0 6px 0; font-size: 18px;">
-                    <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}" style="text-decoration: none; color: #1e293b;">3박 4일 도쿄 여행</a>
-                </h3>
-                <p style="font-size: 14px; color: #64748b; margin-bottom: 16px;">
-                    📅 <span th:text="${s.startDate}">2026-08-01</span> ~ <span th:text="${s.endDate}">2026-08-04</span>
-                </p>
-                <a th:href="@{/schedules/{id}(id=${s.id})}" class="btn btn-secondary" style="display: block; text-align: center; font-size: 14px; text-decoration: none;" th:text="#{schedule.view_detail}">상세 일정 보기</a>
+        <div th:unless="${#lists.isEmpty(schedules)}" class="schedule-grid">
+            <div th:each="s : ${schedules}" class="schedule-card">
+                <div>
+                    <span th:text="${s.region}" class="region-badge">TOKYO</span>
+                    <h3 class="schedule-card__title">
+                        <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}">3박 4일 도쿄 여행</a>
+                    </h3>
+                    <p class="schedule-card__dates">
+                        📅 <span th:text="${s.startDate}">2026-08-01</span> ~ <span th:text="${s.endDate}">2026-08-04</span>
+                    </p>
+                </div>
+                <a th:href="@{/schedules/{id}(id=${s.id})}" class="btn btn-secondary schedule-card__cta" style="text-decoration: none;" th:text="#{schedule.view_detail}">상세 일정 보기</a>
             </div>
         </div>
-        
+
         <div style="margin-top: 30px;">
             <a th:href="@{/}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
         </div>
     </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

@@ -32,7 +32,7 @@ public class PhotoService {
         if (!day.getTravelSchedule().getId().equals(scheduleId)) {
             throw new IllegalArgumentException("일정과 일자 정보가 일치하지 않습니다.");
         }
-        if (!day.getTravelSchedule().getMember().getEmail().equals(email)) {
+        if (!day.getTravelSchedule().isOwnedBy(email)) {
             throw new IllegalStateException("본인의 일정에만 사진을 등록할 수 있습니다.");
         }
 
@@ -70,7 +70,7 @@ public class PhotoService {
         Photo photo = photoRepository.findById(photoId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 사진을 찾을 수 없습니다. id=" + photoId));
 
-        if (!photo.getTravelSchedule().getMember().getEmail().equals(email)) {
+        if (!photo.getTravelSchedule().isOwnedBy(email)) {
             throw new IllegalStateException("본인의 사진만 삭제할 수 있습니다.");
         }
         String imageUrl = photo.getImageUrl();

@@ -1,31 +1,74 @@
+/* ==========================================
+   Photo Gallery — Instagram / Pinterest 감성 매소니 그리드
+   ========================================== */
 .photo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 16px;
+  columns: 2 200px;
+  column-gap: var(--space-4);
+}
+
+@media (min-width: 560px) {
+  .photo-grid {
+    columns: 3 200px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .photo-grid {
+    columns: 4 210px;
+  }
 }
 
 .photo-grid-item {
+  display: inline-block;
+  width: 100%;
+  break-inside: avoid;
+  margin-bottom: var(--space-4);
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
   text-align: center;
+  transition:
+    transform var(--transition-base),
+    box-shadow var(--transition-base),
+    border-color var(--transition-base);
+}
+
+.photo-grid-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-200);
 }
 
 .photo-grid-item img {
   width: 100%;
-  height: 128px;
-  object-fit: cover;
-  border-radius: var(--radius);
-  border: 1px solid var(--border-color);
-  transition: transform var(--transition-slow), box-shadow var(--transition-base);
+  height: auto;
+  display: block;
+  border-radius: 0;
+  border: none;
+  transition: transform 0.5s var(--ease-out);
 }
 
-.photo-grid-item img:hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: var(--shadow-lg);
+.photo-grid-item:hover img {
+  transform: scale(1.04);
+}
+
+.photo-grid-item > div {
+  padding: 0 var(--space-3);
+}
+
+.photo-grid-item > div:last-child {
+  padding-bottom: var(--space-3);
 }
 
 .photo-grid-item form {
-  margin-top: 10px;
+  margin: var(--space-2) var(--space-3) var(--space-3);
 }
 
+/* ------------------------------------------
+   여행 포트폴리오 카드
+   ------------------------------------------ */
 .portfolio-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -39,7 +82,7 @@
 }
 
 .portfolio-card:hover {
-  border-color: rgba(37, 99, 235, 0.2);
+  border-color: var(--primary-200);
   transform: translateY(-6px);
   box-shadow: var(--shadow-xl);
 }
@@ -57,5 +100,23 @@
 }
 
 .portfolio-card .portfolio-card-body {
-  padding: 22px 24px;
+  padding: var(--space-5) var(--space-6);
+}
+
+/* ------------------------------------------
+   반응형 — 모바일에서도 터치하기 쉬운 그리드
+   ------------------------------------------ */
+@media (max-width: 480px) {
+  .photo-grid {
+    columns: 2 140px;
+    column-gap: var(--space-3);
+  }
+
+  .photo-grid-item {
+    margin-bottom: var(--space-3);
+  }
+
+  .portfolio-card img {
+    height: 160px;
+  }
 }

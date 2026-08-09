@@ -1,28 +1,35 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="#{schedule.settings.title} + ' - SoraTrip'">⚙️ 일정 공개 설정 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container form-container" style="max-width: 480px;">
-        <h2 th:text="#{schedule.settings.title}">⚙️ 일정 공개 설정</h2>
-        <p style="color: #64748b; margin-bottom: 20px;" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
+        <div class="form-header">
+            <span class="eyebrow">Schedule Settings</span>
+            <h2 th:text="#{schedule.settings.title}">⚙️ 일정 공개 설정</h2>
+        </div>
+        <p style="color: var(--text-sub); text-align: center; margin-bottom: var(--space-6); font-size: var(--text-sm);" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
 
         <form th:action="@{/schedules/{id}/settings(id=${schedule.id})}" method="post">
             <div class="form-group">
-                <label>
-                    <input type="checkbox" name="isPublic" value="true" th:checked="${schedule.public}">
+                <label style="display: flex; align-items: center; gap: 8px; text-transform: none; font-size: var(--text-sm); color: var(--text-main); cursor: pointer;">
+                    <input type="checkbox" name="isPublic" value="true" th:checked="${schedule.public}" style="width: 18px; height: 18px; accent-color: var(--primary-color); flex-shrink: 0;">
                     <span th:text="#{schedule.settings.public}">이 일정을 공개하여 다른 사람이 둘러보고 복사할 수 있도록 허용</span>
                 </label>
             </div>
 
             <div class="form-group">
                 <label th:text="#{schedule.tags.label}">태그</label>
-                <div>
-                    <label th:each="t : ${tags}" style="display: inline-block; margin-right: 12px; font-weight: normal;">
-                        <input type="checkbox" name="tags" th:value="${t}" th:checked="${schedule.tags.contains(t)}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <label th:each="t : ${tags}" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-full); background: var(--surface); border: 1px solid var(--border-color); font-size: var(--text-xs); font-weight: 600; color: var(--text-sub); text-transform: none; cursor: pointer;">
+                        <input type="checkbox" name="tags" th:value="${t}" th:checked="${schedule.tags.contains(t)}" style="accent-color: var(--primary-color);">
                         <span th:text="${t.displayName}">태그</span>
                     </label>
                 </div>
@@ -31,9 +38,11 @@
             <button type="submit" class="btn btn-primary" th:text="#{btn.save}">등록</button>
         </form>
 
-        <div style="margin-top: 20px;">
-            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{btn.cancel}">취소</a>
+        <div class="form-footer">
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" th:text="#{btn.cancel}">취소</a>
         </div>
     </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

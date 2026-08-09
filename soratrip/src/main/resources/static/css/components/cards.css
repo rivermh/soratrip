@@ -83,6 +83,9 @@
 }
 
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
   padding: 9px 18px;
   border-radius: var(--radius-full);
   background-color: var(--surface-elevated);

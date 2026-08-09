@@ -62,10 +62,22 @@ select.form-control {
   padding-right: 40px;
 }
 
-/* 2. 인증/로그인 전용 레이아웃 */
+/* 2. 인증/로그인 전용 레이아웃 — 화면 크기와 무관하게 항상 카드형 */
 .form-container {
   max-width: 440px;
-  margin: 40px auto 0;
+  margin: var(--space-6) auto 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8) var(--space-5);
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 640px) {
+  .form-container {
+    margin-top: var(--space-10);
+    padding: var(--space-10) var(--space-8);
+  }
 }
 
 .form-header {

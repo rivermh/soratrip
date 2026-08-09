@@ -10,11 +10,15 @@
 @import url('./components/buttons.css');
 @import url('./components/forms.css');
 @import url('./components/cards.css');
+@import url('./components/notification.css');
 
 /* 3. Domain Specifics */
 @import url('./domain/hero.css');
 @import url('./domain/schedule.css');
 @import url('./domain/photo.css');
+@import url('./domain/post.css');
+@import url('./domain/join-form.css');
+@import url('./domain/error.css');
 
 /* 4. Responsive Queries */
 @import url('./responsive.css');

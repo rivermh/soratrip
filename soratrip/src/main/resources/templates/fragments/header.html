@@ -2,14 +2,35 @@
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <header th:fragment="header" class="navbar">
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
+
     <a th:href="@{/}" class="logo">✈️ SoraTrip</a>
 
     <nav class="navbar-nav">
         <!-- 로그인 상태 -->
         <div sec:authorize="isAuthenticated()" class="navbar-menu">
-            <a th:href="@{/schedules/ai-new}" class="btn btn-ai">🤖 AI 일정 만들기</a>
+            <a th:href="@{/schedules/ai-new}" class="btn btn-ai" th:text="#{nav.ai_schedule}">🤖 AI 일정 만들기</a>
             <a th:href="@{/schedules}" class="nav-link" th:text="#{nav.schedule}">🗓️ 내 일정</a>
+            <a th:href="@{/schedules/explore}" class="nav-link" th:text="#{nav.explore}">🧭 일정 둘러보기</a>
+            <a th:href="@{/schedules/recommended}" class="nav-link" th:text="#{nav.recommended}">✨ 맞춤 추천</a>
             <a th:href="@{/posts}" class="nav-link" th:text="#{post.list.title}">✈️ 여행 & 동행 게시판</a>
+            <a th:href="@{/chat}" class="nav-link" th:text="#{nav.chat}">💬 채팅</a>
+
+            <div class="notif-wrap">
+                <button type="button" id="notifBell" class="notif-bell" aria-label="notifications">
+                    🔔
+                    <span id="notifBadge" class="notif-badge" hidden>0</span>
+                </button>
+                <div id="notifPanel" class="notif-panel" hidden>
+                    <div class="notif-panel-header">
+                        <span>🔔</span>
+                        <button type="button" id="notifMarkAllRead" th:text="#{notification.mark_all_read}">모두 읽음</button>
+                    </div>
+                    <div id="notifList" th:data-empty-text="#{notification.empty}"></div>
+                </div>
+            </div>
+
             <a th:href="@{/members/mypage}" class="nav-link" th:text="#{nav.mypage}">마이페이지</a>
             <form th:action="@{/members/logout}" method="post">
                 <button type="submit" class="nav-link nav-link--muted" th:text="#{nav.logout}">로그아웃</button>
@@ -28,5 +49,104 @@
             <a th:href="@{''(lang='ja')}" th:text="#{lang.ja}">日本語</a>
         </div>
     </nav>
+
+    <script th:inline="none">
+        (function () {
+            const bellBtn = document.getElementById('notifBell');
+            if (!bellBtn) return; // 비로그인 상태에서는 알림 UI가 렌더링되지 않음
+
+            const badge = document.getElementById('notifBadge');
+            const panel = document.getElementById('notifPanel');
+            const list = document.getElementById('notifList');
+            const markAllBtn = document.getElementById('notifMarkAllRead');
+            const emptyText = list.getAttribute('data-empty-text') || 'No notifications';
+
+            function getCsrfHeaders(extra) {
+                const token = document.querySelector("meta[name='_csrf']")?.getAttribute('content');
+                const header = document.querySelector("meta[name='_csrf_header']")?.getAttribute('content');
+                const headers = Object.assign({}, extra);
+                if (token && header) {
+                    headers[header] = token;
+                }
+                return headers;
+            }
+
+            function formatTime(iso) {
+                const d = new Date(iso);
+                return d.toLocaleString();
+            }
+
+            function refreshUnreadCount() {
+                fetch('/api/notifications/unread-count')
+                    .then(res => res.ok ? res.json() : { count: 0 })
+                    .then(data => {
+                        const count = data.count || 0;
+                        if (count > 0) {
+                            badge.textContent = count > 99 ? '99+' : String(count);
+                            badge.hidden = false;
+                        } else {
+                            badge.hidden = true;
+                        }
+                    })
+                    .catch(() => {});
+            }
+
+            function renderList(items) {
+                if (!items || items.length === 0) {
+                    list.innerHTML = `<div class="notif-empty">${emptyText}</div>`;
+                    return;
+                }
+                list.innerHTML = items.map(n => `
+                    <a class="notif-item ${n.read ? '' : 'notif-item--unread'}" href="${n.link}">
+                        <span>${n.message}</span>
+                        <span class="notif-item-time">${formatTime(n.createdAt)}</span>
+                    </a>
+                `).join('');
+            }
+
+            function openPanel() {
+                fetch('/api/notifications')
+                    .then(res => res.ok ? res.json() : [])
+                    .then(renderList)
+                    .catch(() => {});
+
+                fetch('/api/notifications/read-all', {
+                    method: 'POST',
+                    headers: getCsrfHeaders()
+                }).then(() => refreshUnreadCount()).catch(() => {});
+
+                panel.hidden = false;
+            }
+
+            bellBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (panel.hidden) {
+                    openPanel();
+                } else {
+                    panel.hidden = true;
+                }
+            });
+
+            markAllBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                fetch('/api/notifications/read-all', {
+                    method: 'POST',
+                    headers: getCsrfHeaders()
+                }).then(() => {
+                    refreshUnreadCount();
+                    list.querySelectorAll('.notif-item--unread').forEach(el => el.classList.remove('notif-item--unread'));
+                }).catch(() => {});
+            });
+
+            document.addEventListener('click', function (e) {
+                if (!panel.hidden && !panel.contains(e.target) && e.target !== bellBtn) {
+                    panel.hidden = true;
+                }
+            });
+
+            refreshUnreadCount();
+            setInterval(refreshUnreadCount, 30000);
+        })();
+    </script>
 </header>
 </html>

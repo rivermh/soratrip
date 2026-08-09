@@ -7,9 +7,9 @@ import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
 import jakarta.validation.Valid; // 👈 @Valid 임포트 추가
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/schedules")
@@ -23,9 +23,9 @@ public class ScheduleApiController {
     @PostMapping("/ai")
     public ResponseEntity<Long> createAiSchedule(
             @RequestBody @Valid AiScheduleRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            Principal principal) {
 
-        Long scheduleId = groqScheduleService.createScheduleWithAi(request, userDetails.getUsername());
+        Long scheduleId = groqScheduleService.createScheduleWithAi(request, principal.getName());
         return ResponseEntity.ok(scheduleId);
     }
 
@@ -34,9 +34,9 @@ public class ScheduleApiController {
     public ResponseEntity<String> updateOrder(
             @PathVariable("scheduleId") Long scheduleId,
             @RequestBody ScheduleOrderUpdateRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            Principal principal) {
 
-        travelScheduleService.updateItemOrder(scheduleId, request, userDetails.getUsername());
+        travelScheduleService.updateItemOrder(scheduleId, request, principal.getName());
         return ResponseEntity.ok("순서가 정상적으로 저장되었습니다.");
     }
 
@@ -44,9 +44,9 @@ public class ScheduleApiController {
     @DeleteMapping("/items/{itemId}")
     public ResponseEntity<String> deleteItem(
             @PathVariable("itemId") Long itemId,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            Principal principal) {
 
-        travelScheduleService.deleteScheduleItem(itemId, userDetails.getUsername());
+        travelScheduleService.deleteScheduleItem(itemId, principal.getName());
         return ResponseEntity.ok("장소가 삭제되었습니다.");
     }
 }

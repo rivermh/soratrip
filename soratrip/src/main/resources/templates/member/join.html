@@ -14,7 +14,7 @@
 
     <!-- 3. 회원가입 중앙 폼 컨테이너 -->
     <main class="container form-container">
-        
+
         <!-- 상단 헤딩 & 브랜드 포인트 -->
         <div class="form-header">
             <span class="eyebrow">Join SoraTrip</span>
@@ -22,28 +22,123 @@
         </div>
 
         <!-- 회원가입 폼 -->
-        <form th:action="@{/members/join}" method="post">
-            <div class="form-group">
-                <label th:text="#{member.email}">이메일</label>
-                <input type="email" name="email" class="form-control" required
-                       placeholder="example@soratrip.com" />
+        <form th:action="@{/members/join}" method="post" id="joinForm" novalidate>
+            
+            <!-- 이메일 필드 + 중복확인 및 인증코드 발송 버튼 -->
+            <div class="form-group" th:classappend="${#fields.hasErrors('memberJoinDto.email') ? 'has-error' : ''}">
+                <label for="email" th:text="#{member.email}">이메일</label>
+                <div class="email-input-group">
+                    <input type="email" 
+                           id="email"
+                           name="email" 
+                           class="form-control" 
+                           th:value="${memberJoinDto?.email}"
+                           placeholder="example@soratrip.com"
+                           required 
+                           style="flex: 1;" />
+                    <button type="button" id="checkEmailBtn" class="btn btn-secondary" style="white-space: nowrap; padding: 0 16px;" th:text="#{member.email.check_btn}">중복확인</button>
+                </div>
+                
+                <!-- 필드 에러 메시지 (서버 검증) -->
+                <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.email')}">
+                    <span th:errors="memberJoinDto.email"></span>
+                </div>
+                
+                <!-- 실시간 및 중복확인 검증 메시지 -->
+                <div class="validation-message email-validation" style="display: none;"></div>
             </div>
 
-            <div class="form-group">
-                <label th:text="#{member.password}">비밀번호</label>
-                <input type="password" name="password" class="form-control" required 
+            <!-- [신규] 이메일 인증코드 입력 영역 (초기 숨김) -->
+            <div class="form-group" id="emailCodeGroup" style="display: none;">
+                <label for="emailCode">인증코드</label>
+                <div class="email-input-group" style="position: relative;">
+                    <input type="text" 
+                           id="emailCode" 
+                           class="form-control" 
+                           placeholder="6자리 인증코드 입력" 
+                           maxlength="6" 
+                           style="flex: 1; padding-right: 60px;" />
+                    <!-- 타이머 표시 -->
+                    <span id="timer" style="position: absolute; right: 110px; top: 50%; transform: translateY(-50%); font-size: 0.875rem; color: #EF4444; font-weight: 600; display: none;">03:00</span>
+                    <button type="button" id="verifyEmailCodeBtn" class="btn btn-secondary" style="white-space: nowrap; padding: 0 16px;">인증확인</button>
+                </div>
+                <div class="validation-message email-code-validation" style="display: none;"></div>
+            </div>
+
+            <!-- 비밀번호 필드 -->
+            <div class="form-group" th:classappend="${#fields.hasErrors('memberJoinDto.password') ? 'has-error' : ''}">
+                <label for="password" th:text="#{member.password}">비밀번호</label>
+                <input type="password" 
+                       id="password"
+                       name="password" 
+                       class="form-control" 
                        th:placeholder="#{member.password.placeholder}"
-                       placeholder="비밀번호를 입력하세요" />
+                       placeholder="비밀번호를 입력하세요"
+                       required />
+                
+                <!-- 필드 에러 메시지 (서버 검증) -->
+                <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.password')}">
+                    <span th:errors="memberJoinDto.password"></span>
+                </div>
+                
+                <!-- 실시간 검증 메시지 (클라이언트 사이드) -->
+                <div class="validation-message password-validation" style="display: none;"></div>
+                <div class="password-requirements">
+                    <p th:text="#{member.password.requirements.title}">비밀번호는 다음을 포함해야 합니다:</p>
+                    <ul>
+                        <li class="req-length"><span class="icon">●</span> <span th:text="#{member.password.requirements.length}">8자 이상 20자 이하</span></li>
+                        <li class="req-letter"><span class="icon">●</span> <span th:text="#{member.password.requirements.letter}">영문자 포함</span></li>
+                        <li class="req-number"><span class="icon">●</span> <span th:text="#{member.password.requirements.number}">숫자 포함</span></li>
+                        <li class="req-special"><span class="icon">●</span> <span th:text="#{member.password.requirements.special}">특수문자(@$!%*#?&) 포함</span></li>
+                    </ul>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label th:text="#{member.nickname}">닉네임</label>
-                <input type="text" name="nickname" class="form-control" required 
+            <!-- 비밀번호 확인 필드 -->
+            <div class="form-group" th:classappend="${#fields.hasErrors('memberJoinDto.passwordConfirm') ? 'has-error' : ''}">
+                <label for="passwordConfirm" th:text="#{member.password_confirm}">비밀번호 확인</label>
+                <input type="password"
+                       id="passwordConfirm"
+                       name="passwordConfirm"
+                       class="form-control"
+                       th:value="${memberJoinDto?.passwordConfirm}"
+                       th:placeholder="#{member.password_confirm.placeholder}"
+                       placeholder="비밀번호를 다시 입력하세요"
+                       required />
+                
+                <!-- 필드 에러 메시지 (서버 검증) -->
+                <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.passwordConfirm')}">
+                    <span th:errors="memberJoinDto.passwordConfirm"></span>
+                </div>
+                
+                <!-- 실시간 검증 메시지 (클라이언트 사이드) -->
+                <div class="validation-message password-match-validation" style="display: none;"></div>
+            </div>
+
+            <!-- 닉네임 필드 -->
+            <div class="form-group" th:classappend="${#fields.hasErrors('memberJoinDto.nickname') ? 'has-error' : ''}">
+                <label for="nickname" th:text="#{member.nickname}">닉네임</label>
+                <input type="text" 
+                       id="nickname"
+                       name="nickname" 
+                       class="form-control" 
+                       th:value="${memberJoinDto?.nickname}"
                        th:placeholder="#{member.nickname.placeholder}"
-                       placeholder="사용할 닉네임을 입력하세요" />
+                       placeholder="사용할 닉네임을 입력하세요"
+                       required />
+                
+                <!-- 필드 에러 메시지 (서버 검증) -->
+                <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.nickname')}">
+                    <span th:errors="memberJoinDto.nickname"></span>
+                </div>
+                
+                <!-- 실시간 검증 메시지 (클라이언트 사이드) -->
+                <div class="validation-message nickname-validation" style="display: none;"></div>
+                <small class="hint-text" th:text="#{member.nickname.hint}">한글, 영문, 숫자, 언더스코어만 사용 가능합니다</small>
             </div>
 
-            <button type="submit" class="btn btn-primary" th:text="#{btn.join}">가입하기</button>
+            <!-- 가입하기 버튼 -->
+            <button type="submit" class="btn btn-primary" id="joinBtn" th:text="#{btn.join}">가입하기</button>
         </form>
 
         <!-- 하단 로그인 안내 링크 -->
@@ -57,5 +152,306 @@
     <!-- 4. 공통 Footer 프래그먼트 연결 -->
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 
+    <!-- 회원가입 폼 검증 및 이메일 중복확인 / 인증코드 발송 스크립트 -->
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('joinForm');
+            const emailInput = document.getElementById('email');
+            const checkEmailBtn = document.getElementById('checkEmailBtn');
+            const passwordInput = document.getElementById('password');
+            const passwordConfirmInput = document.getElementById('passwordConfirm');
+            const nicknameInput = document.getElementById('nickname');
+
+            // [신규] 이메일 인증 관련 요소를 셀렉트
+            const emailCodeGroup = document.getElementById('emailCodeGroup');
+            const emailCodeInput = document.getElementById('emailCode');
+            const verifyEmailCodeBtn = document.getElementById('verifyEmailCodeBtn');
+            const timerSpan = document.getElementById('timer');
+            const emailCodeValidation = document.querySelector('.email-code-validation');
+
+            let isEmailChecked = false;    // 이메일 중복 확인 여부 플래그
+            let isEmailVerified = false;   // 이메일 인증 완료 여부 플래그
+            let timerInterval = null;      // 타이머 타이머 객체
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,20}$/;
+            const nicknameRegex = /^[가-힣a-zA-Z0-9_]{2,10}$/;
+
+            // 이메일 값이 바뀌면 중복확인 및 인증 상태 초기화
+            emailInput.addEventListener('input', function() {
+                isEmailChecked = false;
+                isEmailVerified = false;
+                emailInput.readOnly = false;
+                emailCodeGroup.style.display = 'none';
+                stopTimer();
+
+                const emailValidation = document.querySelector('.email-validation');
+                const value = this.value.trim();
+
+                if (value === '') {
+                    emailValidation.style.display = 'none';
+                    this.classList.remove('invalid', 'valid');
+                } else if (emailRegex.test(value)) {
+                    emailValidation.style.display = 'none';
+                    this.classList.remove('invalid');
+                } else {
+                    emailValidation.textContent = /*[[#{member.validation.email_invalid}]]*/ '올바른 이메일 형식이 아닙니다.';
+                    emailValidation.style.display = 'block';
+                    this.classList.remove('valid');
+                    this.classList.add('invalid');
+                }
+            });
+
+            // === 타이머 제어 함수 ===
+            function startTimer(durationInSeconds) {
+                stopTimer();
+                let timer = durationInSeconds;
+                timerSpan.style.display = 'inline';
+
+                timerInterval = setInterval(function() {
+                    const minutes = parseInt(timer / 60, 10);
+                    const seconds = parseInt(timer % 60, 10);
+
+                    const displayMinutes = minutes < 10 ? "0" + minutes : minutes;
+                    const displaySeconds = seconds < 10 ? "0" + seconds : seconds;
+
+                    timerSpan.textContent = displayMinutes + ":" + displaySeconds;
+
+                    if (--timer < 0) {
+                        stopTimer();
+                        timerSpan.textContent = "만료됨";
+                        emailCodeValidation.style.display = 'block';
+                        emailCodeValidation.textContent = '인증 시간이 만료되었습니다. 다시 시도해 주세요.';
+                        emailCodeValidation.style.color = '#EF4444';
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+
+            // === 이메일 중복 확인 및 인증 코드 발송 버튼 클릭 이벤트 ===
+            checkEmailBtn.addEventListener('click', function() {
+                const email = emailInput.value.trim();
+                const emailValidation = document.querySelector('.email-validation');
+
+                if (!emailRegex.test(email)) {
+                    emailValidation.textContent = /*[[#{member.validation.email_invalid_first}]]*/ '올바른 이메일 형식을 먼저 입력해주세요.';
+                    emailValidation.style.color = '#EF4444';
+                    emailValidation.style.display = 'block';
+                    emailInput.classList.add('invalid');
+                    return;
+                }
+
+                // 1단계: GET 중복 확인
+                fetch(`/api/members/check-email?email=${encodeURIComponent(email)}`, {
+                    method: 'GET'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    emailValidation.style.display = 'block';
+
+                    if (data.available) {
+                        isEmailChecked = true;
+                        emailValidation.textContent = '사용 가능한 이메일입니다. 인증 코드를 발송하는 중...';
+                        emailValidation.style.color = '#10B981';
+                        emailInput.classList.remove('invalid');
+                        emailInput.classList.add('valid');
+
+                        // 2단계: 인증 코드 발송 API 호출 (`/api/members/email-send`)
+                        return fetch('/api/members/email-send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: email })
+                        });
+                    } else {
+                        isEmailChecked = false;
+                        emailValidation.textContent = data.message;
+                        emailValidation.style.color = '#EF4444';
+                        emailInput.classList.remove('valid');
+                        emailInput.classList.add('invalid');
+                        return null;
+                    }
+                })
+                .then(response => {
+                    if (response) return response.json();
+                    return null;
+                })
+                .then(sendData => {
+                    if (sendData && sendData.success) {
+                        emailValidation.textContent = sendData.message;
+                        emailCodeGroup.style.display = 'block';
+                        emailCodeInput.value = '';
+                        emailCodeValidation.style.display = 'none';
+                        startTimer(180); // 3분 타이머 시작
+                    } else if (sendData) {
+                        emailValidation.textContent = sendData.message;
+                        emailValidation.style.color = '#EF4444';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert(/*[[#{member.validation.email_check_error}]]*/ '오류가 발생했습니다. 다시 시도해주세요.');
+                });
+            });
+
+            // === [신규] 인증 코드 검증 버튼 클릭 이벤트 ===
+            verifyEmailCodeBtn.addEventListener('click', function() {
+                const email = emailInput.value.trim();
+                const code = emailCodeInput.value.trim();
+
+                if (!code || code.length !== 6) {
+                    emailCodeValidation.style.display = 'block';
+                    emailCodeValidation.textContent = '6자리 인증 코드를 정확히 입력해 주세요.';
+                    emailCodeValidation.style.color = '#EF4444';
+                    return;
+                }
+
+                fetch('/api/members/email-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, code: code })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    emailCodeValidation.style.display = 'block';
+                    emailCodeValidation.textContent = data.message;
+
+                    if (data.success) {
+                        isEmailVerified = true;
+                        emailCodeValidation.style.color = '#10B981'; // 초록색 (인증 성공)
+                        stopTimer();
+                        timerSpan.style.display = 'none';
+                        
+                        // 인증 완료 시 이메일/코드 입력창 수정 불가 처리
+                        emailInput.readOnly = true;
+                        emailCodeInput.readOnly = true;
+                        checkEmailBtn.disabled = true;
+                        verifyEmailCodeBtn.disabled = true;
+                    } else {
+                        isEmailVerified = false;
+                        emailCodeValidation.style.color = '#EF4444'; // 빨간색 (인증 실패)
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('인증 코드 검증 중 오류가 발생했습니다.');
+                });
+            });
+
+            // === 비밀번호 실시간 검증 ===
+            passwordInput.addEventListener('input', function() {
+                const value = this.value;
+                const requirements = {
+                    length: value.length >= 8 && value.length <= 20,
+                    letter: /[A-Za-z]/.test(value),
+                    number: /\d/.test(value),
+                    special: /[@$!%*#?&]/.test(value)
+                };
+
+                document.querySelector('.req-length').classList.toggle('met', requirements.length);
+                document.querySelector('.req-letter').classList.toggle('met', requirements.letter);
+                document.querySelector('.req-number').classList.toggle('met', requirements.number);
+                document.querySelector('.req-special').classList.toggle('met', requirements.special);
+
+                const isValid = Object.values(requirements).every(v => v === true);
+                if (value === '') {
+                    this.classList.remove('invalid', 'valid');
+                } else if (isValid) {
+                    this.classList.remove('invalid');
+                    this.classList.add('valid');
+                } else {
+                    this.classList.remove('valid');
+                    this.classList.add('invalid');
+                }
+                validatePasswordMatch();
+            });
+
+            passwordConfirmInput.addEventListener('input', function() {
+                validatePasswordMatch();
+            });
+
+            function validatePasswordMatch() {
+                const passwordMatchValidation = document.querySelector('.password-match-validation');
+                const pwd = passwordInput.value;
+                const pwdConfirm = passwordConfirmInput.value;
+
+                if (pwdConfirm === '') {
+                    passwordMatchValidation.style.display = 'none';
+                    passwordConfirmInput.classList.remove('invalid', 'valid');
+                } else if (pwd === pwdConfirm) {
+                    passwordMatchValidation.style.display = 'none';
+                    passwordConfirmInput.classList.remove('invalid');
+                    passwordConfirmInput.classList.add('valid');
+                } else {
+                    passwordMatchValidation.textContent = /*[[#{member.validation.password_mismatch}]]*/ '비밀번호가 일치하지 않습니다.';
+                    passwordMatchValidation.style.display = 'block';
+                    passwordConfirmInput.classList.remove('valid');
+                    passwordConfirmInput.classList.add('invalid');
+                }
+            }
+
+            // === 닉네임 실시간 검증 ===
+            nicknameInput.addEventListener('input', function() {
+                const nicknameValidation = document.querySelector('.nickname-validation');
+                const value = this.value.trim();
+
+                if (value === '') {
+                    nicknameValidation.style.display = 'none';
+                    this.classList.remove('invalid', 'valid');
+                } else if (nicknameRegex.test(value)) {
+                    nicknameValidation.style.display = 'none';
+                    this.classList.remove('invalid');
+                    this.classList.add('valid');
+                } else {
+                    if (value.length < 2 || value.length > 10) {
+                        nicknameValidation.textContent = /*[[#{member.validation.nickname_length}]]*/ '닉네임은 2자 이상 10자 이하여야 합니다.';
+                    } else {
+                        nicknameValidation.textContent = /*[[#{member.validation.nickname_format}]]*/ '한글, 영문, 숫자, 언더스코어만 사용 가능합니다.';
+                    }
+                    nicknameValidation.style.display = 'block';
+                    this.classList.remove('valid');
+                    this.classList.add('invalid');
+                }
+            });
+
+            // === 폼 제출 시 검증 ===
+            form.addEventListener('submit', function(e) {
+                let isFormValid = true;
+
+                if (!emailRegex.test(emailInput.value.trim()) || !isEmailChecked) {
+                    alert(/*[[#{member.validation.email_check_required}]]*/ '이메일 중복 확인을 완료해주세요.');
+                    emailInput.classList.add('invalid');
+                    isFormValid = false;
+                } else if (!isEmailVerified) {
+                    alert('이메일 인증 코드를 확인해 주세요.');
+                    emailCodeInput.classList.add('invalid');
+                    isFormValid = false;
+                }
+
+                if (!passwordRegex.test(passwordInput.value)) {
+                    passwordInput.classList.add('invalid');
+                    isFormValid = false;
+                }
+                if (passwordInput.value !== passwordConfirmInput.value) {
+                    passwordConfirmInput.classList.add('invalid');
+                    isFormValid = false;
+                }
+                if (!nicknameRegex.test(nicknameInput.value.trim())) {
+                    nicknameInput.classList.add('invalid');
+                    isFormValid = false;
+                }
+
+                if (!isFormValid) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
 </body>
 </html>

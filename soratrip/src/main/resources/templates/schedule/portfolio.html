@@ -1,36 +1,40 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${member.nickname} + #{portfolio.owner_title}">OO님의 여행 포트폴리오 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container">
         <h2>
             <span th:text="${member.nickname}">OO</span><span th:text="#{portfolio.owner_title}">님의 여행 포트폴리오</span>
         </h2>
 
-        <div th:if="${#lists.isEmpty(trips)}" style="text-align: center; padding: 40px; color: #64748b; background: #f8fafc; border-radius: 12px;" th:text="#{portfolio.empty}">
+        <div th:if="${#lists.isEmpty(trips)}" class="empty-state" th:text="#{portfolio.empty}">
             아직 완료된 여행이 없습니다.
         </div>
 
-        <div th:unless="${#lists.isEmpty(trips)}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;">
+        <div th:unless="${#lists.isEmpty(trips)}" class="schedule-grid">
             <div th:each="t : ${trips}" class="portfolio-card">
-                <img th:if="${coverPhotoBySchedule.get(t.id) != null}" 
-                     th:src="@{${coverPhotoBySchedule.get(t.id).imageUrl}}" 
-                     th:alt="#{portfolio.cover_alt}" 
+                <img th:if="${coverPhotoBySchedule.get(t.id) != null}"
+                     th:src="@{${coverPhotoBySchedule.get(t.id).imageUrl}}"
+                     th:alt="#{portfolio.cover_alt}"
                      alt="여행 사진">
                 <div class="portfolio-card-body">
-                    <span th:text="${t.region.displayName}" class="badge">TOKYO</span>
-                    <h3 style="margin: 8px 0 4px 0; font-size: 16px;">
-                        <a th:href="@{/schedules/{id}/journal(id=${t.id})}" th:text="${t.title}" style="text-decoration: none; color: var(--text-main);">3박 4일 도쿄 여행</a>
+                    <span th:text="${t.region.displayName}" class="region-badge">TOKYO</span>
+                    <h3 class="schedule-card__title" style="margin-top: 8px;">
+                        <a th:href="@{/schedules/{id}/journal(id=${t.id})}" th:text="${t.title}">3박 4일 도쿄 여행</a>
                     </h3>
-                    <p style="font-size: 13px; color: #64748b; margin-bottom: 8px;">
+                    <p class="schedule-card__dates">
                         📅 <span th:text="${t.startDate}">2026-08-01</span> ~ <span th:text="${t.endDate}">2026-08-04</span>
                     </p>
-                    <div>
-                        <span th:each="tag : ${t.tags}" th:text="${tag.displayName}" class="badge" style="margin-right: 4px;">태그</span>
+                    <div class="schedule-card__tags">
+                        <span th:each="tag : ${t.tags}" th:text="${tag.displayName}" class="tag-chip">태그</span>
                     </div>
                 </div>
             </div>
@@ -40,5 +44,7 @@
             <a th:href="@{/}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
         </div>
     </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

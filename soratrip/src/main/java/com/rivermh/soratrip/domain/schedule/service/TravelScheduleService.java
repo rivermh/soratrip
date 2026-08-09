@@ -25,6 +25,7 @@ import com.rivermh.soratrip.domain.schedule.entity.ScheduleDay;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleItem;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
+import com.rivermh.soratrip.domain.schedule.repository.ScheduleItemRepository;
 import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class TravelScheduleService {
 
     private final TravelScheduleRepository travelScheduleRepository;
     private final MemberRepository memberRepository;
+    private final ScheduleItemRepository scheduleItemRepository;
 
     // 회원이 없으면 자동으로 DB에 가입시키는 도우미 메서드 (소셜 로그인 방어 로직)
     private Member getOrRegisterMember(String email) {
@@ -145,7 +147,7 @@ public class TravelScheduleService {
     @Transactional
     public void updateSettings(Long id, String email, boolean isPublic, Set<ScheduleTag> tags) {
         TravelSchedule schedule = getScheduleDetail(id);
-        if (!schedule.getMember().getEmail().equals(email)) {
+        if (!schedule.isOwnedBy(email)) {
             throw new IllegalStateException("수정 권한이 없습니다.");
         }
         schedule.updateVisibility(isPublic);
@@ -160,7 +162,7 @@ public class TravelScheduleService {
         TravelSchedule source = travelScheduleRepository.findByIdWithDetails(sourceScheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 일정을 찾을 수 없습니다. id=" + sourceScheduleId));
 
-        if (!source.isPublic() && !source.getMember().getEmail().equals(email)) {
+        if (!source.isPublic() && !source.isOwnedBy(email)) {
             throw new IllegalStateException("비공개 일정은 복사할 수 없습니다.");
         }
 
@@ -210,7 +212,7 @@ public class TravelScheduleService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
 
         // 소유자 검증
-        if (!schedule.getMember().getEmail().equals(email)) {
+        if (!schedule.isOwnedBy(email)) {
             throw new IllegalStateException("해당 일정을 수정할 권한이 없습니다.");
         }
 
@@ -229,12 +231,19 @@ public class TravelScheduleService {
         }
     }
 
-    // 2. 장소 단건 삭제 (별도 repository 없이 TravelSchedule 객체를 통해 삭제)
+    // 2. 장소 단건 삭제
     @Transactional
     public void deleteScheduleItem(Long itemId, String email) {
-        // 1) 전체 공개/개인 일정을 조회하며 해당 itemId가 속한 일정을 탐색
-        // (또는 ScheduleItem을 포함하고 있는 TravelSchedule을 도메인 로직으로 처리)
-        ScheduleItem targetItem = null;
-        
+        ScheduleItem targetItem = scheduleItemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 장소입니다. id=" + itemId));
+
+        // 소유자 검증 (다른 사람의 일정에 속한 장소는 삭제 불가)
+        if (!targetItem.getScheduleDay().getTravelSchedule().isOwnedBy(email)) {
+            throw new IllegalStateException("해당 장소를 삭제할 권한이 없습니다.");
+        }
+
+        // 부모 컬렉션(orphanRemoval)과 영속성 컨텍스트 정합성을 위해 컬렉션에서도 제거
+        targetItem.getScheduleDay().getItems().remove(targetItem);
+        scheduleItemRepository.delete(targetItem);
     }
 }

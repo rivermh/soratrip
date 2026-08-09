@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${schedule.title} + ' - SoraTrip'">여행 일정 상세보기 - SoraTrip</title>
-    
+
     <!-- Spring Security CSRF Meta 태그 (null 안전 처리) -->
     <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
     <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
@@ -13,195 +15,119 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container" style="max-width: 900px;">
-        <div style="margin-bottom: 20px;">
-            <span th:text="${schedule.region.displayName}" style="background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 10px; border-radius: 6px;">TOKYO</span>
+        <div class="schedule-hero">
+            <span th:text="${schedule.region.displayName}" class="region-badge region-badge--solid">TOKYO</span>
             <span th:if="${schedule.public}" class="badge" th:text="#{schedule.settings.public_badge}">공개</span>
-            
+
             <!-- 일정 제목 및 북마크 버튼 영역 -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-                <h2 th:text="${schedule.title}" style="margin: 0;">도쿄 3박 4일 일정</h2>
-                
+            <div class="schedule-title-row">
+                <h2 th:text="${schedule.title}">도쿄 3박 4일 일정</h2>
+
                 <!-- 북마크 버튼 UI -->
-                <button id="bookmarkBtn" type="button" onclick="toggleBookmark()" 
-                        style="background: white; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 14px; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px;">
+                <button id="bookmarkBtn" type="button" onclick="toggleBookmark()" class="bookmark-btn">
                     <span id="bookmarkIcon" th:text="${bookmarked != null and bookmarked ? '🔖' : '🏷️'}">🏷️</span>
-                    <span id="bookmarkText" th:text="${bookmarked != null and bookmarked ? '북마크 취소' : '북마크'}">북마크</span>
-                    <span id="bookmarkCount" style="font-weight: bold; color: #0284c7;" th:text="${bookmarkCount ?: 0}">0</span>
+                    <span id="bookmarkText" th:text="${bookmarked != null and bookmarked} ? #{schedule.bookmark.remove} : #{schedule.bookmark}">북마크</span>
+                    <span id="bookmarkCount" class="bookmark-btn__count" th:text="${bookmarkCount ?: 0}">0</span>
                 </button>
             </div>
 
-            <p style="color: #64748b; margin-top: 8px;">📅 <span th:text="${schedule.startDate}">2026-08-01</span> ~ <span th:text="${schedule.endDate}">2026-08-04</span></p>
-            <div th:unless="${#lists.isEmpty(schedule.tags)}" style="margin-top: 8px;">
-                <span th:each="t : ${schedule.tags}" th:text="${t.displayName}" class="badge" style="margin-right: 4px;">태그</span>
+            <p class="schedule-dates">📅 <span th:text="${schedule.startDate}">2026-08-01</span> ~ <span th:text="${schedule.endDate}">2026-08-04</span></p>
+            <div th:unless="${#lists.isEmpty(schedule.tags)}" class="schedule-tags">
+                <span th:each="t : ${schedule.tags}" th:text="${t.displayName}" class="tag-chip">태그</span>
             </div>
-            <div style="margin-top: 12px; display: flex; gap: 8px;">
-                <a th:if="${!owner}" th:href="@{/schedules/{id}/copy(id=${schedule.id})}" class="btn btn-primary" style="width: auto;" th:text="#{schedule.copy.button}">📋 내 일정으로 복사</a>
-                <a th:if="${owner}" th:href="@{/schedules/{id}/settings(id=${schedule.id})}" class="btn btn-secondary" style="width: auto;" th:text="#{schedule.settings.button}">⚙️ 공개 설정</a>
-                <a th:if="${schedule.endDate.isBefore(T(java.time.LocalDate).now())}" th:href="@{/schedules/{id}/journal(id=${schedule.id})}" class="btn btn-secondary" style="width: auto;" th:text="#{journal.title}">📖 여행 일지</a>
-                <a th:if="${schedule.public}" th:href="@{/portfolio/{id}(id=${schedule.member.id})}" class="btn btn-secondary" style="width: auto;" th:text="#{portfolio.title}">🖼️ 여행 포트폴리오</a>
+            <div class="schedule-actions-row">
+                <a th:if="${!owner}" th:href="@{/schedules/{id}/copy(id=${schedule.id})}" class="btn btn-primary" th:text="#{schedule.copy.button}">📋 내 일정으로 복사</a>
+                <a th:if="${owner}" th:href="@{/schedules/{id}/settings(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.settings.button}">⚙️ 공개 설정</a>
+                <a th:if="${owner}" th:href="@{/schedules/{id}/settlement(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.settlement.button}">💸 정산하기</a>
+                <a th:href="@{/schedules/{id}/expenses(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.expenses.button}">💰 가계부</a>
+                <a th:href="@{/schedules/{id}/photos(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.photos.button}">📷 사진</a>
+                <a th:href="@{/schedules/{id}/reviews(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.reviews.button}">📝 후기</a>
+                <a th:if="${schedule.endDate.isBefore(T(java.time.LocalDate).now())}" th:href="@{/schedules/{id}/journal(id=${schedule.id})}" class="btn btn-secondary" th:text="#{journal.title}">📖 여행 일지</a>
+                <a th:if="${schedule.public}" th:href="@{/portfolio/{id}(id=${schedule.member.id})}" class="btn btn-secondary" th:text="#{portfolio.title}">🖼️ 여행 포트폴리오</a>
             </div>
         </div>
 
-        <!-- 여행 전체 가계부 요약 -->
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
-            <h3 style="margin: 0 0 8px 0;" th:text="#{expense.title}">💰 가계부 요약</h3>
-            <div style="font-weight: bold; font-size: 18px; margin: 0 0 8px 0; color: #15803d; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                <span>
-                    <span th:text="#{expense.total}">총 지출</span>:
-                    ₩ <span th:text="${#numbers.formatDecimal(expenseSummary.totalKrw, 0, 'COMMA', 0, 'POINT')}">0</span>
-                </span>
-                <span th:if="${expenseSummary.totalJpy > 0}" style="font-size: 15px; color: #0369a1; font-weight: 600; background: #e0f2fe; padding: 2px 10px; border-radius: 20px;">
-                    (엔화 사용: ¥ <span th:text="${#numbers.formatDecimal(expenseSummary.totalJpy, 0, 'COMMA', 0, 'POINT')}">0</span>)
-                </span>
+        <!-- 이동 편의성 스코어 요약 (리뷰 기반 자동 집계) -->
+        <div th:if="${mobilityScore.reviewCount > 0}" class="mobility-summary"
+             th:classappend="'mobility-summary--' + ${#strings.toLowerCase(mobilityScore.level.name())}">
+            <div class="mobility-summary__header">
+                <span th:if="${mobilityScore.level.name() == 'GOOD'}" th:text="#{mobility.badge.good}">🟢 이동 편의 좋음</span>
+                <span th:if="${mobilityScore.level.name() == 'FAIR'}" th:text="#{mobility.badge.fair}">🟡 이동 편의 보통</span>
+                <span th:if="${mobilityScore.level.name() == 'LOW'}" th:text="#{mobility.badge.low}">🔴 이동 편의 주의</span>
+                <span class="mobility-summary__score" th:text="${mobilityScore.scorePercent} + '%'">70%</span>
             </div>
-            <div th:unless="${expenseSummary.byCategory.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 8px;">
-                <span th:each="entry : ${expenseSummary.byCategory}" class="badge" style="background: #ffffff; border: 1px solid #86efac; color: #166534;"
-                      th:text="${entry.key.displayName} + ': ₩' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: ₩0</span>
+            <div class="mobility-summary__detail">
+                <span th:text="#{mobility.detail.elevator(${mobilityScore.elevatorCount}, ${mobilityScore.reviewCount})}">🛗 엘리베이터 확인 2/3</span>
+                <span th:text="#{mobility.detail.flat(${mobilityScore.flatPathCount}, ${mobilityScore.reviewCount})}">🧑‍🦽 평지 확인 3/3</span>
+                <span th:text="#{mobility.detail.luggage(${mobilityScore.luggageCount}, ${mobilityScore.reviewCount})}">🧳 짐보관 확인 1/3</span>
             </div>
+            <p class="mobility-summary__note" th:text="#{mobility.note}">실제 방문자들의 일자별 후기를 바탕으로 자동 집계된 점수입니다.</p>
+        </div>
+        <div th:if="${mobilityScore.reviewCount == 0}" class="mobility-summary mobility-summary--none">
+            <span th:text="#{mobility.none}">🔍 아직 이동 편의성 정보가 없어요. 일자별 후기를 남겨 알려주세요!</span>
         </div>
 
         <!-- Google Map 핀 동선 출력 -->
-        <div id="map" style="width: 100%; height: 350px; border-radius: 12px; border: 1px solid #cbd5e1; margin-bottom: 30px;"></div>
+        <div id="map" class="map-container"></div>
 
         <!-- 일차별 일정 타임라인 -->
         <h3>🗓️ <span th:text="#{schedule.day_title}">일차별 일정</span></h3>
-        <div th:each="day : ${schedule.days}" style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h4 style="color: #0f172a; margin: 0;">
-                    <span th:text="${day.dayNumber}">1</span><span th:text="#{schedule.day_title}">일차</span> 
-                    <span style="font-size: 14px; color: #64748b; font-weight: normal;" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+        <div class="day-timeline">
+        <div th:each="day : ${schedule.days}" class="day-card">
+            <div class="day-card__header">
+                <h4 class="day-card__title">
+                    <span class="day-badge" th:text="${day.dayNumber}">1</span>
+                    <span th:text="#{schedule.day_title}">일차</span>
+                    <span class="day-date" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
                 </h4>
                 <!-- 소유자인 경우 순서 저장 버튼 노출 -->
-                <button th:if="${owner}" type="button" class="btn btn-secondary" style="width: auto; padding: 4px 10px; font-size: 12px;" 
-                        th:onclick="'saveDayOrder(' + ${day.id} + ')'">💾 순서 저장</button>
+                <button th:if="${owner}" type="button" class="btn btn-secondary day-save-btn"
+                        th:onclick="'saveDayOrder(' + ${day.id} + ')'" th:text="#{schedule.save_order}">💾 순서 저장</button>
             </div>
 
-            <div th:if="${#lists.isEmpty(day.items)}" style="color: #94a3b8; font-size: 14px;" th:text="#{schedule.empty_places}">
+            <div th:if="${#lists.isEmpty(day.items)}" class="day-empty" th:text="#{schedule.empty_places}">
                 등록된 장소가 없습니다.
             </div>
 
             <!-- 드래그 앤 드롭 영역 (itemList-일차ID) -->
-            <div th:unless="${#lists.isEmpty(day.items)}" 
-                 th:id="'itemList-' + ${day.id}" 
-                 class="item-list-container" 
-                 th:data-day-id="${day.id}"
-                 style="display: flex; flex-direction: column; gap: 10px;">
-                
-                <div th:each="item : ${day.items}" 
+            <div th:unless="${#lists.isEmpty(day.items)}"
+                 th:id="'itemList-' + ${day.id}"
+                 class="item-list-container"
+                 th:data-day-id="${day.id}">
+
+                <div th:each="item : ${day.items}"
                      class="schedule-item-card"
                      th:data-id="${item.id}"
                      th:data-lat="${item.latitude}"
                      th:data-lng="${item.longitude}"
-                     th:data-name="${item.placeName}"
-                     style="background: white; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                     th:data-name="${item.placeName}">
+
+                    <div class="item-card__main">
                         <!-- 손잡이 아이콘 (소유자 전용) -->
-                        <span th:if="${owner}" class="drag-handle" style="cursor: grab; color: #94a3b8; font-size: 18px; user-select: none;">☰</span>
-                        
-                        <div>
-                            <strong style="font-size: 16px;">
-                                <span class="order-badge" th:text="${item.visitOrder}">1</span>. 
+                        <span th:if="${owner}" class="drag-handle">☰</span>
+
+                        <div class="item-card__detail">
+                            <strong class="item-card__name">
+                                <span class="order-badge" th:text="${item.visitOrder}">1</span>.
                                 <span th:text="${item.placeName}">도쿄 타워</span>
                             </strong>
-                            <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" style="font-size: 13px; color: #0284c7; margin-left: 8px;">⏰ 10:00</span>
-                            <div style="font-size: 13px; color: #64748b; margin-top: 4px;" th:text="${item.placeAddress}">주소 정보</div>
-                            <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" style="font-size: 13px; color: #059669; margin-top: 2px;">
+                            <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" class="item-time-chip">⏰ 10:00</span>
+                            <div class="item-card__address" th:text="${item.placeAddress}">주소 정보</div>
+                            <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" class="item-card__memo">
                                 📝 <span th:text="#{schedule.memo}">메모</span>: <span th:text="${item.memo}">메모 내용</span>
                             </div>
                         </div>
                     </div>
 
                     <!-- 삭제 버튼 (소유자 전용) -->
-                    <button th:if="${owner}" type="button" class="btn btn-secondary" 
-                            style="width: auto; padding: 4px 8px; font-size: 12px; color: #ef4444; border-color: #fca5a5;" 
-                            th:onclick="'deleteScheduleItem(' + ${item.id} + ', this)'">삭제</button>
+                    <button th:if="${owner}" type="button" class="btn btn-secondary btn-danger-ghost"
+                            th:onclick="'deleteScheduleItem(' + ${item.id} + ', this)'" th:text="#{schedule.item.delete}">삭제</button>
                 </div>
             </div>
-
-            <!-- 일자별 가계부 -->
-            <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
-                <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{expense.title}">💰 가계부</h5>
-                
-                <div th:each="e : ${expensesByDay?.get(day.id)}" style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; background: white; padding: 6px 10px; border-radius: 6px; border: 1px solid #f1f5f9;">
-                    <span th:text="${e.category.displayName} + (${e.memo != null and !#strings.isEmpty(e.memo)} ? ' - ' + ${e.memo} : '')">분류 - 메모</span>
-                    <span style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-weight: 600;">
-                            <span th:text="${e.currency.symbol}">¥</span>
-                            <span th:text="${#numbers.formatDecimal(e.amount, 0, 'COMMA', 0, 'POINT')}">0</span>
-                        </span>
-                        <span th:if="${e.currency.name() == 'JPY'}" style="color: #64748b; font-size: 11px;">
-                            (≈ ₩<span th:text="${#numbers.formatDecimal(e.amountKrw, 0, 'COMMA', 0, 'POINT')}">0</span>)
-                        </span>
-                        <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses/{eid}/delete(sid=${schedule.id},did=${day.id},eid=${e.id})}" method="post" style="display: inline;">
-                            <button type="submit" class="btn btn-secondary" style="width: auto; padding: 1px 6px; font-size: 11px; color: #ef4444; border-color: #fca5a5;">✕</button>
-                        </form>
-                    </span>
-                </div>
-
-                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses(sid=${schedule.id},did=${day.id})}" method="post" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; background: #f1f5f9; padding: 8px; border-radius: 8px;">
-                    <select name="category" class="form-control" style="flex: 1.2; min-width: 90px;" required>
-                        <option th:each="c : ${expenseCategories}" th:value="${c}" th:text="${c.displayName}">분류</option>
-                    </select>
-                    <select name="currency" class="form-control" style="flex: 1; min-width: 80px;">
-                        <option value="JPY" selected>JPY (¥)</option>
-                        <option value="KRW">KRW (₩)</option>
-                    </select>
-                    <input type="number" step="any" name="amount" class="form-control" th:placeholder="#{expense.amount.placeholder}" placeholder="금액" style="flex: 1.2; min-width: 90px;" required>
-                    <input type="number" step="0.01" name="exchangeRate" class="form-control" placeholder="환율(100엔당 원, 기본900)" style="flex: 1.5; min-width: 130px; font-size: 12px;">
-                    <input type="text" name="memo" class="form-control" th:placeholder="#{expense.memo.placeholder}" placeholder="메모" style="flex: 2; min-width: 120px;">
-                    <button type="submit" class="btn btn-primary" style="width: auto; min-width: 60px;" th:text="#{expense.add}">추가</button>
-                </form>
-            </div>
-
-            <!-- 일자별 사진 -->
-            <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
-                <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{photo.title}">📷 사진</h5>
-                <div class="photo-grid">
-                    <div th:each="p : ${photosByDay?.get(day.id)}" class="photo-grid-item">
-                        <img th:src="@{${p.imageUrl}}" th:alt="${p.caption}">
-                        <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos/{pid}/delete(sid=${schedule.id},did=${day.id},pid=${p.id})}" method="post">
-                            <button type="submit" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;" th:text="#{photo.delete}">삭제</button>
-                        </form>
-                    </div>
-                </div>
-                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos(sid=${schedule.id},did=${day.id})}" method="post" enctype="multipart/form-data" style="display: flex; gap: 6px; margin-top: 8px;">
-                    <input type="file" name="file" accept="image/*" required>
-                    <input type="text" name="caption" class="form-control" th:placeholder="#{photo.caption.placeholder}" placeholder="설명 (선택)" style="flex: 1;">
-                    <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{photo.upload}">업로드</button>
-                </form>
-            </div>
-
-            <!-- 일자별 후기 -->
-            <div style="margin-top: 16px; border-top: 1px dashed #cbd5e1; padding-top: 12px;">
-                <h5 style="margin: 0 0 8px 0; font-size: 14px;" th:text="#{review.title}">📝 오늘의 후기</h5>
-                
-                <div th:if="${reviewByDay.get(day.id) != null}" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
-                    <span th:if="${reviewByDay.get(day.id).hasElevator}" style="background: #e0f2fe; color: #0369a1; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🛗 엘리베이터/에스컬레이터 원활</span>
-                    <span th:if="${reviewByDay.get(day.id).isFlatPath}" style="background: #dcfce7; color: #15803d; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🧑‍🦽 계단 없음 / 평지</span>
-                    <span th:if="${reviewByDay.get(day.id).hasLuggageStorage}" style="background: #fef3c7; color: #b45309; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: 500;">🧳 짐 보관 용이</span>
-                </div>
-
-                <div th:if="${!owner}" style="font-size: 14px; color: #334155;" th:text="${reviewByDay.get(day.id)?.content}">후기 내용</div>
-                
-                <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/review(sid=${schedule.id},did=${day.id})}" method="post">
-                    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; font-size: 13px; color: #334155; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <input type="checkbox" name="hasElevator" value="true" th:checked="${reviewByDay.get(day.id)?.hasElevator}"> 🛗 엘리베이터 원활
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <input type="checkbox" name="isFlatPath" value="true" th:checked="${reviewByDay.get(day.id)?.isFlatPath}"> 🧑‍🦽 계단 없음 / 평지
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                            <input type="checkbox" name="hasLuggageStorage" value="true" th:checked="${reviewByDay.get(day.id)?.hasLuggageStorage}"> 🧳 짐 보관 용이
-                        </label>
-                    </div>
-
-                    <textarea name="content" class="form-control" rows="2" th:text="${reviewByDay.get(day.id)?.content}" th:placeholder="#{review.content}"></textarea>
-                    <button type="submit" class="btn btn-secondary" style="width: auto; margin-top: 6px;" th:text="#{review.save}">후기 저장</button>
-                </form>
-            </div>
+        </div>
         </div>
 
         <div style="margin-top: 30px;">
@@ -214,6 +140,7 @@
         /*<![CDATA[*/
         const scheduleId = /*[[${schedule.id}]]*/ 1;
         const isOwner = /*[[${owner}]]*/ false;
+        const itemUnitLabel = /*[[#{schedule.item_unit}]]*/ '번';
 
         const scheduleDaysData = [
             /*[# th:each="day : ${schedule.days}"]*/
@@ -323,7 +250,7 @@
                             infoWindow.setContent(`
                                 <div style="padding: 6px 8px; max-width: 200px;">
                                     <span style="background: ${color}; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold;">
-                                        Day ${dayNumber} - ${idx + 1}번
+                                        Day ${dayNumber} - ${idx + 1}${itemUnitLabel}
                                     </span>
                                     <h4 style="margin: 6px 0 2px 0; font-size: 14px; color: #0f172a;">${name}</h4>
                                 </div>
@@ -353,6 +280,18 @@
             }
         }
 
+        // CSRF 토큰이 포함된 요청 헤더 생성 (meta 태그 기반, AJAX 요청 공통 사용)
+        function getCsrfHeaders(extra) {
+            const token = document.querySelector("meta[name='_csrf']")?.getAttribute("content");
+            const header = document.querySelector("meta[name='_csrf_header']")?.getAttribute("content");
+
+            const headers = Object.assign({}, extra);
+            if (token && header) {
+                headers[header] = token;
+            }
+            return headers;
+        }
+
         // 서버에 변경된 순서 저장 (PATCH /api/schedules/{id}/order)
         function saveDayOrder(dayId) {
             const container = document.getElementById(`itemList-${dayId}`);
@@ -370,21 +309,21 @@
 
             fetch(`/api/schedules/${scheduleId}/order`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(payload)
             })
             .then(res => {
-                if (res.ok) alert('순서가 저장되었습니다!');
-                else alert('저장에 실패했습니다.');
+                if (res.ok) alert(/*[[#{schedule.order.save_success}]]*/ '순서가 저장되었습니다!');
+                else alert(/*[[#{common.save_failed}]]*/ '저장에 실패했습니다.');
             })
-            .catch(err => alert('오류가 발생했습니다: ' + err));
+            .catch(err => alert(/*[[#{common.error_prefix}]]*/ '오류가 발생했습니다:' + ' ' + err));
         }
 
         // 장소 삭제 (DELETE /api/schedules/items/{itemId})
         function deleteScheduleItem(itemId, btnBtn) {
-            if (!confirm('이 장소를 삭제하시겠습니까?')) return;
+            if (!confirm(/*[[#{schedule.item.delete_confirm}]]*/ '이 장소를 삭제하시겠습니까?')) return;
 
-            fetch(`/api/schedules/items/${itemId}`, { method: 'DELETE' })
+            fetch(`/api/schedules/items/${itemId}`, { method: 'DELETE', headers: getCsrfHeaders() })
             .then(res => {
                 if (res.ok) {
                     const card = btnBtn.closest('.schedule-item-card');
@@ -393,33 +332,25 @@
                     updateUIBadges(container);
                     renderMapElements(); // 삭제 후 지도 갱신
                 } else {
-                    alert('삭제에 실패했습니다.');
+                    alert(/*[[#{schedule.item.delete_failed}]]*/ '삭제에 실패했습니다.');
                 }
             })
-            .catch(err => alert('오류가 발생했습니다: ' + err));
+            .catch(err => alert(/*[[#{common.error_prefix}]]*/ '오류가 발생했습니다:' + ' ' + err));
         }
 
         // 북마크 토글 함수 (POST /api/schedules/{scheduleId}/bookmark)
         function toggleBookmark() {
-            const token = document.querySelector("meta[name='_csrf']")?.getAttribute("content");
-            const header = document.querySelector("meta[name='_csrf_header']")?.getAttribute("content");
-
-            const headers = { 'Content-Type': 'application/json' };
-            if (token && header) {
-                headers[header] = token;
-            }
-
             fetch(`/api/schedules/${scheduleId}/bookmark`, {
                 method: 'POST',
-                headers: headers
+                headers: getCsrfHeaders({ 'Content-Type': 'application/json' })
             })
             .then(response => {
                 if (response.status === 401 || response.status === 403) {
-                    alert('로그인이 필요한 기능입니다.');
+                    alert(/*[[#{common.login_required}]]*/ '로그인이 필요한 기능입니다.');
                     return null;
                 }
                 if (!response.ok) {
-                    throw new Error('북마크 처리 실패');
+                    throw new Error(/*[[#{schedule.bookmark.error}]]*/ '북마크 처리 실패');
                 }
                 return response.json();
             })
@@ -432,19 +363,21 @@
 
                 if (data.bookmarked) {
                     iconEl.textContent = '🔖';
-                    textEl.textContent = '북마크 취소';
+                    textEl.textContent = /*[[#{schedule.bookmark.remove}]]*/ '북마크 취소';
                 } else {
                     iconEl.textContent = '🏷️';
-                    textEl.textContent = '북마크';
+                    textEl.textContent = /*[[#{schedule.bookmark}]]*/ '북마크';
                 }
                 countEl.textContent = data.bookmarkCount;
             })
             .catch(error => {
                 console.error('Bookmark Error:', error);
-                alert('북마크 처리 중 오류가 발생했습니다.');
+                alert(/*[[#{schedule.bookmark.process_error}]]*/ '북마크 처리 중 오류가 발생했습니다.');
             });
         }
     </script>
     <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" async defer></script>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

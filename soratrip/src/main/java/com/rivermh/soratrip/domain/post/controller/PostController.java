@@ -8,6 +8,7 @@ import com.rivermh.soratrip.domain.post.dto.PostResponseDto;
 import com.rivermh.soratrip.domain.post.entity.Category;
 import com.rivermh.soratrip.domain.post.entity.Region;
 import com.rivermh.soratrip.domain.post.service.PostService;
+import com.rivermh.soratrip.global.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -63,7 +64,7 @@ public class PostController {
 	// 3. 게시글 작성 처리
 	@PostMapping("/new")
 	public String createPost(@ModelAttribute("postForm") PostCreateDto dto, @AuthenticationPrincipal Object principal) {
-		String email = extractEmail(principal);
+		String email = SecurityUtils.extractEmail(principal);
 		Long postId = postService.createPost(dto, email);
 		return "redirect:/posts/" + postId;
 	}
@@ -77,7 +78,7 @@ public class PostController {
 		// 💡 1. 이메일 추출을 먼저 수행 (비로그인 사용자는 null)
 		String loginEmail = null;
 		if (principal != null) {
-			loginEmail = extractEmail(principal);
+			loginEmail = SecurityUtils.extractEmail(principal);
 		}
 
 		// 💡 2. postService.getPostDetail에 loginEmail 전달 (좋아요 여부 판단용)
@@ -88,15 +89,5 @@ public class PostController {
 		model.addAttribute("comments", comments);
 		model.addAttribute("commentForm", new CommentRequestDto());
 		return "post/detail";
-	}
-
-	// 이메일 추출 헬퍼 메서드
-	private String extractEmail(Object principal) {
-		if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User oAuth2User) {
-			return oAuth2User.getAttribute("email");
-		} else if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-			return userDetails.getUsername();
-		}
-		return null;
 	}
 }

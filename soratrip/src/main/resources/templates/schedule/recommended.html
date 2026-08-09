@@ -1,56 +1,65 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="#{schedule.recommend.title} + ' - SoraTrip'">✨ 맞춤 일정 추천 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container" style="max-width: 950px;">
-        <div style="margin-bottom: 24px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2 th:text="#{schedule.recommend.title}" style="margin: 0;">✨ 맞춤 일정 추천</h2>
-                <a th:href="@{/schedules}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.schedule}">🗓️ 내 일정</a>
-            </div>
-            <p style="color: #64748b; font-size: 14px; margin-top: 6px;">
-                회원님의 취향 태그와 이동 편의성(엘리베이터, 평지, 짐 보관)이 검증된 맞춤 일정을 스마트 알고리즘으로 추천해 드립니다.
-            </p>
+        <div class="page-header-row" style="margin-bottom: 8px;">
+            <h2 th:text="#{schedule.recommend.title}">✨ 맞춤 일정 추천</h2>
+            <a th:href="@{/schedules}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.schedule}">🗓️ 내 일정</a>
         </div>
+        <p class="page-lede" style="margin-bottom: 24px;" th:text="#{schedule.recommend.description}">
+            회원님의 취향 태그와 이동 편의성(엘리베이터, 평지, 짐 보관)이 검증된 맞춤 일정을 스마트 알고리즘으로 추천해 드립니다.
+        </p>
 
         <!-- 추천할 일정이 없는 경우 -->
-        <div th:if="${#lists.isEmpty(schedules)}" style="text-align: center; padding: 50px 20px; color: #64748b; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;" th:text="#{schedule.recommend.empty}">
+        <div th:if="${#lists.isEmpty(schedules)}" class="empty-state" th:text="#{schedule.recommend.empty}">
             아직 추천할 만한 공개 일정이 없습니다.
         </div>
 
         <!-- 추천 일정 그리드 목록 -->
-        <div th:unless="${#lists.isEmpty(schedules)}" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
-            <div th:each="s : ${schedules}" style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div th:unless="${#lists.isEmpty(schedules)}" class="schedule-grid">
+            <div th:each="s : ${schedules}" th:with="ms=${mobilityScores.get(s.id)}" class="schedule-card">
                 <div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span th:text="${s.region.displayName}" style="background: #e0f2fe; color: #0369a1; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 6px;">TOKYO</span>
-                        <span th:if="${s.member != null}" style="font-size: 12px; color: #94a3b8;" th:text="${s.member.nickname != null ? s.member.nickname : s.member.name}">작성자</span>
+                    <div class="schedule-card__top">
+                        <span th:text="${s.region.displayName}" class="region-badge">TOKYO</span>
+                        <span th:if="${s.member != null}" class="author-tag" th:text="${s.member.nickname != null ? s.member.nickname : s.member.name}">작성자</span>
                     </div>
 
-                    <h3 style="margin: 6px 0; font-size: 18px; line-height: 1.4;">
-                        <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}" style="text-decoration: none; color: #1e293b;">3박 4일 도쿄 여행</a>
+                    <h3 class="schedule-card__title">
+                        <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}">3박 4일 도쿄 여행</a>
                     </h3>
 
-                    <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">
+                    <p class="schedule-card__dates">
                         📅 <span th:text="${s.startDate}">2026-08-01</span> ~ <span th:text="${s.endDate}">2026-08-04</span>
                     </p>
 
-                    <!-- 태그 목록 (이동 편의 관련 태그 연초록 강조) -->
-                    <div style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 4px;">
-                        <span th:each="t : ${s.tags}" th:text="${t.displayName}" class="badge"
-                              th:style="${#strings.contains(t.name(), 'LUGGAGE') or #strings.contains(t.name(), 'ELEVATOR') or #strings.contains(t.name(), 'FLAT') or #strings.contains(t.name(), 'STROLLER')} ? 
-                                        'background: #dcfce7; color: #15803d; border: 1px solid #86efac; font-weight: 600;' : 
-                                        'background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;'">
+                    <!-- 이동 편의성 스코어 배지 (리뷰 기반 자동 집계) -->
+                    <div th:if="${ms != null and ms.reviewCount > 0}" class="mobility-badge"
+                         th:classappend="'mobility-badge--' + ${#strings.toLowerCase(ms.level.name())}">
+                        <span th:if="${ms.level.name() == 'GOOD'}" th:text="#{mobility.badge.good}">🟢 이동 편의 좋음</span>
+                        <span th:if="${ms.level.name() == 'FAIR'}" th:text="#{mobility.badge.fair}">🟡 이동 편의 보통</span>
+                        <span th:if="${ms.level.name() == 'LOW'}" th:text="#{mobility.badge.low}">🔴 이동 편의 주의</span>
+                    </div>
+
+                    <!-- 태그 목록 (이동 편의 관련 태그 강조) -->
+                    <div class="schedule-card__tags">
+                        <span th:each="t : ${s.tags}" th:text="${t.displayName}"
+                              class="tag-chip"
+                              th:classappend="${#strings.contains(t.name(), 'LUGGAGE') or #strings.contains(t.name(), 'ELEVATOR') or #strings.contains(t.name(), 'FLAT') or #strings.contains(t.name(), 'STROLLER')} ? 'tag-chip--accessible'">
                             태그
                         </span>
                     </div>
                 </div>
 
-                <a th:href="@{/schedules/{id}(id=${s.id})}" class="btn btn-secondary" style="display: block; text-align: center; font-size: 14px; text-decoration: none; margin-top: 10px;" th:text="#{schedule.explore.view}">상세 일정 보기</a>
+                <a th:href="@{/schedules/{id}(id=${s.id})}" class="btn btn-secondary schedule-card__cta" th:text="#{schedule.explore.view}">상세 일정 보기</a>
             </div>
         </div>
 
@@ -58,5 +67,7 @@
             <a th:href="@{/}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
         </div>
     </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

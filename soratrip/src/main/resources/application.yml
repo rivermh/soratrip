@@ -1,15 +1,21 @@
 server:
   port: 8080
+  servlet:
+    session:
+      cookie:
+        http-only: true # 세션 쿠키를 JS에서 읽지 못하게 차단 (XSS로 인한 세션 탈취 방지)
+        same-site: lax # 외부 사이트發 요청에는 쿠키를 안 실어 CSRF 방어를 보강
+        # secure는 명시하지 않음: 미설정 시 요청이 HTTPS일 때만 컨테이너가 자동으로 Secure를 붙여줌.
+        # 로컬 개발(http://localhost)은 그대로 동작하고, 운영에서 HTTPS를 붙이면 자동으로 Secure 쿠키가 됨.
 
 spring:
   # 1. 인코딩 설정 (Spring Boot 3.x 권장 위치로 이동)
-  # 참고: Spring Boot 3.x는 기본이 UTF-8이므로 생략해도 무방합니다.
   servlet:
     encoding:
       charset: UTF-8
       enabled: true
       force: true
-    # 2. 사진 업로드 (Multipart) 설정 (spring.servlet 하위로 통합)
+    # 2. 사진 업로드 (Multipart) 설정
     multipart:
       max-file-size: 5MB
       max-request-size: 15MB
@@ -32,9 +38,8 @@ spring:
       hibernate:
         format_sql: true
         show_sql: true
-        highlight_sql: true # SQL 로그 가독성을 위해 하이라이트 추가 (선택사항)
+        highlight_sql: true # SQL 로그 가독성을 위해 하이라이트 추가
         default_batch_fetch_size: 100
-    # generate-ddl: true  # ddl-auto가 설정되어 있으면 중복/불필요하므로 생략 가능합니다.
 
   # 6. Thymeleaf 템플릿 설정
   thymeleaf:
@@ -52,16 +57,37 @@ spring:
               - profile
               - email
 
-# 8. 커스텀 사진 업로드 저장 경로
+  # 8. [신규] Mail 설정 (Resend SMTP)
+  mail:
+    host: smtp.resend.com
+    port: 587
+    username: resend # "resend" 문자열 그대로 유지
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  # 9. [신규] Redis 설정 (인증 코드 및 로그인 잠금 TTL 관리용)
+  data:
+    redis:
+      host: localhost # 배포(Railway 등) 환경에 맞게 필요시 주소 조정
+      port: 6379
+
+# 8-1. 메일 발신자 주소 (커스텀 도메인 인증 전이라 Resend 샌드박스 주소 사용 중 — 인증된 도메인 생기면 교체)
+mail:
+  from: onboarding@resend.dev
+
+# 10. 커스텀 사진 업로드 저장 경로
 file:
   upload-dir: uploads
 
-# 9. 로그 출력 설정
-# 9. 로그 출력 설정
+# 11. 로그 출력 설정
 logging:
   level:
     root: INFO
-    com.rivermh.soratrip: INFO # 애플리케이션 로그를 INFO로 변경 (필요할 때만 DEBUG)
-    org.hibernate.SQL: INFO # 실행되는 SQL문 출력 끄기 (ON: DEBUG)
+    com.rivermh.soratrip: INFO # 애플리케이션 로그를 INFO로 변경
+    org.hibernate.SQL: INFO # 실행되는 SQL문 출력 끄기
     org.springframework.security: INFO # 시큐리티 디버그 로그 끄기
-    org.hibernate.orm.jdbc.bind: INFO # SQL 파라미터 값 바인딩(TRACE) 로그 끄기
+    org.hibernate.orm.jdbc.bind: INFO # SQL 파라미터 값 바인딩 로그 끄기

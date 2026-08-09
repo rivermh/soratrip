@@ -17,6 +17,7 @@ import com.rivermh.soratrip.domain.photo.repository.PhotoRepository;
 import com.rivermh.soratrip.domain.schedule.dto.ScheduleJournalDto;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 import com.rivermh.soratrip.domain.schedule.service.SchedulePortfolioService;
+import com.rivermh.soratrip.global.security.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,8 +37,8 @@ public class SchedulePortfolioController {
         ScheduleJournalDto journal = schedulePortfolioService.getJournal(id);
         TravelSchedule schedule = journal.getSchedule();
 
-        String email = principal != null ? extractEmail(principal) : null;
-        boolean owner = email != null && schedule.getMember().getEmail().equals(email);
+        String email = principal != null ? SecurityUtils.extractEmail(principal) : null;
+        boolean owner = schedule.isOwnedBy(email);
         if (!schedule.isPublic() && !owner) {
             return "redirect:/schedules";
         }
@@ -65,14 +66,5 @@ public class SchedulePortfolioController {
         model.addAttribute("trips", trips);
         model.addAttribute("coverPhotoBySchedule", coverPhotoBySchedule);
         return "schedule/portfolio";
-    }
-
-    private String extractEmail(Object principal) {
-        if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User oAuth2User) {
-            return oAuth2User.getAttribute("email");
-        } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-            return userDetails.getUsername();
-        }
-        return null;
     }
 }

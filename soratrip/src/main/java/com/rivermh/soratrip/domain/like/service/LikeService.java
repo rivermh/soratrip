@@ -7,6 +7,8 @@ import com.rivermh.soratrip.domain.like.repository.PostLikeRepository;
 import com.rivermh.soratrip.domain.like.repository.ScheduleLikeRepository;
 import com.rivermh.soratrip.domain.member.entity.Member;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
+import com.rivermh.soratrip.domain.notification.entity.NotificationType;
+import com.rivermh.soratrip.domain.notification.service.NotificationService;
 import com.rivermh.soratrip.domain.post.entity.Post;
 import com.rivermh.soratrip.domain.post.repository.PostRepository;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
@@ -27,6 +29,7 @@ public class LikeService {
     private final PostRepository postRepository;
     private final TravelScheduleRepository travelScheduleRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
 
     // 게시글 좋아요 토글
     public LikeToggleResponse togglePostLike(Long postId, String email) {
@@ -44,6 +47,7 @@ public class LikeService {
         } else {
             postLikeRepository.save(PostLike.builder().member(member).post(post).build());
             isLiked = true;
+            notificationService.notify(post.getWriter(), member, NotificationType.POST_LIKE, post.getId(), post.getTitle());
         }
 
         int currentLikeCount = postLikeRepository.countByPost(post);
@@ -66,6 +70,7 @@ public class LikeService {
         } else {
             scheduleLikeRepository.save(ScheduleLike.builder().member(member).travelSchedule(schedule).build());
             isLiked = true;
+            notificationService.notify(schedule.getMember(), member, NotificationType.SCHEDULE_LIKE, schedule.getId(), schedule.getTitle());
         }
 
         int currentLikeCount = scheduleLikeRepository.countByTravelSchedule(schedule);

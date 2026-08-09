@@ -27,6 +27,12 @@
             <span th:text="#{member.profile.success}">프로필이 성공적으로 수정되었습니다!</span>
         </div>
 
+        <!-- 비밀번호 변경 실패 알림 -->
+        <div th:if="${passwordError}" class="alert alert-error" style="margin-bottom: 24px;">
+            <span>⚠️</span>
+            <span th:text="${passwordError}">오류가 발생했습니다.</span>
+        </div>
+
         <!-- 1. 프로필 정보 수정 -->
         <section style="background: var(--surface); padding: 28px; border-radius: 20px; border: 1px solid var(--border-light); margin-bottom: 32px;">
             <h3 style="margin-bottom: 18px; font-size: 18px; display: flex; align-items: center; gap: 6px;" th:text="#{member.profile.edit}">✏️ 내 정보 수정</h3>
@@ -57,6 +63,32 @@
                 </div>
                 
                 <button type="submit" class="btn btn-primary" style="width: auto; padding: 10px 24px;" th:text="#{member.save}">프로필 저장</button>
+            </form>
+        </section>
+
+        <!-- 1-0. 비밀번호 변경 -->
+        <section style="background: var(--surface); padding: 28px; border-radius: 20px; border: 1px solid var(--border-light); margin-bottom: 32px;">
+            <h3 style="margin-bottom: 18px; font-size: 18px; display: flex; align-items: center; gap: 6px;" th:text="#{member.mypage.password.title}">🔒 비밀번호 변경</h3>
+
+            <form th:action="@{/members/mypage/password}" method="post">
+                <div class="form-group">
+                    <label for="currentPassword" th:text="#{member.mypage.password.current}">현재 비밀번호</label>
+                    <input type="password" id="currentPassword" name="currentPassword" class="form-control" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword" th:text="#{member.mypage.password.new}">새 비밀번호</label>
+                    <input type="password" id="newPassword" name="newPassword" class="form-control"
+                           th:placeholder="#{member.password.placeholder}" placeholder="비밀번호를 입력하세요" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="newPasswordConfirm" th:text="#{member.mypage.password.new_confirm}">새 비밀번호 확인</label>
+                    <input type="password" id="newPasswordConfirm" name="newPasswordConfirm" class="form-control"
+                           th:placeholder="#{member.password_confirm.placeholder}" placeholder="비밀번호를 다시 입력하세요" required />
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: auto; padding: 10px 24px;" th:text="#{member.mypage.password.submit_btn}">비밀번호 변경</button>
             </form>
         </section>
 
@@ -162,15 +194,15 @@
         <!-- 4. 내가 좋아요 한 게시글 목록 -->
         <section style="margin-bottom: 36px;">
             <h3 style="margin-bottom: 16px; font-size: 18px;">
-                ❤️ 내가 좋아요 한 게시글 (<span th:text="${#lists.size(myPostLikes)}">0</span>)
+                <span th:text="#{member.my_post_likes}">❤️ 내가 좋아요 한 게시글</span> (<span th:text="${#lists.size(myPostLikes)}">0</span>)
             </h3>
-            
+
             <table class="styled-table">
                 <thead>
                     <tr>
-                        <th style="width: 15%;">지역</th>
-                        <th>제목</th>
-                        <th style="width: 22%;">좋아요 일시</th>
+                        <th style="width: 15%;" th:text="#{post.region}">지역</th>
+                        <th th:text="#{post.title}">제목</th>
+                        <th style="width: 22%;" th:text="#{post.liked_at}">좋아요 일시</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -182,7 +214,7 @@
                         <td th:text="${#temporals.format(like.createdAt, 'yyyy-MM-dd')}" style="color: var(--text-sub); font-size: 13px;">2026-07-23</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(myPostLikes)}">
-                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);">좋아요한 게시글이 없습니다.</td>
+                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);" th:text="#{member.post_likes.empty}">좋아요한 게시글이 없습니다.</td>
                     </tr>
                 </tbody>
             </table>
@@ -191,15 +223,15 @@
         <!-- 5. 내가 좋아요 한 여행 일정 목록 -->
         <section style="margin-bottom: 36px;">
             <h3 style="margin-bottom: 16px; font-size: 18px;">
-                💖 내가 좋아요 한 일정 (<span th:text="${#lists.size(myScheduleLikes)}">0</span>)
+                <span th:text="#{member.my_schedule_likes}">💖 내가 좋아요 한 일정</span> (<span th:text="${#lists.size(myScheduleLikes)}">0</span>)
             </h3>
-            
+
             <table class="styled-table">
                 <thead>
                     <tr>
-                        <th style="width: 15%;">지역</th>
-                        <th>제목</th>
-                        <th style="width: 28%;">기간</th>
+                        <th style="width: 15%;" th:text="#{post.region}">지역</th>
+                        <th th:text="#{post.title}">제목</th>
+                        <th style="width: 28%;" th:text="#{post.period}">기간</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -211,7 +243,7 @@
                         <td th:text="${like.travelSchedule.startDate} + ' ~ ' + ${like.travelSchedule.endDate}" style="color: var(--text-sub); font-size: 13px;">2026-08-01 ~ 2026-08-04</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(myScheduleLikes)}">
-                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);">좋아요한 일정이 없습니다.</td>
+                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);" th:text="#{member.schedule_likes.empty}">좋아요한 일정이 없습니다.</td>
                     </tr>
                 </tbody>
             </table>
@@ -220,15 +252,15 @@
         <!-- 6. 내가 북마크 한 여행 일정 목록 -->
         <section style="margin-bottom: 36px;">
             <h3 style="margin-bottom: 16px; font-size: 18px;">
-                🔖 내가 북마크 한 일정 (<span th:text="${#lists.size(myBookmarks)}">0</span>)
+                <span th:text="#{member.my_bookmarks}">🔖 내가 북마크 한 일정</span> (<span th:text="${#lists.size(myBookmarks)}">0</span>)
             </h3>
-            
+
             <table class="styled-table">
                 <thead>
                     <tr>
-                        <th style="width: 15%;">지역</th>
-                        <th>제목</th>
-                        <th style="width: 28%;">기간</th>
+                        <th style="width: 15%;" th:text="#{post.region}">지역</th>
+                        <th th:text="#{post.title}">제목</th>
+                        <th style="width: 28%;" th:text="#{post.period}">기간</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -240,7 +272,7 @@
                         <td th:text="${bm.travelSchedule.startDate} + ' ~ ' + ${bm.travelSchedule.endDate}" style="color: var(--text-sub); font-size: 13px;">2026-08-01 ~ 2026-08-04</td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(myBookmarks)}">
-                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);">북마크한 일정이 없습니다.</td>
+                        <td colspan="3" style="text-align: center; color: var(--text-sub); padding: 28px; background: var(--surface);" th:text="#{member.bookmarks.empty}">북마크한 일정이 없습니다.</td>
                     </tr>
                 </tbody>
             </table>

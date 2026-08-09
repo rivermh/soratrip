@@ -16,16 +16,16 @@ import lombok.Setter;
 @Setter
 public class TravelScheduleForm {
 
-    @NotBlank(message = "일정 제목을 입력해 주세요.")
+    @NotBlank(message = "{schedule.validation.title_required}")
     private String title;
 
-    @NotNull(message = "여행 지역을 선택해 주세요.")
+    @NotNull(message = "{schedule.validation.region_required}")
     private Region region;
 
-    @NotNull(message = "시작일을 입력해 주세요.")
+    @NotNull(message = "{schedule.validation.start_date_required}")
     private LocalDate startDate;
 
-    @NotNull(message = "종료일을 입력해 주세요.")
+    @NotNull(message = "{schedule.validation.end_date_required}")
     private LocalDate endDate;
 
     // 일정 관련 선택 태그 (이동 편의 태그 포함)

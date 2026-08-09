@@ -27,12 +27,30 @@
             <span th:text="#{member.login_error}">아이디 또는 비밀번호가 일치하지 않습니다.</span>
         </div>
 
+        <!-- 🔒 로그인 5회 실패로 계정이 잠긴 경우 -->
+        <div th:if="${param.locked}" class="alert alert-error">
+            <span>🔒</span>
+            <span th:text="#{member.login.locked}">로그인 5회 실패로 계정이 일시적으로 잠겼습니다. 30분 후 다시 시도해 주세요.</span>
+        </div>
+
+        <!-- ✅ 비밀번호 재설정 성공 알림 -->
+        <div th:if="${param.reset}" class="alert alert-success">
+            <span>✨</span>
+            <span th:text="#{member.login.reset_success}">비밀번호가 재설정되었습니다. 새 비밀번호로 로그인해 주세요.</span>
+        </div>
+
+        <!-- ✅ 마이페이지 비밀번호 변경 성공 알림 -->
+        <div th:if="${param.passwordChanged}" class="alert alert-success">
+            <span>✨</span>
+            <span th:text="#{member.mypage.password.success}">비밀번호가 성공적으로 변경되었습니다!</span>
+        </div>
+
         <!-- ℹ️ 로그아웃 성공 알림 -->
         <div th:if="${param.logout}" class="alert alert-success">
             <span>✨</span>
             <span th:text="#{member.logout_success}">성공적으로 로그아웃되었습니다.</span>
         </div>
-        
+
         <!-- 로그인 폼 -->
         <form th:action="@{/members/login}" method="post">
             <div class="form-group">
@@ -42,9 +60,10 @@
 
             <div class="form-group">
                 <label th:text="#{member.password}">비밀번호</label>
-                <input type="password" name="password" class="form-control" required 
+                <input type="password" name="password" class="form-control" required
                        th:placeholder="#{member.password.placeholder}"
                        placeholder="비밀번호를 입력하세요" />
+                <a th:href="@{/members/password-reset}" class="hint-text" style="display: inline-block; margin-top: 6px;" th:text="#{member.login.forgot_password}">비밀번호를 잊으셨나요?</a>
             </div>
 
             <button type="submit" class="btn btn-primary" th:text="#{member.login}">로그인</button>

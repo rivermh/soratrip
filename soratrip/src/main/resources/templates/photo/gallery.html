@@ -1,35 +1,69 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{photo.title}">📷 사진 - SoraTrip</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{photo.title} + ' - ' + ${schedule.title}">📷 사진 - SoraTrip</title>
+
+    <!-- Spring Security CSRF Meta 태그 (null 안전 처리) -->
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
+
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
     <div class="container" style="max-width: 900px;">
         <span class="eyebrow">Gallery</span>
-        <h2 th:text="#{photo.title}" style="margin-bottom: 24px;">📷 사진</h2>
+        <h2 th:text="#{photo.title}" style="margin-bottom: 4px;">📷 사진</h2>
+        <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-6);" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
 
-        <!-- 등록된 사진이 없을 경우 -->
-        <div th:if="${#lists.isEmpty(photos)}" style="text-align: center; padding: 48px 20px; color: var(--text-faint); background: var(--surface); border-radius: var(--radius); border: 1px dashed var(--border-color);" th:text="#{photo.empty}">
+        <!-- 일자별로 묶어서 표시 -->
+        <div th:if="${#sets.isEmpty(schedule.days)}" class="empty-state" th:text="#{photo.empty}">
             등록된 사진이 없습니다.
         </div>
 
-        <!-- 사진 그리드 목록 -->
-        <div th:unless="${#lists.isEmpty(photos)}" class="photo-grid" style="margin-bottom: 32px;">
-            <div th:each="p : ${photos}" class="photo-grid-item">
-                <img th:src="@{${p.imageUrl}}" th:alt="${p.caption}">
-                <div style="margin-top: 8px;">
-                    <span class="badge" style="font-size: 11px; padding: 2px 8px; background: var(--primary-soft); color: var(--primary-color); border-color: #c9e0fb;" th:text="${p.scheduleDay.dayNumber} + '일차'">1일차</span>
-                </div>
-                <div th:if="${p.caption != null and !#strings.isEmpty(p.caption)}" style="font-size: 13px; color: var(--text-main); margin-top: 4px; word-break: break-all;" th:text="${p.caption}">설명</div>
+        <div class="day-timeline">
+        <div th:each="day : ${schedule.days}" class="day-card">
+            <div class="day-card__header">
+                <h4 class="day-card__title">
+                    <span class="day-badge" th:text="${day.dayNumber}">1</span>
+                    <span th:text="#{schedule.day_title}">일차</span>
+                    <span class="day-date" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+                </h4>
             </div>
+
+            <div th:if="${#lists.isEmpty(photosByDay.get(day.id))}" class="day-empty" th:text="#{photo.empty}">
+                등록된 사진이 없습니다.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(photosByDay.get(day.id))}" class="photo-grid" style="margin-bottom: 12px;">
+                <div th:each="p : ${photosByDay.get(day.id)}" class="photo-grid-item">
+                    <img th:src="@{${p.imageUrl}}" th:alt="${p.caption}">
+                    <div th:if="${p.caption != null and !#strings.isEmpty(p.caption)}" style="font-size: 13px; color: var(--text-main); margin-top: 4px; word-break: break-all;" th:text="${p.caption}">설명</div>
+                    <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos/{pid}/delete(sid=${schedule.id},did=${day.id},pid=${p.id})}" method="post">
+                        <button type="submit" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;" th:text="#{photo.delete}">삭제</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 사진 업로드 (소유자 전용) -->
+            <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos(sid=${schedule.id},did=${day.id})}" method="post" enctype="multipart/form-data" style="display: flex; gap: 6px; margin-top: 8px;">
+                <input type="file" name="file" accept="image/*" required>
+                <input type="text" name="caption" class="form-control" th:placeholder="#{photo.caption.placeholder}" placeholder="설명 (선택)" style="flex: 1;">
+                <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{photo.upload}">업로드</button>
+            </form>
+        </div>
         </div>
 
         <!-- 하단 버튼 영역 -->
-        <div>
-            <a th:href="@{/schedules/{id}(id=${scheduleId})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{photo.back_to_schedule}">📋 일정으로 돌아가기</a>
+        <div style="margin-top: 30px;">
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{photo.back_to_schedule}">📋 일정으로 돌아가기</a>
         </div>
     </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>
 </html>

@@ -1,8 +1,4 @@
 @media (max-width: 768px) {
-  body {
-    padding: 20px 16px 56px;
-  }
-
   .navbar {
     flex-direction: column;
     align-items: stretch;
@@ -36,22 +32,8 @@
     border-top: 1px solid var(--border-color);
   }
 
-  .hero-actions {
-    max-width: 100%;
-  }
-
-  .container {
-    padding: 32px 24px;
-    border-radius: var(--radius-lg);
-  }
-
-  .hero {
-    padding-top: 44px;
-    padding-bottom: 44px;
-  }
-
   .filter-panel {
-    padding: 20px;
+    padding: var(--space-4);
   }
 }
 
@@ -59,9 +41,5 @@
   .btn {
     padding: 12px 20px;
     font-size: 13.5px;
-  }
-
-  .photo-grid {
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 }

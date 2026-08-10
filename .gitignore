@@ -24,3 +24,8 @@ hs_err_pid*
 replay_pid*
 
 application-secret.yml
+
+### Eclipse ###
+.project
+.settings
+.classpath

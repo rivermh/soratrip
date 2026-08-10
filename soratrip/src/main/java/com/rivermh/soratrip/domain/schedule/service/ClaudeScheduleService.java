@@ -173,15 +173,35 @@ public class ClaudeScheduleService {
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("None");
 
+        // 같은 여행의 다른 날에 이미 나온 장소는 재생성 시 다시 제안하지 않도록 제외 목록으로 전달한다
+        String otherDaysPlaces = schedule.getDays().stream()
+                .filter(d -> !d.getId().equals(day.getId()))
+                .flatMap(d -> d.getItems().stream())
+                .map(ScheduleItem::getPlaceName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .reduce((a, b) -> a + ", " + b)
+                .orElse("None");
+
         return String.format("""
-                You are an expert Japan travel planner focusing on accessibility and luggage-friendly routing.
-                The user wants to REGENERATE just ONE day (day %d) of an existing %s itinerary. Do not return other days.
+                You are a local food curator who has lived in %s for over a decade and knows its
+                back alleys, markets, and family-run shops -- not a generic tour guide.
+                The user wants to REGENERATE just ONE day (day %d) of an existing %s itinerary,
+                built around storied local eateries rather than famous landmarks or chain
+                restaurants. Do not return other days.
 
                 Context:
                 - Travel Region: %s
                 - Travel Style/Tags: %s
                 - Current plan for this day (to be fully replaced): %s
+                - Places already used on OTHER days of this trip (do NOT repeat these): %s
                 - User's request for this day: %s
+
+                Important Guidelines:
+                1. EXCLUDE chain restaurants, franchises, and already-famous landmark attractions.
+                   Prefer small, generational, neighborhood places.
+                2. At least half of the places suggested for this day should be food-related spots
+                   chosen for their story, not their fame.
 
                 STRICT JSON Format Requirement:
                 Return ONLY valid JSON for this single day (no markdown, no comments). Use this EXACT structure:
@@ -195,7 +215,7 @@ public class ClaudeScheduleService {
                       "visitTime": "09:00",
                       "visitOrder": 1,
                       "memo": "Memo text",
-                      "recommendReason": "One short sentence on why this place fits the requested tags/preferences"
+                      "recommendReason": "2-3 sentences telling this place's story"
                     }
                   ]
                 }
@@ -208,11 +228,22 @@ public class ClaudeScheduleService {
                 - Do NOT include markdown backticks
                 - Do NOT include any text outside the JSON object
                 - Write 'placeName', 'placeAddress', 'memo', and 'recommendReason' in Korean or Japanese, matching the current plan's language (default to Korean if unclear).
-                - 'recommendReason' MUST be a single concrete sentence explaining why THIS place fits the Travel Style/Tags or the user's request for this day. If accessibility/luggage/stroller/senior tags were requested, prioritize mentioning the specific accessibility feature. Never leave it generic praise like "인기 명소예요".
+                - 'recommendReason' MUST be 2-3 concrete sentences that include AT LEAST TWO of
+                  the following: the shop's history or why it opened, the story behind its
+                  signature dish, its relationship to the neighborhood/market, an anecdote about
+                  the owner or chef, or why locals (not tourists) go there. If accessibility,
+                  luggage, stroller, or senior tags were requested, also weave in the specific
+                  accessibility feature.
+                - NEVER use generic praise or guidebook phrases such as "인기 명소예요", "유명한",
+                  "필수 코스", "여행객이라면 꼭", "인스타 핫플", "관광지로 유명한", or their
+                  English/Japanese equivalents.
+                - Before returning the JSON, silently re-check every item against the rules above
+                  and replace any item that fails.
 
                 Make sure latitude and longitude coordinates are accurate real-world values for the requested location.
                 """,
-                day.getDayNumber(), regionName, regionName, tagNames, currentPlaces,
+                regionName, day.getDayNumber(), regionName,
+                regionName, tagNames, currentPlaces, otherDaysPlaces,
                 extraPrompt != null && !extraPrompt.isBlank() ? extraPrompt : "Just make this day more interesting."
         );
     }
@@ -253,16 +284,27 @@ public class ClaudeScheduleService {
 
                 String cleanedJson = cleanJsonResponse(jsonText);
 
+                ClaudeScheduleResponse.DayDto result;
                 try {
-                    ClaudeScheduleResponse.DayDto result = objectMapper.readValue(cleanedJson, ClaudeScheduleResponse.DayDto.class);
-                    log.info("✅ OpenRouter 하루 재생성 API 호출 성공! (시도: {})", attempt + 1);
-                    return result;
+                    result = objectMapper.readValue(cleanedJson, ClaudeScheduleResponse.DayDto.class);
                 } catch (Exception jsonParseException) {
                     log.warn("⚠️ 하루 재생성 JSON 파싱 실패 (시도: {}). 재시도 중...", attempt + 1);
                     if (attempt == MAX_RETRIES) {
                         throw jsonParseException;
                     }
+                    continue;
                 }
+
+                if (hasGenericItems(result.getItems())) {
+                    log.warn("⚠️ 하루 재생성 응답에 서사 없는 추천 이유가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
+                    if (attempt == MAX_RETRIES) {
+                        throw new IllegalStateException("AI가 서사 있는 추천을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+                    }
+                    continue;
+                }
+
+                log.info("✅ OpenRouter 하루 재생성 API 호출 성공! (시도: {})", attempt + 1);
+                return result;
             } catch (Exception e) {
                 log.warn("⚠️ 하루 재생성 API 호출 실패 (시도: {}/{}): {}", attempt + 1, MAX_RETRIES + 1, e.getMessage());
                 if (attempt == MAX_RETRIES) {
@@ -320,11 +362,9 @@ public class ClaudeScheduleService {
                 String cleanedJson = cleanJsonResponse(jsonText);
 
                 // JSON 유효성 검증 및 파싱
+                ClaudeScheduleResponse result;
                 try {
-                    ClaudeScheduleResponse result = objectMapper.readValue(cleanedJson, ClaudeScheduleResponse.class);
-                    log.info("✅ OpenRouter API 호출 성공! (시도: {})", attempt + 1);
-                    log.debug("응답: {}", cleanedJson.substring(0, Math.min(200, cleanedJson.length())));
-                    return result;
+                    result = objectMapper.readValue(cleanedJson, ClaudeScheduleResponse.class);
                 } catch (Exception jsonParseException) {
                     log.warn("⚠️ JSON 파싱 실패 (시도: {}). 재시도 중...", attempt + 1);
                     log.warn("원본: {}", jsonText.substring(0, Math.min(200, jsonText.length())));
@@ -333,7 +373,24 @@ public class ClaudeScheduleService {
                     if (attempt == MAX_RETRIES) {
                         throw jsonParseException;
                     }
+                    continue;
                 }
+
+                // 파싱은 됐지만 뻔한 관광지 홍보 문구 수준의 추천 이유가 섞여 있으면 재시도한다
+                boolean hasGeneric = result.getDays() != null
+                        && result.getDays().stream().anyMatch(day -> hasGenericItems(day.getItems()));
+                if (hasGeneric) {
+                    log.warn("⚠️ 서사 없는 추천 이유가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
+                    if (attempt == MAX_RETRIES) {
+                        log.error("❌ 재시도 후에도 서사 없는 추천이 남아있어 Fallback 일정으로 대체합니다.");
+                        return createFallbackSchedule(request);
+                    }
+                    continue;
+                }
+
+                log.info("✅ OpenRouter API 호출 성공! (시도: {})", attempt + 1);
+                log.debug("응답: {}", cleanedJson.substring(0, Math.min(200, cleanedJson.length())));
+                return result;
 
             } catch (Exception e) {
                 log.warn("⚠️ OpenRouter API 호출 실패 (시도: {}/{}): {}", 
@@ -347,6 +404,31 @@ public class ClaudeScheduleService {
         }
 
         return createFallbackSchedule(request);
+    }
+
+    // recommendReason에 이 표현이 섞여 있으면 서사 없는 뻔한 홍보 문구로 간주한다
+    private static final List<String> GENERIC_PHRASES = List.of(
+            "인기 명소", "유명한", "필수 코스", "여행객이라면", "인스타 핫플", "관광지로 유명",
+            "must-visit", "must visit", "famous spot", "popular tourist"
+    );
+
+    /**
+     * recommendReason이 서사 없이 뻔한 홍보 문구 수준에 그치는지 검사한다.
+     * 비어있거나, 너무 짧거나, 금지 표현이 섞여 있으면 "서사 없음"으로 간주한다.
+     */
+    private boolean isGenericRecommendation(String reason) {
+        if (reason == null || reason.isBlank() || reason.trim().length() < 15) {
+            return true;
+        }
+        String normalized = reason.toLowerCase();
+        return GENERIC_PHRASES.stream().anyMatch(phrase -> normalized.contains(phrase.toLowerCase()));
+    }
+
+    private boolean hasGenericItems(List<ClaudeScheduleResponse.ItemDto> items) {
+        if (items == null || items.isEmpty()) {
+            return false;
+        }
+        return items.stream().anyMatch(item -> isGenericRecommendation(item.getRecommendReason()));
     }
 
     /**
@@ -386,13 +468,14 @@ public class ClaudeScheduleService {
 
             if (i == 1) {
                 ClaudeScheduleResponse.ItemDto item1 = new ClaudeScheduleResponse.ItemDto();
-                item1.setPlaceName("시부야 스카이 (SHIBUYA SKY)");
-                item1.setPlaceAddress("2 Chome-24-12 Shibuya, Shibuya City, Tokyo");
-                item1.setLatitude(35.6585);
-                item1.setLongitude(139.7013);
-                item1.setVisitTime("10:00");
+                item1.setPlaceName("츠키지 장외시장 다마고야키 노점");
+                item1.setPlaceAddress("4 Chome-16-2 Tsukiji, Chuo City, Tokyo");
+                item1.setLatitude(35.6654);
+                item1.setLongitude(139.7707);
+                item1.setVisitTime("09:00");
                 item1.setVisitOrder(1);
-                item1.setMemo("엘리베이터 이용 편리, 짐 보관소(코인라커) 4층 위치");
+                item1.setMemo("아침 일찍 갈수록 줄이 짧음, 평지 노점이라 이동 편함");
+                item1.setRecommendReason("경매가 끝난 새벽 시장 상인들의 아침 끼니로 시작된 다마고야키 집으로, 3대째 같은 화로에서 한 겹씩 말아 굽는 방식을 고집한다. 관광객보다 근처 수산물 상인들이 출근길에 먼저 들르는 곳이다.");
                 items.add(item1);
 
                 ClaudeScheduleResponse.ItemDto item2 = new ClaudeScheduleResponse.ItemDto();
@@ -403,16 +486,18 @@ public class ClaudeScheduleService {
                 item2.setVisitTime("15:00");
                 item2.setVisitOrder(2);
                 item2.setMemo("야경 명소, 메인 데크 진입 시 완만한 경사로 및 엘리베이터 완비");
+                item2.setRecommendReason("전망대 자체는 유명하지만, 엘리베이터가 지상부터 메인 데크까지 단차 없이 연결돼 있어 캐리어나 휠체어 이동이 있는 일행이 하루 동선에 부담 없이 끼워 넣을 수 있는 몇 안 되는 랜드마크다.");
                 items.add(item2);
             } else {
                 ClaudeScheduleResponse.ItemDto item1 = new ClaudeScheduleResponse.ItemDto();
-                item1.setPlaceName("아사쿠사 센소지 (Senso-ji)");
-                item1.setPlaceAddress("2 Chome-3-1 Asakusa, Taito City, Tokyo");
-                item1.setLatitude(35.7148);
-                item1.setLongitude(139.7967);
+                item1.setPlaceName("야나카 긴자 멘치카츠 정육점");
+                item1.setPlaceAddress("3 Chome-13-3 Yanaka, Taito City, Tokyo");
+                item1.setLatitude(35.7280);
+                item1.setLongitude(139.7669);
                 item1.setVisitTime("11:00");
                 item1.setVisitOrder(1);
-                item1.setMemo("전통 거리 구경, 인근 평지 위주 동선으로 도보 이동 수월");
+                item1.setMemo("좁은 상점가 초입 평지 매장, 서서 먹거나 포장 가능");
+                item1.setRecommendReason("원래는 동네 정육점이었는데, 남는 자투리 고기로 만든 멘치카츠가 입소문이 나며 지금은 골목 명물이 됐다. 튀김옷 배합은 3대째 손자에게만 구전으로 전해진다고 가게 앞에 적혀 있다.");
                 items.add(item1);
 
                 ClaudeScheduleResponse.ItemDto item2 = new ClaudeScheduleResponse.ItemDto();
@@ -423,6 +508,7 @@ public class ClaudeScheduleService {
                 item2.setVisitTime("14:30");
                 item2.setVisitOrder(2);
                 item2.setMemo("공원 내 산책로 정비 잘 됨, 카페 및 휴게 공간 다수 보유");
+                item2.setRecommendReason("공원 자체보다 서쪽 출구 인근 벤치가 숨은 포인트인데, 근처 상점가 상인들이 점심시간마다 이곳에서 도시락을 먹어 '상인들의 마당'이라 불린다.");
                 items.add(item2);
             }
 
@@ -446,20 +532,29 @@ public class ClaudeScheduleService {
         }
 
         return String.format("""
-                You are an expert Japan travel planner focusing on accessibility and luggage-friendly routing.
-                Create a detailed %d-day itinerary for %s, Japan.
-                
+                You are a local food curator who has lived in %s for over a decade and knows its
+                back alleys, markets, and family-run shops -- not a generic tour guide.
+                Create a detailed %d-day itinerary for %s, Japan, built around storied local
+                eateries rather than famous landmarks or chain restaurants.
+
                 Constraints & Context:
                 - Travel Region: %s
                 - Companion Type: %s
                 - Travel Style/Tags: %s
                 - Additional Preferences & Requests: %s
-                
+
                 Important Guidelines:
-                1. Suggest unique, highly relevant places in %s according to the companion type and preferences.
-                2. Reflect the 'Additional Preferences & Requests' strictly (e.g. stairs, walking distance, luggage, specific spot requests).
-                3. Automatically detect whether Korean or Japanese is requested or appropriate based on the input context, and write all content in that matching language.
-                
+                1. EXCLUDE chain restaurants, franchises, and already-famous landmark attractions.
+                   Prefer small, generational, neighborhood places over anything a typical
+                   guidebook would list first.
+                2. At least half of the places suggested per day should be food-related spots
+                   (a restaurant, izakaya, market stall, cafe, etc.) chosen for their story, not
+                   their fame.
+                3. Reflect the 'Additional Preferences & Requests' strictly (e.g. stairs, walking
+                   distance, luggage, specific spot requests).
+                4. Automatically detect whether Korean or Japanese is requested or appropriate
+                   based on the input context, and write all content in that matching language.
+
                 STRICT JSON Format Requirement:
                 Return ONLY valid JSON (no markdown, no comments). Use this EXACT structure:
                 {
@@ -476,7 +571,7 @@ public class ClaudeScheduleService {
                           "visitTime": "09:00",
                           "visitOrder": 1,
                           "memo": "Memo text",
-                          "recommendReason": "One short sentence on why this place fits the requested tags/companion/preferences"
+                          "recommendReason": "2-3 sentences telling this place's story"
                         }
                       ]
                     }
@@ -491,17 +586,32 @@ public class ClaudeScheduleService {
                 - Do NOT include markdown backticks
                 - Do NOT include any text outside the JSON object
                 - Write 'title', 'placeName', 'placeAddress', 'memo', and 'recommendReason' in the detected language (Korean or Japanese).
-                - 'recommendReason' MUST be a single concrete sentence explaining why THIS place fits the given Travel Style/Tags, Companion Type, or Additional Preferences (e.g. "1층 매장이라 계단 이동이 없어요", "역과 엘리베이터로 바로 연결돼요"). If accessibility/luggage/stroller/senior tags were requested, prioritize mentioning the specific accessibility feature. Never leave it generic praise like "인기 명소예요".
-                
+                - 'recommendReason' MUST be 2-3 concrete sentences that include AT LEAST TWO of
+                  the following: the shop's history or why it opened, the story behind its
+                  signature dish, its relationship to the neighborhood/market, an anecdote about
+                  the owner or chef, or why locals (not tourists) go there. If accessibility,
+                  luggage, stroller, or senior tags were requested, also weave in the specific
+                  accessibility feature.
+                - NEVER use generic praise or guidebook phrases such as "인기 명소예요", "유명한",
+                  "필수 코스", "여행객이라면 꼭", "인스타 핫플", "관광지로 유명한", or their
+                  English/Japanese equivalents (e.g. "must-visit", "famous spot", "popular tourist
+                  attraction").
+                - Bad example: "현지인에게 인기 많은 라멘 맛집입니다."
+                  Good example: "3대째 이어온 라멘집으로, 창업자가 시장 상인들 아침 끼니용으로 팔던
+                  국물이 지금의 시그니처가 됐다. 관광 거리에서 두 블록 떨어져 있어 여행객보다 근처
+                  공장 직원들이 아침 7시부터 줄을 선다."
+                - Before returning the JSON, silently re-check every item against the rules above
+                  and replace any item that fails.
+
                 Make sure latitude and longitude coordinates are accurate real-world values for the requested location.
                 """,
+                regionName,
                 req.getDaysCount(),
                 regionName,
                 regionName,
                 req.getCompanionType() != null && !req.getCompanionType().isBlank() ? req.getCompanionType() : "General",
                 tagNames,
-                req.getExtraPrompt() != null && !req.getExtraPrompt().isBlank() ? req.getExtraPrompt() : "None",
-                regionName
+                req.getExtraPrompt() != null && !req.getExtraPrompt().isBlank() ? req.getExtraPrompt() : "None"
         );
     }
 }

@@ -25,6 +25,9 @@
                      th:src="@{${coverPhotoBySchedule.get(t.id).imageUrl}}"
                      th:alt="#{portfolio.cover_alt}"
                      alt="여행 사진">
+                <div th:if="${coverPhotoBySchedule.get(t.id) == null}" class="portfolio-card__cover-fallback">
+                    <span th:text="${t.region.displayName}">TOKYO</span>
+                </div>
                 <div class="portfolio-card-body">
                     <span th:text="${t.region.displayName}" class="region-badge">TOKYO</span>
                     <h3 class="schedule-card__title" style="margin-top: 8px;">

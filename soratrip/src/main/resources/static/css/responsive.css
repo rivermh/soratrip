@@ -2,8 +2,8 @@
   .navbar {
     flex-direction: column;
     align-items: stretch;
-    border-radius: var(--radius-xl);
-    padding: 16px 20px;
+    border-radius: 0;
+    padding: 14px var(--space-4);
     position: static;
   }
 

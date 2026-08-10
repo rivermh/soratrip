@@ -189,8 +189,14 @@ public class MemberController {
     // 프로필 수정 처리
     @PostMapping("/mypage")
     public String updateProfile(@AuthenticationPrincipal Object principal,
-                                @ModelAttribute MemberProfileDto dto) {
+                                @Valid @ModelAttribute MemberProfileDto dto,
+                                BindingResult bindingResult) {
         String email = SecurityUtils.requireEmail(principal);
+        // 마이페이지는 여러 목록(글/댓글/좋아요/북마크 등)을 함께 렌더링하므로,
+        // 검증 실패 시 그 모델을 다시 채워 뷰를 직접 반환하는 대신 GET 핸들러로 리다이렉트한다.
+        if (bindingResult.hasErrors()) {
+            return "redirect:/members/mypage?error";
+        }
         memberService.updateProfile(email, dto);
         return "redirect:/members/mypage?success";
     }

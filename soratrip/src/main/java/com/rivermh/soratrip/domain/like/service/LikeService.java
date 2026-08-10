@@ -14,6 +14,7 @@ import com.rivermh.soratrip.domain.post.repository.PostRepository;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,9 +46,14 @@ public class LikeService {
             postLikeRepository.delete(postLike.get());
             isLiked = false;
         } else {
-            postLikeRepository.save(PostLike.builder().member(member).post(post).build());
+            try {
+                postLikeRepository.save(PostLike.builder().member(member).post(post).build());
+                notificationService.notify(post.getWriter(), member, NotificationType.POST_LIKE, post.getId(), post.getTitle());
+            } catch (DataIntegrityViolationException e) {
+                // 좋아요 버튼 연타 등으로 동시에 두 번 요청이 들어와 유니크 제약(member, post)에 걸린 경우.
+                // 이미 다른 요청이 좋아요를 저장했으므로 실패로 취급하지 않고 성공 상태로 흡수한다.
+            }
             isLiked = true;
-            notificationService.notify(post.getWriter(), member, NotificationType.POST_LIKE, post.getId(), post.getTitle());
         }
 
         int currentLikeCount = postLikeRepository.countByPost(post);
@@ -60,6 +66,9 @@ public class LikeService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         TravelSchedule schedule = travelScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+        if (!schedule.isPublic() && !schedule.isOwnedBy(email)) {
+            throw new IllegalArgumentException("존재하지 않는 일정입니다.");
+        }
 
         Optional<ScheduleLike> scheduleLike = scheduleLikeRepository.findByMemberAndTravelSchedule(member, schedule);
         boolean isLiked;
@@ -68,9 +77,13 @@ public class LikeService {
             scheduleLikeRepository.delete(scheduleLike.get());
             isLiked = false;
         } else {
-            scheduleLikeRepository.save(ScheduleLike.builder().member(member).travelSchedule(schedule).build());
+            try {
+                scheduleLikeRepository.save(ScheduleLike.builder().member(member).travelSchedule(schedule).build());
+                notificationService.notify(schedule.getMember(), member, NotificationType.SCHEDULE_LIKE, schedule.getId(), schedule.getTitle());
+            } catch (DataIntegrityViolationException e) {
+                // 동시 중복 요청으로 유니크 제약(member, travelSchedule)에 걸린 경우 성공 상태로 흡수
+            }
             isLiked = true;
-            notificationService.notify(schedule.getMember(), member, NotificationType.SCHEDULE_LIKE, schedule.getId(), schedule.getTitle());
         }
 
         int currentLikeCount = scheduleLikeRepository.countByTravelSchedule(schedule);

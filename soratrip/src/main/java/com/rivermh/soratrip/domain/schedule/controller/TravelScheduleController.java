@@ -30,12 +30,14 @@ import com.rivermh.soratrip.domain.review.dto.MobilityScoreDto;
 import com.rivermh.soratrip.domain.review.entity.Review;
 import com.rivermh.soratrip.domain.review.service.ReviewService;
 import com.rivermh.soratrip.domain.schedule.dto.AiScheduleRequest;
+import com.rivermh.soratrip.domain.schedule.dto.DayWeatherSummaryDto;
 import com.rivermh.soratrip.domain.schedule.dto.TravelScheduleForm;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
-import com.rivermh.soratrip.domain.schedule.service.GroqScheduleService;
+import com.rivermh.soratrip.domain.schedule.service.ClaudeScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.ScheduleRecommendationService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
+import com.rivermh.soratrip.domain.schedule.service.WeatherService;
 import com.rivermh.soratrip.global.security.SecurityUtils;
 
 import jakarta.validation.Valid;
@@ -49,7 +51,8 @@ public class TravelScheduleController {
     private final TravelScheduleService travelScheduleService;
     private final ScheduleRecommendationService scheduleRecommendationService;
     private final ReviewService reviewService;
-    private final GroqScheduleService groqScheduleService;
+    private final ClaudeScheduleService claudeScheduleService;
+    private final WeatherService weatherService;
 
     // 북마크 조회를 위해 추가된 의존성
     private final ScheduleBookmarkRepository scheduleBookmarkRepository;
@@ -62,8 +65,6 @@ public class TravelScheduleController {
             return "redirect:/members/login";
         }
 
-        // 현재 로그인한 사용자의 일정 목록 가져오기
-        // Member 엔티티 가져오는 방식에 맞게 조정 필요 (email 기준 조회)
         List<TravelSchedule> schedules = travelScheduleService.getMySchedulesByEmail(principal.getName());
         model.addAttribute("schedules", schedules);
         return "schedule/list";
@@ -81,14 +82,14 @@ public class TravelScheduleController {
     @PostMapping("/new")
     public String createSchedule(@Valid @ModelAttribute("scheduleForm") TravelScheduleForm form,
                                  BindingResult bindingResult,
-                                 @AuthenticationPrincipal Object principal, // Principal 대신 Object로 수신
+                                 @AuthenticationPrincipal Object principal,
                                  Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("regions", Region.values());
             return "schedule/form";
         }
 
-        String email = SecurityUtils.extractEmail(principal); // 안전하게 이메일 추출
+        String email = SecurityUtils.extractEmail(principal);
         if (email == null) {
             return "redirect:/members/login";
         }
@@ -116,7 +117,7 @@ public class TravelScheduleController {
         return "schedule/explore";
     }
 
- // 4-1. 취향 태그 기반 맞춤 일정 추천 (로그인 검증 및 소셜/일반 로그인 통합 이메일 추출)
+    // 4-1. 취향 태그 기반 맞춤 일정 추천
     @GetMapping("/recommended")
     public String recommended(Model model, @AuthenticationPrincipal Object principal) {
         String email = SecurityUtils.extractEmail(principal);
@@ -132,7 +133,7 @@ public class TravelScheduleController {
         return "schedule/recommended";
     }
 
- // 5. 여행 일정 상세 보기 페이지 (Google Maps 및 북마크 연동)
+    // 5. 여행 일정 상세 보기 페이지 (Google Maps 및 북마크 연동)
     @GetMapping("/{id}")
     public String detailSchedule(@PathVariable("id") Long id,
                                  @AuthenticationPrincipal Object principal,
@@ -146,7 +147,6 @@ public class TravelScheduleController {
             return "redirect:/schedules";
         }
 
-        // 북마크 상태 및 총 개수 조회 로직 추가
         boolean bookmarked = false;
         if (email != null) {
             Member member = memberRepository.findByEmail(email).orElse(null);
@@ -156,13 +156,12 @@ public class TravelScheduleController {
         }
         int bookmarkCount = scheduleBookmarkRepository.countByTravelSchedule(schedule);
 
-        // 이동 편의성 요약(후기 기반)만 상세 페이지에 남기고, 가계부/사진/후기 CRUD는 각자 페이지로 분리됨
         List<Review> reviews = reviewService.getReviewsForSchedule(id);
 
         model.addAttribute("schedule", schedule);
         model.addAttribute("owner", owner);
-        model.addAttribute("bookmarked", bookmarked);       // 추가된 북마크 여부
-        model.addAttribute("bookmarkCount", bookmarkCount); // 추가된 북마크 총 개수
+        model.addAttribute("bookmarked", bookmarked);
+        model.addAttribute("bookmarkCount", bookmarkCount);
         model.addAttribute("mobilityScore", MobilityScoreDto.fromReviews(reviews));
         return "schedule/detail";
     }
@@ -175,7 +174,7 @@ public class TravelScheduleController {
         return "schedule/copy-form";
     }
 
-    // 7. 일정 복사 처리 (다른 사람의 일정을 내 일정으로 가져오기)
+    // 7. 일정 복사 처리
     @PostMapping("/{id}/copy")
     public String copySchedule(@PathVariable("id") Long id,
                                @RequestParam("newStartDate") LocalDate newStartDate,
@@ -205,7 +204,7 @@ public class TravelScheduleController {
         return "redirect:/schedules/" + id;
     }
 
- // 10. AI 일정 자동 생성 폼
+    // 10. AI 일정 자동 생성 폼
     @GetMapping("/ai-new")
     public String aiCreateForm(Model model) {
         AiScheduleRequest aiRequest = new AiScheduleRequest();
@@ -216,19 +215,17 @@ public class TravelScheduleController {
         return "schedule/ai-form";
     }
 
- // AI 일정 자동 생성 처리
+    // AI 일정 자동 생성 처리
     @PostMapping("/ai-new")
     public String createAiSchedule(@Valid @ModelAttribute("aiRequest") AiScheduleRequest aiRequest,
                                    BindingResult bindingResult,
-                                   Model model, // 👈 Model 추가
+                                   Model model,
                                    @AuthenticationPrincipal Object principal) {
-        
-        // 💡 유효성 검사 실패 시
+
         if (bindingResult.hasErrors()) {
-            // ⚠️ 폼 화면을 다시 그릴 때 필요한 데이터들을 다시 넣어주어야 에러 x
-            model.addAttribute("regions", Region.values()); // 본인 프로젝트의 지역 목록 Enum에 맞게 수정
-            model.addAttribute("tags", ScheduleTag.values()); // 본인 프로젝트의 태그 목록 Enum에 맞게 수정
-            return "schedule/ai-form"; 
+            model.addAttribute("regions", Region.values());
+            model.addAttribute("tags", ScheduleTag.values());
+            return "schedule/ai-form";
         }
 
         String email = SecurityUtils.extractEmail(principal);
@@ -236,7 +233,31 @@ public class TravelScheduleController {
             return "redirect:/members/login";
         }
 
-        Long scheduleId = groqScheduleService.createScheduleWithAi(aiRequest, email);
+        Long scheduleId = claudeScheduleService.createScheduleWithAi(aiRequest, email);
         return "redirect:/schedules/" + scheduleId;
+    }
+
+    // 11. 일정별 날씨 및 준비물 팁 페이지 (수정 반영)
+    @GetMapping("/{id}/weather")
+    public String scheduleWeatherView(@PathVariable("id") Long id,
+                                      @AuthenticationPrincipal Object principal,
+                                      Model model) {
+        TravelSchedule schedule = travelScheduleService.getScheduleDetail(id);
+
+        String email = principal != null ? SecurityUtils.extractEmail(principal) : null;
+        boolean owner = schedule.isOwnedBy(email);
+
+        // 비공개 일정이고 본인 일정이 아닐 경우 접근 제한
+        if (!schedule.isPublic() && !owner) {
+            return "redirect:/schedules";
+        }
+
+        List<DayWeatherSummaryDto> weatherList = weatherService.getScheduleWeatherSummary(id);
+
+        model.addAttribute("schedule", schedule);
+        model.addAttribute("weatherList", weatherList);
+        model.addAttribute("owner", owner);
+
+        return "schedule/weather";
     }
 }

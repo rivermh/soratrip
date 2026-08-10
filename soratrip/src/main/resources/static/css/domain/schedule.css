@@ -60,7 +60,8 @@
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  padding: var(--space-5);
+  padding: 0;
+  overflow: hidden;
   box-shadow: var(--shadow-xs);
   transition:
     transform var(--transition-base),
@@ -69,9 +70,41 @@
 }
 
 .schedule-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
   border-color: var(--primary-200);
+}
+
+/* 카드 상단 컬러 커버 — 인덱스 히어로 목업의 '일정카드' 톤을 실제 목록 카드에도 통일 적용 */
+.schedule-card__cover {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: 72px;
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(160deg, var(--primary-500), var(--primary-700));
+}
+
+.schedule-card__cover-region {
+  color: var(--text-inverse);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.schedule-card__cover-author {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 11px;
+  font-weight: var(--fw-medium);
+}
+
+.schedule-card__body {
+  flex: 1;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  display: flex;
+  flex-direction: column;
 }
 
 .schedule-card__top {
@@ -106,7 +139,7 @@
 }
 
 .schedule-card__title {
-  margin: var(--space-2) 0 6px;
+  margin: 0 0 6px;
   font-size: var(--text-md);
   line-height: var(--leading-tight);
 }
@@ -161,7 +194,7 @@
 .schedule-card__cta {
   display: block;
   text-align: center;
-  margin-top: auto;
+  margin: auto var(--space-5) var(--space-5);
 }
 
 /* ------------------------------------------
@@ -362,19 +395,32 @@
    6. 카드형 타임라인 — 일차별 일정
    ------------------------------------------ */
 .day-timeline {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
 }
 
+/* 일차 카드들을 잇는 실제 타임라인 레일 — 카드 사이 간격에서만 보이고,
+   각 day-badge(노드)가 그 위에 얹힌 것처럼 보이도록 badge 중심에 맞춘다 */
+.day-timeline::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 37px;
+  width: 2px;
+  background: var(--timeline-line-color);
+  z-index: 0;
+}
+
 .day-card {
   position: relative;
+  z-index: 1;
   background: var(--surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
-  padding-left: calc(var(--space-5) + 4px);
-  border-left: 4px solid var(--primary-color);
 }
 
 .day-card__header {
@@ -398,15 +444,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 34px;
+  min-width: var(--timeline-dot-size);
+  width: 34px;
   height: 34px;
   padding: 0 10px;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--primary-color), #6366f1);
+  background: var(--timeline-dot-active-color);
+  border: var(--timeline-dot-border);
   color: var(--text-inverse);
   font-size: var(--text-sm);
-  font-weight: 800;
-  box-shadow: 0 4px 12px var(--primary-glow);
+  font-weight: var(--fw-bold);
+  box-shadow: 0 0 0 1px var(--timeline-line-color), 0 4px 10px var(--primary-glow);
 }
 
 .day-date {
@@ -415,7 +463,15 @@
   font-weight: 500;
 }
 
-.day-save-btn {
+.day-card__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.day-save-btn,
+.day-ai-regen-btn {
   width: auto;
   padding: 6px 14px;
   font-size: var(--text-xs);
@@ -505,6 +561,12 @@
 .item-card__memo {
   font-size: var(--text-xs);
   color: var(--color-success);
+  margin-top: 2px;
+}
+
+.item-card__ai-reason {
+  font-size: var(--text-xs);
+  color: var(--primary-700);
   margin-top: 2px;
 }
 
@@ -794,6 +856,141 @@
   align-items: center;
   gap: 5px;
   cursor: pointer;
+}
+
+/* ------------------------------------------
+   9. 날씨 & 준비물 카드 (schedule/weather.html)
+   ------------------------------------------ */
+.weather-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--sky-top);
+  border: 1px solid var(--primary-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-6);
+  color: var(--primary-700);
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+}
+
+.weather-notice__icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.weather-card {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.weather-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.weather-card__place {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+  color: var(--text-main);
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+}
+
+.weather-main__icon {
+  width: 52px;
+  height: 52px;
+}
+
+.weather-main__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.weather-main__temp {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: var(--text-lg);
+  font-weight: var(--fw-black);
+  color: var(--text-main);
+}
+
+.weather-main__condition {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  color: var(--text-sub);
+}
+
+.weather-pop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--primary-color);
+}
+
+.weather-tip {
+  background: var(--surface);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: var(--space-3) var(--space-4);
+}
+
+.weather-tip__label {
+  font-size: 11px;
+  font-weight: var(--fw-bold);
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: 4px;
+}
+
+.weather-tip p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-main);
+  line-height: var(--leading-relaxed);
+  word-break: keep-all;
+}
+
+.weather-empty {
+  text-align: center;
+  padding: var(--space-6) var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius);
+  color: var(--text-faint);
+}
+
+.weather-empty__icon {
+  font-size: 1.8rem;
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.weather-empty p {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  word-break: keep-all;
 }
 
 /* ------------------------------------------

@@ -42,6 +42,7 @@
                 <a th:if="${!owner}" th:href="@{/schedules/{id}/copy(id=${schedule.id})}" class="btn btn-primary" th:text="#{schedule.copy.button}">📋 내 일정으로 복사</a>
                 <a th:if="${owner}" th:href="@{/schedules/{id}/settings(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.settings.button}">⚙️ 공개 설정</a>
                 <a th:if="${owner}" th:href="@{/schedules/{id}/settlement(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.settlement.button}">💸 정산하기</a>
+                <a th:href="@{/schedules/{id}/weather(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.weather.button}">☀️ 날씨 & 준비물</a>
                 <a th:href="@{/schedules/{id}/expenses(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.expenses.button}">💰 가계부</a>
                 <a th:href="@{/schedules/{id}/photos(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.photos.button}">📷 사진</a>
                 <a th:href="@{/schedules/{id}/reviews(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.reviews.button}">📝 후기</a>
@@ -83,9 +84,13 @@
                     <span th:text="#{schedule.day_title}">일차</span>
                     <span class="day-date" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
                 </h4>
-                <!-- 소유자인 경우 순서 저장 버튼 노출 -->
-                <button th:if="${owner}" type="button" class="btn btn-secondary day-save-btn"
-                        th:onclick="'saveDayOrder(' + ${day.id} + ')'" th:text="#{schedule.save_order}">💾 순서 저장</button>
+                <!-- 소유자인 경우 순서 저장 / AI 재생성 버튼 노출 -->
+                <div th:if="${owner}" class="day-card__actions">
+                    <button type="button" class="btn btn-secondary day-save-btn"
+                            th:onclick="'saveDayOrder(' + ${day.id} + ')'" th:text="#{schedule.save_order}">💾 순서 저장</button>
+                    <button type="button" class="btn btn-ai day-ai-regen-btn"
+                            th:onclick="'regenerateDayWithAi(' + ${day.id} + ', this)'" th:text="#{schedule.ai.regenerate_day}">🔄 AI로 이 날 다시 짜기</button>
+                </div>
             </div>
 
             <div th:if="${#lists.isEmpty(day.items)}" class="day-empty" th:text="#{schedule.empty_places}">
@@ -118,6 +123,9 @@
                             <div class="item-card__address" th:text="${item.placeAddress}">주소 정보</div>
                             <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" class="item-card__memo">
                                 📝 <span th:text="#{schedule.memo}">메모</span>: <span th:text="${item.memo}">메모 내용</span>
+                            </div>
+                            <div th:if="${item.recommendReason != null and !#strings.isEmpty(item.recommendReason)}" class="item-card__ai-reason">
+                                🤖 <span th:text="#{schedule.ai_reason}">AI 추천 이유</span>: <span th:text="${item.recommendReason}">AI 추천 이유 내용</span>
                             </div>
                         </div>
                     </div>
@@ -317,6 +325,37 @@
                 else alert(/*[[#{common.save_failed}]]*/ '저장에 실패했습니다.');
             })
             .catch(err => alert(/*[[#{common.error_prefix}]]*/ '오류가 발생했습니다:' + ' ' + err));
+        }
+
+        // AI로 특정 하루 다시 짜기 (POST /api/schedules/days/{dayId}/ai-regenerate)
+        function regenerateDayWithAi(dayId, btnEl) {
+            if (!confirm(/*[[#{schedule.ai.regenerate_day_confirm}]]*/ '이 날의 장소들이 AI가 새로 짠 일정으로 교체됩니다. 계속할까요?')) return;
+
+            const extraPrompt = prompt(/*[[#{schedule.ai.regenerate_day_prompt}]]*/ '이 날에 반영할 요청사항이 있다면 입력해주세요 (선택)', '') || '';
+
+            const originalText = btnEl.textContent;
+            btnEl.disabled = true;
+            btnEl.textContent = /*[[#{schedule.ai.regenerating}]]*/ '🤖 AI가 생성 중...';
+
+            fetch(`/api/schedules/days/${dayId}/ai-regenerate`, {
+                method: 'POST',
+                headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ extraPrompt: extraPrompt })
+            })
+            .then(res => {
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    alert(/*[[#{schedule.ai.regenerate_day_failed}]]*/ 'AI 재생성에 실패했습니다. 잠시 후 다시 시도해주세요.');
+                    btnEl.disabled = false;
+                    btnEl.textContent = originalText;
+                }
+            })
+            .catch(err => {
+                alert(/*[[#{common.error_prefix}]]*/ '오류가 발생했습니다:' + ' ' + err);
+                btnEl.disabled = false;
+                btnEl.textContent = originalText;
+            });
         }
 
         // 장소 삭제 (DELETE /api/schedules/items/{itemId})

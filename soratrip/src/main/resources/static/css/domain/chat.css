@@ -1,0 +1,303 @@
+/* ==========================================
+   Chat — 실시간 채팅 & 동행 매칭 (chat/chat.html)
+   ========================================== */
+.chat-container {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: var(--space-5);
+  height: min(640px, 75vh);
+}
+
+.sidebar {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.sidebar-header {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  padding: var(--space-5);
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+}
+
+.chat-rooms-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.chat-room-item {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  margin-bottom: 4px;
+  border-left: 3px solid transparent;
+}
+
+.chat-room-item:hover {
+  background: var(--surface);
+}
+
+.chat-room-item.active {
+  background: var(--primary-soft);
+  border-left-color: var(--primary-color);
+}
+
+.chat-room-item.active .room-name {
+  color: var(--primary-color);
+}
+
+.room-name {
+  font-weight: var(--fw-bold);
+  font-size: var(--text-sm);
+  color: var(--text-main);
+  margin-bottom: 3px;
+}
+
+.room-preview {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.main-chat {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.chat-header {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  padding: var(--space-5);
+  font-size: var(--text-base);
+  font-weight: var(--fw-bold);
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  background: var(--bg-color);
+}
+
+.message {
+  margin-bottom: var(--space-4);
+  animation: chatSlideIn 0.3s var(--ease-out);
+  max-width: 78%;
+}
+
+@keyframes chatSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.message.own {
+  align-self: flex-end;
+}
+
+.message.other {
+  align-self: flex-start;
+}
+
+.message-content {
+  padding: 11px 16px;
+  border-radius: var(--radius);
+  word-wrap: break-word;
+  line-height: 1.5;
+  font-size: var(--text-sm);
+  box-shadow: var(--shadow-xs);
+}
+
+.message.own .message-content {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  border-bottom-right-radius: 4px;
+}
+
+.message.other .message-content {
+  background: var(--surface-elevated);
+  color: var(--text-main);
+  border: 1px solid var(--border-light);
+  border-bottom-left-radius: 4px;
+}
+
+.message-sender {
+  font-size: 11.5px;
+  color: var(--text-sub);
+  margin-bottom: 4px;
+  font-weight: var(--fw-bold);
+}
+
+.message.other .message-sender { text-align: left; }
+.message.own .message-sender { text-align: right; }
+
+.message-time {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+.message.own .message-time { text-align: right; }
+.message.other .message-time { text-align: left; }
+
+.input-area {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  gap: var(--space-2);
+  background: var(--card-bg);
+  padding-bottom: max(var(--space-3), var(--safe-area-bottom));
+}
+
+.input-area input {
+  flex: 1;
+  min-height: var(--touch-target);
+  padding: 12px 18px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  outline: none;
+  background: var(--surface);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.input-area input:focus {
+  border-color: var(--primary-color);
+  background: var(--surface-elevated);
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.input-area input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.input-area button {
+  background: var(--primary-color);
+  color: var(--text-inverse);
+  border: none;
+  padding: 0 26px;
+  min-height: var(--touch-target);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  font-weight: var(--fw-bold);
+  font-size: var(--text-sm);
+  box-shadow: 0 4px 14px var(--primary-glow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), opacity var(--transition-fast), background-color var(--transition-fast);
+}
+
+.input-area button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px var(--primary-glow);
+}
+
+.input-area button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.matching-section {
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+}
+
+.matching-section h2 {
+  font-size: var(--text-md);
+  margin-bottom: var(--space-4);
+  color: var(--text-main);
+}
+
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.user-card {
+  padding: var(--space-4);
+  background: var(--surface);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition-base);
+  border: 1px solid var(--border-color);
+}
+
+.user-card:hover {
+  background: var(--primary-color);
+  border-color: transparent;
+  color: var(--text-inverse);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px var(--primary-glow);
+}
+
+.user-name {
+  font-weight: var(--fw-bold);
+  margin-bottom: 4px;
+  font-size: var(--text-sm);
+}
+
+.user-similarity {
+  font-size: var(--text-xs);
+  opacity: 0.85;
+}
+
+.status {
+  text-align: center;
+  padding: var(--space-5);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.connection-status {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-error);
+  margin-right: var(--space-2);
+}
+
+.connection-status.connected {
+  background: var(--color-success);
+  box-shadow: 0 0 6px rgba(23, 166, 115, 0.6);
+}
+
+@media (max-width: 768px) {
+  .chat-container {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .sidebar {
+    max-height: 220px;
+  }
+  .main-chat {
+    min-height: 68vh;
+  }
+}

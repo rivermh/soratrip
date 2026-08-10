@@ -4,23 +4,28 @@
    ========================================== */
 :root {
   /* ------------------------------------------
-     1. Primary — Travel Blue / Indigo
+     1. Primary — Sky Blue (Wanderlog/Triple 스타일 글로벌 여행 플랫폼 톤)
      ------------------------------------------ */
-  --primary-50:  #eef2ff;
-  --primary-100: #e0e7ff;
-  --primary-200: #c7d2fe;
-  --primary-300: #a5b4fc;
-  --primary-400: #818cf8;
-  --primary-500: #4f5fee;
-  --primary-600: #3d52e0;
-  --primary-700: #3142c4;
-  --primary-800: #2a379e;
-  --primary-900: #26317d;
+  --primary-50:  #f0f9ff;
+  --primary-100: #e0f2fe;
+  --primary-200: #bae6fd;
+  --primary-300: #7dd3fc;
+  --primary-400: #38bdf8;
+  --primary-500: #0ea5e9;
+  --primary-600: #0284c7;
+  --primary-700: #0369a1;
+  --primary-800: #075985;
+  --primary-900: #0c4a6e;
 
   --primary-color: var(--primary-600);
   --primary-hover: var(--primary-700);
-  --primary-soft: rgba(61, 82, 224, 0.09);
-  --primary-glow: rgba(61, 82, 224, 0.28);
+  --primary-soft: rgba(2, 132, 199, 0.08);
+  --primary-glow: rgba(2, 132, 199, 0.24);
+
+  /* 브랜드 잉크 — 순수 그레이 대신 살짝 남색이 도는 딥 네이비 (헤더/푸터/헤딩 전용) */
+  --ink-900: #0b1d33;
+  --ink-800: #16304f;
+  --ink-700: #1f4166;
 
   /* ------------------------------------------
      2. Accent — 포인트 컬러 (선셋 오렌지)
@@ -33,10 +38,10 @@
   --ai-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
   --ai-shadow: 0 8px 24px -8px rgba(99, 102, 241, 0.4);
 
-  /* 배경 은은한 하늘빛 (도입부 등에서 선택적으로 사용) */
-  --sky-top: #eef2ff;
-  --sky-mid: #f4f6fd;
-  --sky-bottom: #fafbff;
+  /* 배경 은은한 하늘빛 — 히어로/섹션 배경 전용, 카드·버튼·배지에는 사용하지 않음 */
+  --sky-top: #f0f9ff;
+  --sky-mid: #f5fbfe;
+  --sky-bottom: #ffffff;
 
   /* ------------------------------------------
      3. Neutral Gray Scale
@@ -83,9 +88,9 @@
   /* ------------------------------------------
      7. Borders
      ------------------------------------------ */
-  --border-color: rgba(20, 22, 31, 0.08);
-  --border-light: rgba(20, 22, 31, 0.05);
-  --border-focus: rgba(61, 82, 224, 0.45);
+  --border-color: rgba(11, 29, 51, 0.10);
+  --border-light: rgba(11, 29, 51, 0.06);
+  --border-focus: rgba(2, 132, 199, 0.45);
 
   /* ------------------------------------------
      8. Elevation — 부드럽고 넓게 퍼지는 카드 그림자
@@ -109,11 +114,23 @@
   --text-lg:   clamp(1.1875rem, 1.1rem + 0.4vw, 1.375rem);
   --text-xl:   clamp(1.375rem, 1.25rem + 0.6vw, 1.75rem);
   --text-2xl:  clamp(1.625rem, 1.4rem + 1.1vw, 2.25rem);
-  --text-3xl:  clamp(2rem, 1.6rem + 2vw, 3rem);
+  --text-3xl:  clamp(2.125rem, 1.6rem + 2.6vw, 3.375rem);
 
   --leading-tight: 1.25;
+  --leading-heading: 1.08;
   --leading-normal: 1.6;
   --leading-relaxed: 1.75;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-black: 800;
+
+  --tracking-tight: -0.03em;
+  --tracking-tighter: -0.04em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.02em;
 
   /* ------------------------------------------
      10. Spacing Scale (4px base)
@@ -132,10 +149,10 @@
   /* ------------------------------------------
      11. Radius — 동글동글한 카드 모서리
      ------------------------------------------ */
-  --radius-sm: 10px;
-  --radius: 16px;
-  --radius-lg: 22px;
-  --radius-xl: 28px;
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
   /* ------------------------------------------
@@ -170,4 +187,12 @@
   --z-overlay: 300;
   --z-modal: 400;
   --z-toast: 500;
+
+  /* ------------------------------------------
+     16. Timeline UI (일정 상세 타임라인 전용)
+     ------------------------------------------ */
+  --timeline-line-color: var(--gray-200);
+  --timeline-dot-size: 12px;
+  --timeline-dot-border: 3px solid var(--card-bg);
+  --timeline-dot-active-color: var(--primary-600);
 }

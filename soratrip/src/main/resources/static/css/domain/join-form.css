@@ -97,3 +97,228 @@
   margin-top: var(--space-2);
   display: block;
 }
+
+/* ==========================================
+   회원가입 완료 페이지 (member/signup-success.html)
+   ========================================== */
+.success-container {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+  position: relative;
+  overflow: hidden;
+}
+
+.success-content {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-12) var(--space-8);
+  text-align: center;
+  max-width: 600px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  z-index: 10;
+  animation: slideUp 0.5s var(--ease-out);
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.success-icon {
+  margin-bottom: 32px;
+  animation: bounceIn 0.6s var(--ease-out);
+}
+
+.success-icon svg {
+  filter: drop-shadow(0 4px 10px rgba(16, 185, 129, 0.18));
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.success-title {
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--text-main);
+  margin: 0 0 var(--space-4) 0;
+  line-height: var(--leading-heading);
+}
+
+.success-subtitle {
+  font-size: var(--text-md);
+  color: var(--text-sub);
+  margin: 0 0 var(--space-8) 0;
+  line-height: 1.5;
+}
+
+.success-description {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-8);
+  text-align: left;
+}
+
+.success-description > p {
+  color: var(--text-main);
+  font-weight: var(--fw-bold);
+  margin: 0 0 var(--space-4) 0;
+  font-size: var(--text-base);
+}
+
+.features-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.features-list li {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-sub);
+  font-size: var(--text-sm);
+}
+
+.features-list li:last-child {
+  border-bottom: none;
+}
+
+.feature-icon {
+  font-size: 24px;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.feature-text {
+  flex: 1;
+  text-align: left;
+}
+
+.next-steps {
+  background: var(--primary-soft);
+  border-left: 4px solid var(--primary-color);
+  border-radius: var(--radius);
+  padding: var(--space-6);
+  margin-bottom: var(--space-8);
+  text-align: left;
+}
+
+.next-steps h3 {
+  color: var(--primary-hover);
+  font-size: var(--text-base);
+  margin: 0 0 var(--space-4) 0;
+  font-weight: var(--fw-bold);
+}
+
+.steps-list {
+  list-style: decimal;
+  padding-left: var(--space-6);
+  margin: 0;
+}
+
+.steps-list li {
+  color: var(--text-main);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-3);
+  line-height: 1.5;
+}
+
+.steps-list li strong {
+  color: var(--primary-hover);
+  font-weight: var(--fw-bold);
+}
+
+.steps-list li:last-child {
+  margin-bottom: 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+  flex-direction: column;
+}
+
+.action-buttons .btn {
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .action-buttons {
+    flex-direction: row;
+  }
+}
+
+.decoration-elements {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.decoration-circle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.05;
+  animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+  width: 200px;
+  height: 200px;
+  background-color: var(--primary-color);
+  top: -50px;
+  right: -50px;
+  animation-delay: 0s;
+}
+
+.circle-2 {
+  width: 150px;
+  height: 150px;
+  background-color: var(--color-success);
+  bottom: 100px;
+  left: -50px;
+  animation-delay: 1s;
+}
+
+.circle-3 {
+  width: 180px;
+  height: 180px;
+  background-color: var(--accent-color);
+  top: 50%;
+  right: 10%;
+  animation-delay: 2s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@media (max-width: 480px) {
+  .success-content {
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .success-icon svg {
+    width: 60px;
+    height: 60px;
+  }
+
+  .success-description,
+  .next-steps {
+    padding: var(--space-4);
+  }
+}

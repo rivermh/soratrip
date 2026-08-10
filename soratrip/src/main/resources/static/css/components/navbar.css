@@ -1,39 +1,45 @@
+/* Wanderlog 실제 사이트 참고: 떠다니는 유리질감 pill이 아니라
+   전체 폭의 납작한 바 + 얇은 밑줄 하나로 끝내는 미니멀 구조 */
 .navbar {
-  max-width: 1080px;
-  margin: 0 auto 32px;
+  max-width: none;
+  width: auto;
+  margin: calc(var(--space-4) * -1) calc(var(--space-4) * -1) var(--space-8);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  padding: 12px 12px 12px 24px;
-  border-radius: var(--radius-full);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: var(--shadow-md), var(--shadow-inner);
+  background: var(--card-bg);
+  padding: 18px var(--space-5);
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: none;
   position: sticky;
-  top: 16px;
+  top: 0;
   z-index: 100;
 }
 
-.navbar a.logo,
-.navbar a:first-child {
+@media (min-width: 768px) {
+  .navbar {
+    padding: 20px var(--space-8);
+  }
+}
+
+.navbar a.logo {
   margin-left: 0;
-  color: var(--text-main);
-  font-weight: 800;
-  font-size: 18px;
-  letter-spacing: -0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-900);
+  font-weight: var(--fw-black);
+  font-size: 20px;
+  letter-spacing: var(--tracking-tighter);
   text-decoration: none;
-  background: linear-gradient(135deg, var(--text-main) 30%, var(--primary-color) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .navbar .btn {
   width: auto;
-  padding: 9px 18px;
+  padding: 10px 20px;
   font-size: 13px;
 }
 
@@ -61,12 +67,12 @@
   display: inline-flex;
   align-items: center;
   padding: 8px 14px;
-  border-radius: var(--radius-full);
-  color: var(--text-sub);
+  border-radius: var(--radius-sm);
+  color: var(--ink-800);
   text-decoration: none;
   font-size: 13.5px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-normal);
   border: none;
   background: transparent;
   cursor: pointer;

@@ -36,6 +36,13 @@ public class MailService {
     private static final String PWD_RESET_ATTEMPT_PREFIX = "pwd-reset-attempt:";
     private static final int PWD_RESET_ATTEMPT_THRESHOLD = 5;
 
+    // 코드 "검증" 시도 횟수 제한(PWD_RESET_ATTEMPT)과는 별개로, 코드 "발송 요청" 자체를 제한한다.
+    // 제한이 없으면 공격자가 타인의 이메일로 재설정 요청을 반복 호출해 메일함을 스팸으로 채우거나
+    // (email bombing) 메일 발송 쿼터를 소진시킬 수 있다.
+    private static final String PWD_RESET_REQUEST_PREFIX = "pwd-reset-request:";
+    private static final int PWD_RESET_REQUEST_THRESHOLD = 5;
+    private static final long PWD_RESET_REQUEST_WINDOW_SECONDS = 3600L; // 1시간
+
     /**
      * 6자리 난수 인증 코드 생성 후 메일 발송 및 Redis 저장
      */
@@ -91,6 +98,8 @@ public class MailService {
      * 비밀번호 재설정 코드 생성 후 메일 발송 및 Redis 저장 (가입 시 이메일 인증 코드와 동일한 방식/TTL)
      */
     public void sendPasswordResetCode(String email) {
+        checkPasswordResetRequestRate(email);
+
         String code = createCode();
 
         redisTemplate.opsForValue().set(
@@ -128,6 +137,22 @@ public class MailService {
 
         recordPasswordResetAttempt(email);
         return false;
+    }
+
+    /**
+     * 이메일당 시간당 비밀번호 재설정 코드 발송 요청 횟수를 제한한다.
+     * 한도 초과 시 예외를 던지며, 호출부(MemberController)는 이미 모든 예외를
+     * 동일한 화면으로 조용히 흡수하므로 계정 열거로는 이어지지 않는다.
+     */
+    private void checkPasswordResetRequestRate(String email) {
+        String key = PWD_RESET_REQUEST_PREFIX + email;
+        Long count = redisTemplate.opsForValue().increment(key);
+        if (count != null && count == 1L) {
+            redisTemplate.expire(key, Duration.ofSeconds(PWD_RESET_REQUEST_WINDOW_SECONDS));
+        }
+        if (count != null && count > PWD_RESET_REQUEST_THRESHOLD) {
+            throw new IllegalStateException("비밀번호 재설정 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+        }
     }
 
     private void recordPasswordResetAttempt(String email) {

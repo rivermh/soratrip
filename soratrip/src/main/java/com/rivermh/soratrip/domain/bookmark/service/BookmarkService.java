@@ -8,6 +8,7 @@ import com.rivermh.soratrip.domain.member.repository.MemberRepository;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,9 @@ public class BookmarkService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
         TravelSchedule schedule = travelScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
+        if (!schedule.isPublic() && !schedule.isOwnedBy(email)) {
+            throw new IllegalArgumentException("존재하지 않는 일정입니다.");
+        }
 
         Optional<ScheduleBookmark> bookmark = scheduleBookmarkRepository.findByMemberAndTravelSchedule(member, schedule);
         boolean isBookmarked;
@@ -35,10 +39,14 @@ public class BookmarkService {
             scheduleBookmarkRepository.delete(bookmark.get());
             isBookmarked = false;
         } else {
-            scheduleBookmarkRepository.save(ScheduleBookmark.builder()
-                    .member(member)
-                    .travelSchedule(schedule)
-                    .build());
+            try {
+                scheduleBookmarkRepository.save(ScheduleBookmark.builder()
+                        .member(member)
+                        .travelSchedule(schedule)
+                        .build());
+            } catch (DataIntegrityViolationException e) {
+                // 동시 중복 요청으로 유니크 제약(member, travelSchedule)에 걸린 경우 성공 상태로 흡수
+            }
             isBookmarked = true;
         }
 

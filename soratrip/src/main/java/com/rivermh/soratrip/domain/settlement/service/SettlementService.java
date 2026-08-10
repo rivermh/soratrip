@@ -3,6 +3,7 @@ package com.rivermh.soratrip.domain.settlement.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,11 +90,21 @@ public class SettlementService {
                 continue; // 정산 대상으로 지정되지 않은 지출은 건너뜀
             }
             BigDecimal amount = e.getAmountKrw();
-            BigDecimal share = amount.divide(BigDecimal.valueOf(e.getSharedWith().size()), 0, RoundingMode.HALF_UP);
+            List<TripParticipant> sharedWith = e.getSharedWith().stream()
+                    .sorted(Comparator.comparing(TripParticipant::getId))
+                    .toList();
+            int shareCount = sharedWith.size();
+
+            // 1원 단위로 나눠떨어지지 않으면 기본 분담금은 내림 처리하고, 남는 나머지(원 단위)를
+            // 참여자 순서대로 1원씩 분배한다. 이렇게 하면 분담금 합계가 항상 원래 금액과 정확히 일치해서
+            // 반올림 오차가 결제자에게 소리 없이 손실되는 일이 없다.
+            BigDecimal baseShare = amount.divide(BigDecimal.valueOf(shareCount), 0, RoundingMode.DOWN);
+            int remainderWon = amount.subtract(baseShare.multiply(BigDecimal.valueOf(shareCount))).intValue();
 
             netAmount.merge(e.getPaidBy().getId(), amount, BigDecimal::add);
-            for (TripParticipant sp : e.getSharedWith()) {
-                netAmount.merge(sp.getId(), share.negate(), BigDecimal::add);
+            for (int i = 0; i < shareCount; i++) {
+                BigDecimal share = i < remainderWon ? baseShare.add(BigDecimal.ONE) : baseShare;
+                netAmount.merge(sharedWith.get(i).getId(), share.negate(), BigDecimal::add);
             }
         }
 

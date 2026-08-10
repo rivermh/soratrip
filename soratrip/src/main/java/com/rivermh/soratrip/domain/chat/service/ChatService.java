@@ -36,8 +36,8 @@ public class ChatService {
         Member otherUser = memberRepository.findById(otherUserId)
                 .orElseThrow(() -> new IllegalArgumentException("상대방을 찾을 수 없습니다."));
 
-        // 기존 채팅방 찾기
-        return chatRoomRepository.findChatRoomBetween(currentUser, otherUser)
+        // 기존 채팅방 찾기 (종료된 채팅방이면 다시 활성화해서 재사용)
+        ChatRoom chatRoom = chatRoomRepository.findChatRoomBetween(currentUser, otherUser)
                 .orElseGet(() -> {
                     ChatRoom newRoom = ChatRoom.builder()
                             .initiator(currentUser)
@@ -45,6 +45,8 @@ public class ChatService {
                             .build();
                     return chatRoomRepository.save(newRoom);
                 });
+        chatRoom.reopen();
+        return chatRoom;
     }
 
     /**
@@ -59,6 +61,9 @@ public class ChatService {
 
         if (!chatRoom.contains(sender)) {
             throw new IllegalArgumentException("이 채팅방에 접근할 권한이 없습니다.");
+        }
+        if (!chatRoom.isActive()) {
+            throw new IllegalStateException("종료되었거나 차단된 채팅방에는 메시지를 보낼 수 없습니다.");
         }
 
         ChatMessage message = ChatMessage.builder()

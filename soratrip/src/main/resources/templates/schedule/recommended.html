@@ -27,12 +27,11 @@
         <!-- 추천 일정 그리드 목록 -->
         <div th:unless="${#lists.isEmpty(schedules)}" class="schedule-grid">
             <div th:each="s : ${schedules}" th:with="ms=${mobilityScores.get(s.id)}" class="schedule-card">
-                <div>
-                    <div class="schedule-card__top">
-                        <span th:text="${s.region.displayName}" class="region-badge">TOKYO</span>
-                        <span th:if="${s.member != null}" class="author-tag" th:text="${s.member.nickname != null ? s.member.nickname : s.member.name}">작성자</span>
-                    </div>
-
+                <div class="schedule-card__cover">
+                    <span th:text="${s.region.displayName}" class="schedule-card__cover-region">TOKYO</span>
+                    <span th:if="${s.member != null}" class="schedule-card__cover-author" th:text="${s.member.nickname != null ? s.member.nickname : s.member.name}">작성자</span>
+                </div>
+                <div class="schedule-card__body">
                     <h3 class="schedule-card__title">
                         <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}">3박 4일 도쿄 여행</a>
                     </h3>
@@ -53,7 +52,7 @@
                     <div class="schedule-card__tags">
                         <span th:each="t : ${s.tags}" th:text="${t.displayName}"
                               class="tag-chip"
-                              th:classappend="${#strings.contains(t.name(), 'LUGGAGE') or #strings.contains(t.name(), 'ELEVATOR') or #strings.contains(t.name(), 'FLAT') or #strings.contains(t.name(), 'STROLLER')} ? 'tag-chip--accessible'">
+                              th:classappend="${t.barrierFree} ? 'tag-chip--accessible'">
                             태그
                         </span>
                     </div>

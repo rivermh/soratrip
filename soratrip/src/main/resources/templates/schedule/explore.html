@@ -55,12 +55,11 @@
         <!-- 일정 카드 목록 -->
         <div th:unless="${schedules.totalElements == 0}" class="schedule-grid">
             <div th:each="s : ${schedules}" th:with="ms=${mobilityScores.get(s.id)}" class="schedule-card">
-                <div>
-                    <div class="schedule-card__top">
-                        <span th:text="${s.region.displayName}" class="region-badge region-badge--solid">TOKYO</span>
-                        <span class="author-tag" th:text="${s.member.nickname}">작성자</span>
-                    </div>
-
+                <div class="schedule-card__cover">
+                    <span th:text="${s.region.displayName}" class="schedule-card__cover-region">TOKYO</span>
+                    <span class="schedule-card__cover-author" th:text="${s.member.nickname}">작성자</span>
+                </div>
+                <div class="schedule-card__body">
                     <h3 class="schedule-card__title">
                         <a th:href="@{/schedules/{id}(id=${s.id})}" th:text="${s.title}">3박 4일 도쿄 여행</a>
                     </h3>
@@ -80,10 +79,10 @@
                     <!-- 태그 노출 (이동 편의 태그 특화 강조) -->
                     <div class="schedule-card__tags">
                         <th:block th:each="t : ${s.tags}">
-                            <!-- ELEVATOR, STROLLER, WHEELCHAIR, HEAVY_LUGGAGE 등 이동 관련 태그는 파란 배지로 강조 -->
-                            <span th:if="${#strings.contains(t.name(), 'ELEVATOR') or #strings.contains(t.name(), 'LUGGAGE') or #strings.contains(t.name(), 'STROLLER') or #strings.contains(t.name(), 'WHEELCHAIR') or #strings.contains(t.name(), 'TRANSIT')}"
+                            <!-- 이동 편의 / 배리어프리 태그는 파란 배지로 강조 -->
+                            <span th:if="${t.barrierFree}"
                                   th:text="${t.displayName}" class="tag-chip tag-chip--transit">이동태그</span>
-                            <span th:unless="${#strings.contains(t.name(), 'ELEVATOR') or #strings.contains(t.name(), 'LUGGAGE') or #strings.contains(t.name(), 'STROLLER') or #strings.contains(t.name(), 'WHEELCHAIR') or #strings.contains(t.name(), 'TRANSIT')}"
+                            <span th:unless="${t.barrierFree}"
                                   th:text="${t.displayName}" class="tag-chip">일반태그</span>
                         </th:block>
                     </div>

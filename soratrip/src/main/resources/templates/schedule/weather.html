@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!-- 1. 공통 head 프래그먼트 불러오기 -->
+<head th:replace="~{fragments/common :: head(~{::title})}">
+    <title th:text="${schedule.title} + ' - 날씨 & 준비물'">SoraTrip - 날씨 & 복장 팁</title>
+</head>
+
+<body>
+
+    <!-- 2. 공통 header 프래그먼트 불러오기 -->
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <!-- 3. 메인 콘텐츠 영역 -->
+    <div class="container" style="max-width: 900px;">
+
+        <!-- 상단 헤더: 일정 제목 / 기간 / 일정으로 돌아가기 -->
+        <div class="schedule-hero">
+            <span th:text="${schedule.region.displayName}" class="region-badge region-badge--solid">TOKYO</span>
+            <div class="schedule-title-row">
+                <h2 th:text="${schedule.title}">도쿄 3박 4일 여행</h2>
+            </div>
+            <p class="schedule-dates">📅 <span th:text="${schedule.startDate}">2026-09-01</span> ~ <span th:text="${schedule.endDate}">2026-09-04</span></p>
+            <div class="schedule-actions-row">
+                <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" th:text="#{expense.back_to_schedule}">📋 일정으로 돌아가기</a>
+            </div>
+        </div>
+
+        <span class="eyebrow">☀️ Weather &amp; Outfit Guide</span>
+
+        <!-- 안내 문구 -->
+        <div class="weather-notice">
+            <span class="weather-notice__icon">💡</span>
+            <span>일정에 등록된 대표 장소의 실시간 예보를 바탕으로 기온, 강수확률 및 추천 착장 가이드를 제공합니다.</span>
+        </div>
+
+        <!-- 일자별 날씨 카드 그리드 -->
+        <div class="schedule-grid">
+
+            <div th:each="day : ${weatherList}" class="card weather-card">
+
+                <!-- 카드 상단: N일차 & 실제 방문 날짜 -->
+                <div class="weather-card__top">
+                    <span class="day-badge" th:text="${day.dayNumber}">1</span>
+                    <span class="day-date" th:text="${day.visitDate}">2026-09-01</span>
+                </div>
+
+                <!-- 대표 장소명 -->
+                <div class="weather-card__place">
+                    <span>📍</span>
+                    <span th:text="${day.representativePlace}">도쿄 타워</span>
+                </div>
+
+                <!-- 날씨 정보 데이터가 정상 조회된 경우 -->
+                <div th:if="${day.hasCoordinates}" class="weather-info-body">
+
+                    <!-- 날씨 아이콘 + 기온 + 날씨 상태 -->
+                    <div class="weather-main">
+                        <img th:src="${day.iconUrl}" alt="Weather Icon" class="weather-main__icon" />
+                        <div class="weather-main__info">
+                            <div class="weather-main__temp">
+                                <span th:text="${day.temp}">24.5</span><span>°C</span>
+                            </div>
+                            <span class="weather-main__condition" th:text="${day.weatherCondition}">맑음</span>
+                        </div>
+                    </div>
+
+                    <!-- 강수확률 -->
+                    <div class="weather-pop">
+                        <span>☔ 강수확률</span>
+                        <span th:text="${day.pop} + '%'">20%</span>
+                    </div>
+
+                    <!-- 복장 & 준비물 팁 박스 -->
+                    <div class="weather-tip">
+                        <div class="weather-tip__label">Outfit &amp; Packing Tip</div>
+                        <p th:text="${day.outfitTip}">가벼운 셔츠나 얇은 가디건을 추천합니다.</p>
+                    </div>
+                </div>
+
+                <!-- 장소 좌표가 없거나 API 조회가 안 된 경우 -->
+                <div th:unless="${day.hasCoordinates}" class="weather-empty">
+                    <span class="weather-empty__icon">🗺️</span>
+                    <p th:text="${day.outfitTip}">등록된 장소의 좌표 정보가 없어 날씨를 불러올 수 없습니다.</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- 4. 공통 footer 프래그먼트 불러오기 -->
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

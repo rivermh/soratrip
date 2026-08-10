@@ -9,7 +9,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class GeminiScheduleResponse {
+public class ClaudeScheduleResponse {
     private String title;
     private List<DayDto> days;
 
@@ -28,5 +28,6 @@ public class GeminiScheduleResponse {
         private String visitTime; // "10:00" 형식
         private Integer visitOrder;
         private String memo;
+        private String recommendReason; // AI가 이 장소를 고른 이유 (태그/동행자/추가요청과 연결된 한 줄 근거)
     }
 }

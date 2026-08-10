@@ -75,14 +75,16 @@
 
         <div th:unless="${posts.totalElements == 0}" class="post-grid">
             <a th:each="p : ${posts}" th:href="@{/posts/{id}(id=${p.id})}" class="post-card">
-                <div class="post-card__badges">
-                    <span class="region-badge" th:text="${p.region.displayName}">도쿄</span>
-                    <span class="category-badge" th:text="${p.category.displayName}">동행</span>
+                <div class="post-card__cover">
+                    <span class="post-card__cover-region" th:text="${p.region.displayName}">도쿄</span>
+                    <span class="post-card__cover-category" th:text="${p.category.displayName}">동행</span>
                 </div>
-                <h3 class="post-card__title" th:text="${p.title}">글 제목</h3>
-                <div class="post-card__meta">
-                    <span class="post-card__writer" th:text="${p.writerNickname}">작성자</span>
-                    <span class="post-card__views">👁 <span th:text="${p.viewCount}">0</span></span>
+                <div class="post-card__body">
+                    <h3 class="post-card__title" th:text="${p.title}">글 제목</h3>
+                    <div class="post-card__meta">
+                        <span class="post-card__writer" th:text="${p.writerNickname}">작성자</span>
+                        <span class="post-card__views">👁 <span th:text="${p.viewCount}">0</span></span>
+                    </div>
                 </div>
             </a>
         </div>

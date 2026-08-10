@@ -43,7 +43,10 @@ public class ScheduleItem {
     
     @Column(length = 500)
     private String memo;         // 메모 (예: "티켓 현장 발급, 30분 전 도착하기")
-    
+
+    @Column(length = 300)
+    private String recommendReason; // AI가 이 장소를 추천한 이유 (AI 생성 시에만 채워짐, 사용자 수동 추가 시 null)
+
     public void setVisitOrder(Integer visitOrder) {
         this.visitOrder = visitOrder;
     }

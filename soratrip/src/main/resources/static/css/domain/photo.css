@@ -36,8 +36,8 @@
 }
 
 .photo-grid-item:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
   border-color: var(--primary-200);
 }
 
@@ -83,8 +83,8 @@
 
 .portfolio-card:hover {
   border-color: var(--primary-200);
-  transform: translateY(-6px);
-  box-shadow: var(--shadow-xl);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 .portfolio-card img {
@@ -97,6 +97,23 @@
 
 .portfolio-card:hover img {
   transform: scale(1.06);
+}
+
+/* 커버 사진이 없는 경우의 대체 컬러 커버 — 인덱스 히어로 목업/schedule-card 커버와 톤 통일 */
+.portfolio-card__cover-fallback {
+  height: 200px;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-4) var(--space-5);
+  background: linear-gradient(160deg, var(--primary-500), var(--primary-700));
+}
+
+.portfolio-card__cover-fallback span {
+  color: var(--text-inverse);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-black);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
 }
 
 .portfolio-card .portfolio-card-body {

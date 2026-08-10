@@ -91,13 +91,6 @@ public class ScheduleRecommendationService {
      * 이동 편의 / 캐리어 친화 관련 핵심 태그 판별
      */
     private boolean isMobilityFriendlyTag(ScheduleTag tag) {
-        if (tag == null) return false;
-        String tagName = tag.name();
-        
-        return tagName.contains("LUGGAGE") ||     // 대형 캐리어
-               tagName.contains("ELEVATOR") ||    // 엘리베이터 우선
-               tagName.contains("FLAT") ||        // 평지/계단없음
-               tagName.contains("ACCESSIBLE") ||  // 배리어프리
-               tagName.contains("STROLLER");      // 유모차 수월
+        return tag != null && tag.isBarrierFree();
     }
 }

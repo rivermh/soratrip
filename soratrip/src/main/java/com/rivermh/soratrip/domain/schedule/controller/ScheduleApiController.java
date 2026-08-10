@@ -1,10 +1,11 @@
 package com.rivermh.soratrip.domain.schedule.controller;
 
-import com.rivermh.soratrip.domain.schedule.dto.AiScheduleRequest; // 👈 DTO 임포트 추가
+import com.rivermh.soratrip.domain.schedule.dto.AiScheduleRequest;
+import com.rivermh.soratrip.domain.schedule.dto.DayRegenerateRequest;
 import com.rivermh.soratrip.domain.schedule.dto.ScheduleOrderUpdateRequest;
-import com.rivermh.soratrip.domain.schedule.service.GroqScheduleService; // 👈 AI 서비스 임포트 추가
+import com.rivermh.soratrip.domain.schedule.service.ClaudeScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
-import jakarta.validation.Valid; // 👈 @Valid 임포트 추가
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ import java.security.Principal;
 public class ScheduleApiController {
 
     private final TravelScheduleService travelScheduleService;
-    private final GroqScheduleService groqScheduleService; // 👈 AI 서비스 주입 추가
+    private final ClaudeScheduleService claudeScheduleService;
 
     //  AI 여행 일정 생성 API (@Valid 적용)
     @PostMapping("/ai")
@@ -25,8 +26,20 @@ public class ScheduleApiController {
             @RequestBody @Valid AiScheduleRequest request,
             Principal principal) {
 
-        Long scheduleId = groqScheduleService.createScheduleWithAi(request, principal.getName());
+        Long scheduleId = claudeScheduleService.createScheduleWithAi(request, principal.getName());
         return ResponseEntity.ok(scheduleId);
+    }
+
+    // 특정 하루만 AI로 다시 생성 (기존 dayNumber/visitDate 유지, items만 교체)
+    @PostMapping("/days/{dayId}/ai-regenerate")
+    public ResponseEntity<String> regenerateDay(
+            @PathVariable("dayId") Long dayId,
+            @RequestBody(required = false) DayRegenerateRequest request,
+            Principal principal) {
+
+        String extraPrompt = request != null ? request.getExtraPrompt() : null;
+        claudeScheduleService.regenerateDay(dayId, extraPrompt, principal.getName());
+        return ResponseEntity.ok("AI가 이 날 일정을 새로 짜드렸어요.");
     }
 
     // 순서 변경 저장 API

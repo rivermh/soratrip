@@ -56,4 +56,16 @@ public class ChatRoom extends BaseTimeEntity {
     public void close() {
         this.status = ChatRoomStatus.CLOSED;
     }
+
+    // 채팅방이 메시지를 주고받을 수 있는 상태인지 확인
+    public boolean isActive() {
+        return this.status == ChatRoomStatus.ACTIVE;
+    }
+
+    // 종료된 채팅방을 다시 활성화 (차단된 채팅방은 재개방하지 않음)
+    public void reopen() {
+        if (this.status == ChatRoomStatus.CLOSED) {
+            this.status = ChatRoomStatus.ACTIVE;
+        }
+    }
 }

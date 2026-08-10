@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ public class FileStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
     private static final DateTimeFormatter DATE_PATH_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
 
     @Value("${file.upload-dir}")
     private String uploadDir;
@@ -42,6 +44,12 @@ public class FileStorageService {
             String extension = extractExtension(file.getOriginalFilename());
             String storedFileName = UUID.randomUUID() + extension;
             Path targetPath = targetDir.resolve(storedFileName).normalize();
+
+            // 저장 파일명은 UUID + 화이트리스트 확장자로만 구성되므로 이론상 항상 targetDir 하위여야 하지만,
+            // delete()와 동일하게 방어적으로 한 번 더 검증한다.
+            if (!targetPath.startsWith(targetDir)) {
+                throw new IllegalArgumentException("허용되지 않는 파일 이름입니다.");
+            }
 
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
@@ -70,11 +78,18 @@ public class FileStorageService {
         }
     }
 
+    // 원본 파일명에서 확장자를 뽑아 화이트리스트와 대조한다.
+    // 원본 파일명을 신뢰해 그대로 저장 경로에 쓰면 "a./../../evil.jsp" 같은 이름으로
+    // 업로드 디렉토리 밖에 임의 파일을 쓸 수 있으므로, 알려진 이미지 확장자가 아니면 거부한다.
     private String extractExtension(String originalFileName) {
         if (originalFileName == null) {
-            return "";
+            throw new IllegalArgumentException("허용되지 않는 파일 확장자입니다.");
         }
         int dotIndex = originalFileName.lastIndexOf('.');
-        return dotIndex >= 0 ? originalFileName.substring(dotIndex) : "";
+        String extension = dotIndex >= 0 ? originalFileName.substring(dotIndex).toLowerCase() : "";
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("허용되지 않는 파일 확장자입니다.");
+        }
+        return extension;
     }
 }

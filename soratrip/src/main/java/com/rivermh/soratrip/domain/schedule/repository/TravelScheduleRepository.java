@@ -25,6 +25,13 @@ public interface TravelScheduleRepository extends JpaRepository<TravelSchedule, 
     	       "where ts.id = :id")
     	Optional<TravelSchedule> findByIdWithDetails(@Param("id") Long id);
 
+    // 날씨 조회용: ScheduleDay + ScheduleItem까지 한 번에 Fetch Join (일자별 대표 장소 순회 시 N+1 방지)
+    @Query("select distinct ts from TravelSchedule ts " +
+               "left join fetch ts.days d " +
+               "left join fetch d.items " +
+               "where ts.id = :id")
+    Optional<TravelSchedule> findByIdWithDaysAndItems(@Param("id") Long id);
+
     // 공개 일정 둘러보기 (지역/태그 필터 + 페이징)
     @Query(value = "SELECT DISTINCT ts FROM TravelSchedule ts LEFT JOIN ts.tags t " +
            "WHERE ts.isPublic = true " +

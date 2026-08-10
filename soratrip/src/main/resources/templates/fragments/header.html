@@ -76,6 +76,14 @@
                 return d.toLocaleString();
             }
 
+            // 알림 메시지는 다른 회원의 닉네임/게시글·일정 제목을 포함하므로
+            // innerHTML에 꽂기 전에 반드시 이스케이프한다.
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
             function refreshUnreadCount() {
                 fetch('/api/notifications/unread-count')
                     .then(res => res.ok ? res.json() : { count: 0 })
@@ -98,7 +106,7 @@
                 }
                 list.innerHTML = items.map(n => `
                     <a class="notif-item ${n.read ? '' : 'notif-item--unread'}" href="${n.link}">
-                        <span>${n.message}</span>
+                        <span>${escapeHtml(n.message)}</span>
                         <span class="notif-item-time">${formatTime(n.createdAt)}</span>
                     </a>
                 `).join('');
@@ -147,6 +155,33 @@
             refreshUnreadCount();
             setInterval(refreshUnreadCount, 30000);
         })();
+    </script>
+
+    <!-- 스크롤 진입 시 카드가 부드럽게 떠오르는 효과 (로그인 여부와 무관하게 모든 페이지에 적용) -->
+    <!-- header 프래그먼트는 본문(main)보다 먼저 파싱되므로, 카드 요소가 DOM에 존재하도록 DOMContentLoaded 이후 실행 -->
+    <script th:inline="none">
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!('IntersectionObserver' in window)) return;
+
+            const els = document.querySelectorAll(
+                '.schedule-card, .post-card, .day-card, .comment-card, .photo-grid-item, .portfolio-card'
+            );
+            if (!els.length) return;
+
+            const io = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('is-revealed');
+                        io.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+
+            els.forEach(el => {
+                el.classList.add('reveal-init');
+                io.observe(el);
+            });
+        });
     </script>
 </header>
 </html>

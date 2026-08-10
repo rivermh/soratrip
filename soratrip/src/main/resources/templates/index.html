@@ -13,32 +13,57 @@
     <header th:replace="~{fragments/header :: header}"></header>
 
     <!-- 3. 메인 콘텐츠 영역 -->
-    <main class="container hero">
-        <div class="hero-content">
-            <span class="eyebrow">Sky Blue Journey</span>
+    <main class="hero">
+        <div class="hero-inner">
+            <div class="hero-content">
+                <span class="eyebrow">Sky Blue Journey</span>
 
-            <h1 th:text="#{welcome.message}">✈️ SoraTrip에 오신 것을 환영합니다!</h1>
-            <p class="hero-subtitle" th:text="#{sub.message}">한국과 일본을 잇는 자유로운 여행 & 동행 플랫폼</p>
+                <h1 th:text="#{welcome.message}">✈️ SoraTrip에 오신 것을 환영합니다!</h1>
+                <p class="hero-subtitle" th:text="#{sub.message}">한국과 일본을 잇는 자유로운 여행 & 동행 플랫폼</p>
 
-            <div sec:authorize="isAuthenticated()" class="hero-welcome">
-                <span class="badge" th:text="#{nav.welcome(${#authentication.name})}">OO님 환영합니다!</span>
+                <div sec:authorize="isAuthenticated()" class="hero-welcome">
+                    <span class="badge" th:text="#{nav.welcome(${#authentication.name})}">OO님 환영합니다!</span>
+                </div>
+
+                <div class="hero-actions">
+                    <a sec:authorize="isAuthenticated()"
+                       th:href="@{/schedules/ai-new}"
+                       class="btn btn-ai"
+                       th:text="#{main.ai_cta}">
+                        ✨ AI 맞춤 일정 자동 생성
+                    </a>
+                    <a th:href="@{/schedules}" class="btn btn-primary" th:text="#{nav.schedule}">🗓️ 내 일정</a>
+                    <a th:href="@{/posts}" class="btn btn-secondary" th:text="#{main.board_btn}">✈️ 여행 & 동행 게시판 보러가기</a>
+                </div>
+
+                <div class="hero-highlights">
+                    <span class="hero-highlight-chip" th:text="#{main.highlight1}">🇰🇷 ↔ 🇯🇵 한일 여행 특화</span>
+                    <span class="hero-highlight-chip" th:text="#{main.highlight2}">🗺️ 지도 기반 동선 관리</span>
+                    <span class="hero-highlight-chip" th:text="#{main.highlight3}">🧑‍🤝‍🧑 동행 매칭</span>
+                </div>
             </div>
 
-            <div class="hero-actions">
-                <a sec:authorize="isAuthenticated()"
-                   th:href="@{/schedules/ai-new}"
-                   class="btn btn-ai"
-                   th:text="#{main.ai_cta}">
-                    ✨ AI 맞춤 일정 자동 생성
-                </a>
-                <a th:href="@{/schedules}" class="btn btn-primary" th:text="#{nav.schedule}">🗓️ 내 일정</a>
-                <a th:href="@{/posts}" class="btn btn-secondary" th:text="#{main.board_btn}">✈️ 여행 & 동행 게시판 보러가기</a>
-            </div>
-
-            <div class="hero-highlights">
-                <span class="hero-highlight-chip" th:text="#{main.highlight1}">🇰🇷 ↔ 🇯🇵 한일 여행 특화</span>
-                <span class="hero-highlight-chip" th:text="#{main.highlight2}">🗺️ 지도 기반 동선 관리</span>
-                <span class="hero-highlight-chip" th:text="#{main.highlight3}">🧑‍🤝‍🧑 동행 매칭</span>
+            <!-- 장식용 미니 일정 프리뷰 (Wanderlog 실제 히어로의 '프로덕트 스크린샷' 구성을 참고 — 실데이터 없이 정적 목업) -->
+            <div class="hero-visual" aria-hidden="true">
+                <div class="hero-mock-card">
+                    <div class="hero-mock-card__cover">TOKYO</div>
+                    <div class="hero-mock-card__body">
+                        <strong class="hero-mock-card__title">도쿄 3박 4일 여행</strong>
+                        <span class="hero-mock-card__dates">📅 09.01 - 09.04</span>
+                        <div class="hero-mock-card__tags">
+                            <span>가족여행</span>
+                            <span>엘리베이터 우선</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-mock-map">
+                    <span class="hero-mock-pin hero-mock-pin--1"></span>
+                    <span class="hero-mock-pin hero-mock-pin--2"></span>
+                    <span class="hero-mock-pin hero-mock-pin--3"></span>
+                    <svg class="hero-mock-route" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <path d="M18 28 L52 58 L80 22" />
+                    </svg>
+                </div>
             </div>
         </div>
     </main>

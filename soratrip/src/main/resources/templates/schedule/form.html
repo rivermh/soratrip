@@ -154,7 +154,7 @@
             const hiddenDiv = document.getElementById("hiddenInputsContainer");
             
             if (addedPlaces.length === 0) {
-                listDiv.innerHTML = `<p id="emptyMsg" style="color: #94a3b8; font-size: 14px;">${emptyPlacesMsg}</p>`;
+                listDiv.innerHTML = `<p id="emptyMsg" style="color: var(--text-faint); font-size: var(--text-sm);">${emptyPlacesMsg}</p>`;
                 hiddenDiv.innerHTML = '';
                 return;
             }
@@ -165,11 +165,11 @@
             addedPlaces.forEach((p, idx) => {
                 // UI Render
                 const card = document.createElement("div");
-                card.style.cssText = "background: white; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
+                card.style.cssText = "background: var(--surface-elevated); border: 1.5px solid var(--border-color); padding: var(--space-3) var(--space-4); border-radius: var(--radius); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
                 card.innerHTML = `
                     <div>
-                        <strong>${idx + 1}. ${p.name}</strong> ${p.time ? `<span style="color: #0284c7; font-size: 13px;">(${p.time})</span>` : ''}
-                        <div style="font-size: 12px; color: #64748b;">${p.address} ${p.memo ? ` | 📝 ${p.memo}` : ''}</div>
+                        <strong>${idx + 1}. ${p.name}</strong> ${p.time ? `<span style="color: var(--primary-color); font-size: 13px;">(${p.time})</span>` : ''}
+                        <div style="font-size: 12px; color: var(--text-sub);">${p.address} ${p.memo ? ` | 📝 ${p.memo}` : ''}</div>
                     </div>
                     <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="removePlace(${idx})">${deleteLabel}</button>
                 `;

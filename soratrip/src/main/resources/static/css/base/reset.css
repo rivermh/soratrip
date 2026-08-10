@@ -93,19 +93,10 @@ ul, ol {
   .container {
     background: var(--card-bg);
     padding: var(--space-10) var(--space-12);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius);
     border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-sm);
     overflow: hidden;
-  }
-
-  .container::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9) 50%, transparent);
-    pointer-events: none;
   }
 }
 
@@ -114,29 +105,29 @@ ul, ol {
    ========================================== */
 h1, h2, h3, h4 {
   color: var(--text-main);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: var(--leading-tight);
+  font-weight: var(--fw-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-heading);
   margin-bottom: var(--space-4);
   text-wrap: balance;
 }
 
 h1 {
   font-size: var(--text-3xl);
-  font-weight: 900;
+  font-weight: var(--fw-bold);
 }
 
 h1 .accent, h1 em {
   font-style: normal;
-  background: linear-gradient(135deg, var(--primary-color), #6366f1);
+  background: linear-gradient(135deg, var(--primary-700), var(--primary-400));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 h2 { font-size: var(--text-2xl); }
-h3 { font-size: var(--text-lg); font-weight: 700; letter-spacing: -0.02em; }
-h4 { font-size: var(--text-md); font-weight: 700; }
+h3 { font-size: var(--text-lg); font-weight: var(--fw-semibold); }
+h4 { font-size: var(--text-md); font-weight: var(--fw-semibold); }
 p { color: var(--text-sub); font-size: var(--text-base); }
 
 .eyebrow {
@@ -144,15 +135,15 @@ p { color: var(--text-sub); font-size: var(--text-base); }
   align-items: center;
   gap: var(--space-2);
   font-size: var(--text-xs);
-  font-weight: 700;
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--tracking-wide);
   color: var(--primary-color);
   background: var(--primary-soft);
   padding: 7px 16px;
   border-radius: var(--radius-full);
   margin-bottom: var(--space-5);
-  border: 1px solid rgba(61, 82, 224, 0.14);
+  border: 1px solid rgba(2, 132, 199, 0.14);
 }
 
 .eyebrow::before {

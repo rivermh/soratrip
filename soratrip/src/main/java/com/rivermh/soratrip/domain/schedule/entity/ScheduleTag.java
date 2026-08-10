@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.i18n.LocaleContextHolder;
 
+import java.util.EnumSet;
 import java.util.Locale;
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
@@ -37,5 +39,14 @@ public enum ScheduleTag {
             return this.jaName;
         }
         return this.koName;
+    }
+
+    // 이동 편의 / 배리어프리 태그 목록 (추천 점수 가중치·"접근성 좋음" 뱃지 표시에 공통 사용)
+    private static final Set<ScheduleTag> BARRIER_FREE_TAGS = EnumSet.of(
+            ELEVATOR_PRIORITY, STAIR_FREE, HEAVY_LUGGAGE, STROLLER_FRIENDLY, SENIOR_EASY
+    );
+
+    public boolean isBarrierFree() {
+        return BARRIER_FREE_TAGS.contains(this);
     }
 }

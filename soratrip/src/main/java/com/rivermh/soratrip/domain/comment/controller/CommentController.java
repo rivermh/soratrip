@@ -26,6 +26,17 @@ public class CommentController {
         return "redirect:/posts/" + postId;
     }
 
+    // 댓글 수정
+    @PostMapping("/{commentId}/edit")
+    public String editComment(@PathVariable(name = "postId") Long postId,
+                              @PathVariable(name = "commentId") Long commentId,
+                              @ModelAttribute CommentRequestDto dto,
+                              @AuthenticationPrincipal Object principal) {
+        String email = SecurityUtils.requireEmail(principal);
+        commentService.updateComment(commentId, dto, email);
+        return "redirect:/posts/" + postId;
+    }
+
     // 댓글 삭제
     @PostMapping("/{commentId}/delete")
     public String deleteComment(@PathVariable(name = "postId") Long postId,

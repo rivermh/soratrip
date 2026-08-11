@@ -1,5 +1,6 @@
 package com.rivermh.soratrip.domain.schedule.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,9 @@ public class TravelScheduleForm {
 
     @NotNull(message = "{schedule.validation.end_date_required}")
     private LocalDate endDate;
+
+    // 여행 예산 (원화 기준, 선택 입력)
+    private BigDecimal budgetKrw;
 
     // 일정 관련 선택 태그 (이동 편의 태그 포함)
     private List<ScheduleTag> tags = new ArrayList<>();

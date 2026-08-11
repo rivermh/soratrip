@@ -23,7 +23,7 @@
 
         <!-- 저장 성공 알림 -->
         <div th:if="${param.success}" style="background-color: var(--primary-soft); border: 1px solid var(--primary-200); color: var(--primary-hover); padding: 13px 18px; border-radius: 12px; font-size: 14px; font-weight: 600; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
-            <span>✨</span>
+            <span>✅</span>
             <span th:text="#{member.profile.success}">프로필이 성공적으로 수정되었습니다!</span>
         </div>
 
@@ -37,6 +37,12 @@
         <div th:if="${passwordError}" class="alert alert-error" style="margin-bottom: 24px;">
             <span>⚠️</span>
             <span th:text="${passwordError}">오류가 발생했습니다.</span>
+        </div>
+
+        <!-- 회원 탈퇴 실패 알림 -->
+        <div th:if="${withdrawError}" class="alert alert-error" style="margin-bottom: 24px;">
+            <span>⚠️</span>
+            <span th:text="${withdrawError}">오류가 발생했습니다.</span>
         </div>
 
         <!-- 1. 프로필 정보 수정 -->
@@ -100,7 +106,7 @@
 
         <!-- 1-1. 여행 취향 태그 (필터 칩 스타일 활용) -->
         <section style="background: var(--surface); padding: 28px; border-radius: 20px; border: 1px solid var(--border-light); margin-bottom: 32px;">
-            <h3 style="margin-bottom: 18px; font-size: 18px; display: flex; align-items: center; gap: 6px;" th:text="#{member.preferred_tags.label}">✨ 여행 취향 태그</h3>
+            <h3 style="margin-bottom: 18px; font-size: 18px; display: flex; align-items: center; gap: 6px;" th:text="#{member.preferred_tags.label}">🏷️ 여행 취향 태그</h3>
             
             <form th:action="@{/members/mypage/tags}" method="post">
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
@@ -229,7 +235,7 @@
         <!-- 5. 내가 좋아요 한 여행 일정 목록 -->
         <section style="margin-bottom: 36px;">
             <h3 style="margin-bottom: 16px; font-size: 18px;">
-                <span th:text="#{member.my_schedule_likes}">💖 내가 좋아요 한 일정</span> (<span th:text="${#lists.size(myScheduleLikes)}">0</span>)
+                <span th:text="#{member.my_schedule_likes}">⭐ 내가 좋아요 한 일정</span> (<span th:text="${#lists.size(myScheduleLikes)}">0</span>)
             </h3>
 
             <table class="styled-table">
@@ -282,6 +288,23 @@
                     </tr>
                 </tbody>
             </table>
+        </section>
+
+        <!-- 3. 회원 탈퇴 -->
+        <section style="background: var(--color-error-soft); padding: 28px; border-radius: 20px; border: 1px solid rgba(230, 72, 63, 0.3); margin-bottom: 32px;">
+            <h3 style="margin-bottom: 8px; font-size: 18px; display: flex; align-items: center; gap: 6px; color: var(--color-error);" th:text="#{member.mypage.withdraw.title}">🚪 회원 탈퇴</h3>
+            <p style="margin-bottom: 18px; font-size: 13px; color: var(--text-sub);" th:text="#{member.mypage.withdraw.warning}">
+                탈퇴 시 작성한 일정·게시글·댓글 등 모든 활동 내역이 삭제되며, 되돌릴 수 없습니다.
+            </p>
+
+            <form th:action="@{/members/mypage/withdraw}" method="post" onsubmit="return confirm(/*[[#{member.mypage.withdraw.confirm}]]*/ '정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.');">
+                <div class="form-group">
+                    <label for="withdrawPassword" th:text="#{member.mypage.withdraw.password_label}">비밀번호 확인 (소셜 로그인 계정은 입력하지 않아도 됩니다)</label>
+                    <input type="password" id="withdrawPassword" name="password" class="form-control"
+                           th:placeholder="#{member.password.placeholder}" placeholder="비밀번호를 입력하세요" />
+                </div>
+                <button type="submit" class="btn btn-danger-ghost" style="width: auto; padding: 10px 24px; font-size: 14px;" th:text="#{member.mypage.withdraw.submit_btn}">회원 탈퇴</button>
+            </form>
         </section>
 
         <!-- 하단 홈 버튼 -->

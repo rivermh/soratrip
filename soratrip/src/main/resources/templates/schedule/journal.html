@@ -98,7 +98,7 @@
         </div>
 
         <div style="margin-top: 30px; display: flex; gap: 8px;">
-            <a th:href="@{/schedules/{id}(id=${journal.schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{journal.back_to_schedule}">📋 일정으로 돌아가기</a>
+            <a th:href="@{/schedules/{id}(id=${journal.schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{journal.back_to_schedule}">⬅️ 일정으로 돌아가기</a>
             <a th:if="${owner}" th:href="@{/portfolio/{id}(id=${journal.schedule.member.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{portfolio.my_portfolio}">🖼️ 내 포트폴리오</a>
         </div>
     </div>

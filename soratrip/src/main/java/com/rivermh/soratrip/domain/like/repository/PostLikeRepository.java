@@ -13,6 +13,12 @@ public interface PostLikeRepository extends JpaRepository<PostLike, Long> {
     boolean existsByMemberAndPost(Member member, Post post);
     
     int countByPost(Post post);
-    
+
     List<PostLike> findByMemberEmailOrderByIdDesc(String email);
+
+    // 회원 탈퇴용: 탈퇴 회원이 쓴 글에 달린 좋아요 일괄 삭제
+    void deleteByPostIn(List<Post> posts);
+
+    // 회원 탈퇴용: 탈퇴 회원이 누른 좋아요 일괄 삭제
+    void deleteByMember(Member member);
 }

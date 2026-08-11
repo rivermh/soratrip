@@ -100,8 +100,8 @@ public class ExpenseService {
         return expenseRepository.findByTravelScheduleIdWithDay(scheduleId);
     }
 
-    // 일정 전체 지출 요약 (원화 환산 총액 + 순수 엔화 총액 + 카테고리별 원화 합계)
-    public ExpenseSummaryDto getScheduleSummary(Long scheduleId) {
+    // 일정 전체 지출 요약 (원화 환산 총액 + 순수 엔화 총액 + 카테고리별 원화 합계 + 예산 대비 사용률)
+    public ExpenseSummaryDto getScheduleSummary(Long scheduleId, BigDecimal budgetKrw) {
         List<Expense> expenses = expenseRepository.findByTravelScheduleIdWithDay(scheduleId);
 
         BigDecimal totalKrw = BigDecimal.ZERO;
@@ -121,7 +121,7 @@ public class ExpenseService {
             byCategory.merge(e.getCategory(), e.getAmountKrw(), BigDecimal::add);
         }
 
-        return new ExpenseSummaryDto(totalKrw, totalJpy, byCategory);
+        return new ExpenseSummaryDto(totalKrw, totalJpy, byCategory, budgetKrw);
     }
 
     // 지출 삭제

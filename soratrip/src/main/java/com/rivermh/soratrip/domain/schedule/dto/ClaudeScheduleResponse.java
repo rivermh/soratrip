@@ -29,5 +29,6 @@ public class ClaudeScheduleResponse {
         private Integer visitOrder;
         private String memo;
         private String recommendReason; // AI가 이 장소를 고른 이유 (태그/동행자/추가요청과 연결된 한 줄 근거)
+        private String placeType; // ATTRACTION/RESTAURANT/CAFE/LODGING/TRANSPORT/SHOPPING/ETC 중 하나
     }
 }

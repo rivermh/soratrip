@@ -2,6 +2,8 @@ package com.rivermh.soratrip.domain.schedule.dto;
 
 import java.time.LocalTime;
 
+import com.rivermh.soratrip.domain.schedule.entity.PlaceType;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,4 +17,5 @@ public class ScheduleItemForm {
     private LocalTime visitTime;
     private Integer visitOrder;
     private String memo;
+    private PlaceType placeType;
 }

@@ -41,4 +41,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
     """)
     Optional<ChatRoom> findChatRoomBetween(@Param("currentUser") Member currentUser,
                                            @Param("otherUser") Member otherUser);
+
+    // 회원 탈퇴용: 상태(활성/종료/차단) 상관없이 탈퇴 회원이 속한 모든 채팅방 조회
+    List<ChatRoom> findAllByInitiatorOrParticipant(Member initiator, Member participant);
 }

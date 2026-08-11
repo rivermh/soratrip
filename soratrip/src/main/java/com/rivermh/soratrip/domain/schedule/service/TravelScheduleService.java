@@ -1,5 +1,6 @@
 package com.rivermh.soratrip.domain.schedule.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
@@ -70,6 +71,7 @@ public class TravelScheduleService {
                 .region(form.getRegion())
                 .startDate(form.getStartDate())
                 .endDate(form.getEndDate())
+                .budgetKrw(form.getBudgetKrw())
                 .tags(form.getTags() != null ? new HashSet<>(form.getTags()) : new HashSet<>()) // 태그 세팅 추가
                 .build();
 
@@ -98,6 +100,7 @@ public class TravelScheduleService {
                                 .visitTime(itemForm.getVisitTime())
                                 .visitOrder(j + 1)
                                 .memo(itemForm.getMemo())
+                                .placeType(itemForm.getPlaceType())
                                 .build();
                         day.addItem(item);
                     }
@@ -143,15 +146,16 @@ public class TravelScheduleService {
         return travelScheduleRepository.searchPublic(region, tag, pageable);
     }
 
-    // 일정 공개 여부 / 태그 설정 변경
+    // 일정 공개 여부 / 태그 / 예산 설정 변경
     @Transactional
-    public void updateSettings(Long id, String email, boolean isPublic, Set<ScheduleTag> tags) {
+    public void updateSettings(Long id, String email, boolean isPublic, Set<ScheduleTag> tags, BigDecimal budgetKrw) {
         TravelSchedule schedule = getScheduleDetail(id);
         if (!schedule.isOwnedBy(email)) {
             throw new IllegalStateException("수정 권한이 없습니다.");
         }
         schedule.updateVisibility(isPublic);
         schedule.updateTags(tags);
+        schedule.updateBudget(budgetKrw);
     }
 
     // 다른 회원의 일정을 내 일정으로 복사 (템플릿으로 가져오기)
@@ -197,6 +201,7 @@ public class TravelScheduleService {
                         .visitTime(item.getVisitTime())
                         .visitOrder(item.getVisitOrder())
                         .memo(item.getMemo())
+                        .placeType(item.getPlaceType())
                         .build());
             }
             copy.getDays().add(dayCopy);
@@ -229,6 +234,32 @@ public class TravelScheduleService {
                 }
             }
         }
+    }
+
+    // 공유 링크 발급 (소유자 전용, 이미 있으면 기존 토큰 재사용)
+    @Transactional
+    public String createShareLink(Long id, String email) {
+        TravelSchedule schedule = getScheduleDetail(id);
+        if (!schedule.isOwnedBy(email)) {
+            throw new IllegalStateException("본인의 일정만 공유 링크를 만들 수 있습니다.");
+        }
+        return schedule.issueShareToken();
+    }
+
+    // 공유 링크 폐기 (소유자 전용)
+    @Transactional
+    public void revokeShareLink(Long id, String email) {
+        TravelSchedule schedule = getScheduleDetail(id);
+        if (!schedule.isOwnedBy(email)) {
+            throw new IllegalStateException("본인의 일정만 공유 링크를 삭제할 수 있습니다.");
+        }
+        schedule.revokeShareToken();
+    }
+
+    // 공유 링크 토큰으로 일정 조회 (로그인 불필요, 유효하지 않은 토큰이면 예외)
+    public TravelSchedule getScheduleByShareToken(String token) {
+        return travelScheduleRepository.findByShareTokenWithDetails(token)
+                .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 공유 링크입니다."));
     }
 
     // 2. 장소 단건 삭제

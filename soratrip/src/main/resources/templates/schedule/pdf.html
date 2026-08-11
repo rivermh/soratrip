@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="${schedule.title}">일정 PDF</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 24mm 16mm;
+        }
+        * {
+            font-family: 'NanumGothic', sans-serif;
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            color: #222222;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .doc-header {
+            border-bottom: 2px solid #0284c7;
+            padding-bottom: 10px;
+            margin-bottom: 16px;
+        }
+        .doc-header__brand {
+            color: #0284c7;
+            font-size: 11px;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+        }
+        .doc-header__title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 6px 0;
+        }
+        .doc-header__meta {
+            font-size: 11px;
+            color: #555555;
+        }
+        .day-block {
+            margin-bottom: 14px;
+            page-break-inside: avoid;
+        }
+        .day-block__title {
+            background-color: #f0f9ff;
+            color: #0284c7;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 5px 8px;
+            margin: 0 0 6px 0;
+            border-radius: 3px;
+        }
+        table.item-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.item-table th {
+            text-align: left;
+            font-size: 10px;
+            color: #777777;
+            border-bottom: 1px solid #dddddd;
+            padding: 4px 6px;
+        }
+        table.item-table td {
+            font-size: 11px;
+            padding: 6px;
+            border-bottom: 1px solid #eeeeee;
+            vertical-align: top;
+        }
+        td.col-time {
+            width: 48px;
+            color: #0284c7;
+            font-weight: bold;
+        }
+        td.col-name {
+            width: 26%;
+            font-weight: bold;
+        }
+        td.col-address {
+            width: 32%;
+            color: #555555;
+        }
+        td.col-memo {
+            color: #555555;
+        }
+        .empty-day {
+            color: #999999;
+            font-size: 10px;
+            padding: 6px;
+        }
+        .doc-footer {
+            margin-top: 20px;
+            font-size: 9px;
+            color: #999999;
+            border-top: 1px solid #dddddd;
+            padding-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="doc-header">
+        <p class="doc-header__brand">SoraTrip</p>
+        <p class="doc-header__title" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
+        <p class="doc-header__meta">
+            <span th:text="${schedule.region.displayName}">도쿄</span>
+            &#183;
+            <span th:text="${#temporals.format(schedule.startDate, 'yyyy.MM.dd')}">2026.08.15</span>
+            ~
+            <span th:text="${#temporals.format(schedule.endDate, 'yyyy.MM.dd')}">2026.08.18</span>
+        </p>
+    </div>
+
+    <div class="day-block" th:each="day : ${schedule.days}">
+        <p class="day-block__title">
+            <span th:text="${day.dayNumber} + '일차'">1일차</span>
+            &#183;
+            <span th:text="${#temporals.format(day.visitDate, 'yyyy.MM.dd (E)')}">2026.08.15 (토)</span>
+        </p>
+
+        <table class="item-table" th:if="${!day.items.isEmpty()}">
+            <thead>
+                <tr>
+                    <th>시간</th>
+                    <th>장소</th>
+                    <th>주소</th>
+                    <th>메모</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${day.items}">
+                    <td class="col-time" th:text="${item.visitTime != null ? #temporals.format(item.visitTime, 'HH:mm') : '-'}">10:00</td>
+                    <td class="col-name" th:text="${item.placeName}">장소명</td>
+                    <td class="col-address" th:text="${item.placeAddress ?: '-'}">주소</td>
+                    <td class="col-memo" th:text="${item.memo ?: '-'}">메모</td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="empty-day" th:if="${day.items.isEmpty()}">등록된 장소가 없습니다.</p>
+    </div>
+
+    <div class="doc-footer">
+        <p>SoraTrip에서 생성된 여행 일정표입니다. AI 추천 장소가 포함된 경우 방문 전 실제 정보를 다시 확인해주세요.</p>
+    </div>
+</body>
+</html>

@@ -1,17 +1,36 @@
 package com.rivermh.soratrip.domain.member.service;
 
+import java.util.List;
 import java.util.Set;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.rivermh.soratrip.domain.bookmark.repository.ScheduleBookmarkRepository;
+import com.rivermh.soratrip.domain.chat.entity.ChatRoom;
+import com.rivermh.soratrip.domain.chat.repository.ChatMessageRepository;
+import com.rivermh.soratrip.domain.chat.repository.ChatRoomRepository;
+import com.rivermh.soratrip.domain.comment.repository.CommentRepository;
+import com.rivermh.soratrip.domain.expense.entity.Expense;
+import com.rivermh.soratrip.domain.expense.repository.ExpenseRepository;
+import com.rivermh.soratrip.domain.like.repository.PostLikeRepository;
+import com.rivermh.soratrip.domain.like.repository.ScheduleLikeRepository;
 import com.rivermh.soratrip.domain.member.dto.MemberJoinDto;
 import com.rivermh.soratrip.domain.member.dto.MemberProfileDto;
 import com.rivermh.soratrip.domain.member.entity.Member;
 import com.rivermh.soratrip.domain.member.entity.Role;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
+import com.rivermh.soratrip.domain.notification.repository.NotificationRepository;
+import com.rivermh.soratrip.domain.post.entity.Post;
+import com.rivermh.soratrip.domain.post.repository.PostApplicationRepository;
+import com.rivermh.soratrip.domain.post.repository.PostRepository;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
+import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
+import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
+import com.rivermh.soratrip.domain.settlement.entity.TripParticipant;
+import com.rivermh.soratrip.domain.settlement.repository.SettlementCompletionRepository;
+import com.rivermh.soratrip.domain.settlement.repository.TripParticipantRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +42,19 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
+    private final TravelScheduleRepository travelScheduleRepository;
+    private final ExpenseRepository expenseRepository;
+    private final TripParticipantRepository tripParticipantRepository;
+    private final SettlementCompletionRepository settlementCompletionRepository;
+    private final ScheduleLikeRepository scheduleLikeRepository;
+    private final ScheduleBookmarkRepository scheduleBookmarkRepository;
+    private final PostRepository postRepository;
+    private final PostApplicationRepository postApplicationRepository;
+    private final CommentRepository commentRepository;
+    private final PostLikeRepository postLikeRepository;
+    private final ChatRoomRepository chatRoomRepository;
+    private final ChatMessageRepository chatMessageRepository;
+    private final NotificationRepository notificationRepository;
 
     /**
      * 회원가입
@@ -189,5 +221,82 @@ public class MemberService {
         }
 
         member.updatePassword(passwordEncoder.encode(newPassword));
+    }
+
+    /**
+     * 회원 탈퇴. Member 삭제는 일정(schedules) 쪽으로만 cascade가 걸려 있어서(연쇄적으로
+     * ScheduleDay -> ScheduleItem/Expense/Photo/Review까지 정리됨), 그 밖에 FK로만 연결되어
+     * cascade가 닿지 않는 데이터(정산 참여자, 다른 사람이 남긴 좋아요/북마크, 게시글, 채팅, 알림)는
+     * 여기서 미리 정리한 뒤에 회원을 삭제한다. 순서가 중요하다 — 참조하는 쪽부터 지워야 FK 위반이 안 난다.
+     */
+    @Transactional
+    public void withdraw(String email, String rawPassword) {
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        // 소셜 로그인 계정은 비밀번호가 없으므로 확인을 건너뛴다
+        if (member.getPassword() != null) {
+            if (rawPassword == null || !passwordEncoder.matches(rawPassword, member.getPassword())) {
+                throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+            }
+        }
+
+        List<TravelSchedule> schedules = travelScheduleRepository.findByMemberIdOrderByIdDesc(member.getId());
+        for (TravelSchedule schedule : schedules) {
+            // 정산 참여자(TripParticipant)는 일정에 cascade가 안 걸려 있고, 지출(Expense)의
+            // paidBy/sharedWith가 참여자를 참조하므로 참여자를 지우기 전에 먼저 참조를 끊는다
+            // (SettlementService.removeParticipant와 동일한 패턴)
+            List<Expense> expenses = expenseRepository.findByTravelScheduleIdWithDay(schedule.getId());
+            for (Expense expense : expenses) {
+                expense.clearPaidBy();
+                expense.getSharedWith().clear();
+            }
+            List<TripParticipant> participants =
+                    tripParticipantRepository.findByTravelScheduleIdOrderByIdAsc(schedule.getId());
+            if (!participants.isEmpty()) {
+                List<Long> participantIds = participants.stream().map(TripParticipant::getId).toList();
+                settlementCompletionRepository.deleteByFromParticipant_IdInOrToParticipant_IdIn(participantIds, participantIds);
+                tripParticipantRepository.deleteAll(participants);
+            }
+        }
+
+        if (!schedules.isEmpty()) {
+            // 내 일정에 다른 사람이 남긴 좋아요/북마크 (일정 자체는 뒤의 member 삭제 cascade로 정리됨)
+            scheduleLikeRepository.deleteByTravelScheduleIn(schedules);
+            scheduleBookmarkRepository.deleteByTravelScheduleIn(schedules);
+        }
+
+        // 내가 쓴 글(Post)은 Member에 cascade가 없어 직접 정리해야 하고,
+        // 그 글에 남이 단 댓글/좋아요도 글보다 먼저 지워야 한다
+        List<Post> posts = postRepository.findByWriterEmailOrderByIdDesc(email);
+        if (!posts.isEmpty()) {
+            commentRepository.deleteByPostIn(posts);
+            postLikeRepository.deleteByPostIn(posts);
+            postApplicationRepository.deleteByPostIn(posts);
+            postRepository.deleteAll(posts);
+        }
+
+        // 내가 남의 글/일정에 남긴 활동 흔적
+        commentRepository.deleteByWriter(member);
+        postLikeRepository.deleteByMember(member);
+        scheduleLikeRepository.deleteByMember(member);
+        scheduleBookmarkRepository.deleteByMember(member);
+        postApplicationRepository.deleteByApplicant(member);
+
+        // 채팅방(상태 무관 - 활성/종료/차단 전부)과 그 메시지들
+        List<ChatRoom> chatRooms = chatRoomRepository.findAllByInitiatorOrParticipant(member, member);
+        if (!chatRooms.isEmpty()) {
+            chatMessageRepository.deleteByChatRoomIn(chatRooms);
+            chatRoomRepository.deleteAll(chatRooms);
+        }
+
+        // 알림: 내가 받은 알림은 삭제, 내가 발생시킨(actor) 알림은 받는 사람 화면에 남기되 행위자만 익명화
+        notificationRepository.deleteByRecipient(member);
+        notificationRepository.clearActor(member);
+
+        // 마지막으로 회원 삭제. Member.schedules(cascade=ALL, orphanRemoval=true)를 통해
+        // travel_schedule -> schedule_day -> schedule_item/expense/photo/review, 그리고
+        // member_preferred_tags(@ElementCollection)까지 전부 정리된다.
+        memberRepository.delete(member);
     }
 }

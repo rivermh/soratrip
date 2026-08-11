@@ -32,4 +32,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
 
     // 특정 채팅방의 메시지 개수
     Long countByChatRoom(ChatRoom chatRoom);
+
+    // 회원 탈퇴용: 탈퇴 회원이 속한 채팅방들의 메시지 일괄 삭제
+    void deleteByChatRoomIn(List<ChatRoom> chatRooms);
 }

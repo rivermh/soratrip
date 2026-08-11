@@ -23,7 +23,7 @@
             </div>
             <p class="schedule-dates">📅 <span th:text="${schedule.startDate}">2026-09-01</span> ~ <span th:text="${schedule.endDate}">2026-09-04</span></p>
             <div class="schedule-actions-row">
-                <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" th:text="#{expense.back_to_schedule}">📋 일정으로 돌아가기</a>
+                <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" th:text="#{expense.back_to_schedule}">⬅️ 일정으로 돌아가기</a>
             </div>
         </div>
 

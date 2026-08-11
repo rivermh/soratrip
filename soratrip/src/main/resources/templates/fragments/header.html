@@ -10,10 +10,10 @@
     <nav class="navbar-nav">
         <!-- 로그인 상태 -->
         <div sec:authorize="isAuthenticated()" class="navbar-menu">
-            <a th:href="@{/schedules/ai-new}" class="btn btn-ai" th:text="#{nav.ai_schedule}">🤖 AI 일정 만들기</a>
+            <a th:href="@{/schedules/ai-new}" class="btn btn-ai" th:text="#{nav.ai_schedule}">AI 일정 만들기</a>
             <a th:href="@{/schedules}" class="nav-link" th:text="#{nav.schedule}">🗓️ 내 일정</a>
             <a th:href="@{/schedules/explore}" class="nav-link" th:text="#{nav.explore}">🧭 일정 둘러보기</a>
-            <a th:href="@{/schedules/recommended}" class="nav-link" th:text="#{nav.recommended}">✨ 맞춤 추천</a>
+            <a th:href="@{/schedules/recommended}" class="nav-link" th:text="#{nav.recommended}">🎯 맞춤 추천</a>
             <a th:href="@{/posts}" class="nav-link" th:text="#{post.list.title}">✈️ 여행 & 동행 게시판</a>
             <a th:href="@{/chat}" class="nav-link" th:text="#{nav.chat}">💬 채팅</a>
 

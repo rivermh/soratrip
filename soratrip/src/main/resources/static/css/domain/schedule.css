@@ -372,6 +372,87 @@
   color: var(--color-success);
 }
 
+.expense-budget {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px dashed rgba(23, 166, 115, 0.25);
+}
+
+.expense-budget__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: var(--space-2);
+}
+
+.expense-budget__bar {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--surface-elevated);
+  overflow: hidden;
+}
+
+.expense-budget__bar-fill {
+  height: 100%;
+  background: var(--color-success);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.expense-budget__bar-fill--over {
+  background: var(--color-error);
+}
+
+.expense-budget__warning {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--color-error);
+}
+
+.settlement-transaction--completed {
+  opacity: 0.55;
+}
+
+.settlement-transaction--completed strong,
+.settlement-transaction--completed span {
+  text-decoration: line-through;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border-light);
+}
+
+.checklist-item:first-of-type {
+  border-top: none;
+}
+
+.checklist-item__check-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-base);
+  padding: 0;
+  line-height: 1;
+}
+
+.checklist-item__content {
+  flex: 1;
+}
+
+.checklist-item--checked .checklist-item__content {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+
 /* ------------------------------------------
    5. 지도
    ------------------------------------------ */
@@ -550,6 +631,19 @@
   margin-left: 8px;
 }
 
+.item-type-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-sub);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  margin-left: 8px;
+}
+
 .item-card__address {
   font-size: var(--text-xs);
   color: var(--text-sub);
@@ -568,6 +662,65 @@
   font-size: var(--text-xs);
   color: var(--primary-700);
   margin-top: 2px;
+}
+
+.item-card__ai-reason-disclaimer {
+  color: var(--text-sub);
+  opacity: 0.75;
+}
+
+.ai-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 22, 31, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.ai-loading-overlay[hidden] {
+  display: none;
+}
+
+.ai-loading-overlay__box {
+  max-width: 360px;
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ai-loading-overlay__spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: var(--ai-gradient);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+  animation: ai-loading-spin 0.9s linear infinite;
+}
+
+@keyframes ai-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ai-loading-overlay__title {
+  font-weight: var(--fw-semibold, 600);
+  font-size: var(--text-base);
+  margin: 0;
+}
+
+.ai-loading-overlay__hint {
+  font-size: var(--text-xs);
+  color: var(--text-sub);
+  margin: 0;
 }
 
 .drag-handle {

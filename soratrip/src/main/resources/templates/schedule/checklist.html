@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{schedule.checklist.title} + ' - SoraTrip'">🧳 준비물 체크리스트 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container" style="max-width: 700px;">
+        <span class="eyebrow">Checklist</span>
+        <h2 th:text="#{schedule.checklist.title}" style="margin-bottom: 4px;">🧳 준비물 체크리스트</h2>
+        <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-6);" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
+
+        <div class="expense-summary" style="margin-bottom: var(--space-6);">
+
+            <!-- 항목 추가 (소유자 전용) -->
+            <div th:if="${owner}" style="margin-bottom: var(--space-4);">
+                <form th:action="@{/schedules/{id}/checklist(id=${schedule.id})}" method="post" style="display: flex; gap: 8px; margin-bottom: var(--space-2);">
+                    <input type="text" name="content" class="form-control" th:placeholder="#{schedule.checklist.add.placeholder}"
+                           placeholder="준비물을 입력하세요 (예: 여권, 상비약, 한국라면...)" required maxlength="100">
+                    <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{schedule.checklist.add}">추가</button>
+                </form>
+
+                <!-- 자주 챙기는 항목 원클릭 추가 -->
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    <form th:each="key : ${suggestionKeys}" th:action="@{/schedules/{id}/checklist(id=${schedule.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="content" th:value="#{${key}}">
+                        <button type="submit" class="tag-chip" style="cursor: pointer; border: 1px solid var(--border-color);" th:text="#{${key}}">여권</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 항목 목록 -->
+            <div th:if="${#lists.isEmpty(items)}" class="empty-state" th:text="#{schedule.checklist.empty}">
+                아직 등록된 준비물이 없습니다.
+            </div>
+
+            <div th:each="item : ${items}" class="checklist-item" th:classappend="${item.checked} ? 'checklist-item--checked' : ''">
+                <form th:if="${owner}" th:action="@{/schedules/{sid}/checklist/{iid}/toggle(sid=${schedule.id}, iid=${item.id})}" method="post" style="display: inline;">
+                    <button type="submit" class="checklist-item__check-btn" th:text="${item.checked} ? '✅' : '⬜'">⬜</button>
+                </form>
+                <span th:unless="${owner}" class="checklist-item__check-btn" th:text="${item.checked} ? '✅' : '⬜'">⬜</span>
+
+                <span class="checklist-item__content" th:text="${item.content}">항목</span>
+
+                <form th:if="${owner}" th:action="@{/schedules/{sid}/checklist/{iid}/delete(sid=${schedule.id}, iid=${item.id})}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-secondary btn-danger-ghost" style="padding: 1px 6px; font-size: 11px;" th:title="#{schedule.checklist.delete}">✕</button>
+                </form>
+            </div>
+        </div>
+
+        <div>
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{settlement.back}">⬅️ 일정으로 돌아가기</a>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

@@ -34,6 +34,26 @@
                 <span th:each="entry : ${summary.byCategory}" class="badge"
                       th:text="${entry.key.displayName} + ': ₩' + ${#numbers.formatDecimal(entry.value, 0, 'COMMA', 0, 'POINT')}">분류: ₩0</span>
             </div>
+
+            <!-- 예산 진행률 (예산이 설정된 경우에만 표시) -->
+            <div th:if="${summary.budgetKrw != null}" class="expense-budget">
+                <div class="expense-budget__row">
+                    <span th:text="#{expense.budget.label}">예산</span>
+                    <span>
+                        ₩<span th:text="${#numbers.formatDecimal(summary.totalKrw, 0, 'COMMA', 0, 'POINT')}">0</span>
+                        / ₩<span th:text="${#numbers.formatDecimal(summary.budgetKrw, 0, 'COMMA', 0, 'POINT')}">0</span>
+                        (<span th:text="${summary.percentUsed}">0</span>%)
+                    </span>
+                </div>
+                <div class="expense-budget__bar">
+                    <div class="expense-budget__bar-fill"
+                         th:classappend="${summary.percentUsed >= 100} ? 'expense-budget__bar-fill--over' : ''"
+                         th:style="'width: ' + ${summary.percentUsed > 100 ? 100 : summary.percentUsed} + '%'"></div>
+                </div>
+                <div th:if="${summary.percentUsed >= 100}" class="expense-budget__warning" th:text="#{expense.budget.over_warning}">
+                    ⚠️ 설정한 예산을 초과했습니다.
+                </div>
+            </div>
         </div>
 
         <!-- 일자별로 묶어서 표시 -->
@@ -103,7 +123,7 @@
 
         <!-- 하단 버튼 영역 -->
         <div style="margin-top: 30px;">
-            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{expense.back_to_schedule}">📋 일정으로 돌아가기</a>
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{expense.back_to_schedule}">⬅️ 일정으로 돌아가기</a>
         </div>
     </div>
 

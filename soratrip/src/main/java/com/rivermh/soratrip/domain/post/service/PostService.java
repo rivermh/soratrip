@@ -27,6 +27,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final MemberRepository memberRepository;
     private final PostLikeRepository postLikeRepository; //  1. 좋아요 리포지토리
+    private final PostViewRedisService postViewRedisService;
 
     // 글 작성
     @Transactional
@@ -74,11 +75,14 @@ public class PostService {
 
     // 게시글 상세 조회 (+ 조회수 증가 & 좋아요 정보 바인딩)
     @Transactional
-    public PostResponseDto getPostDetail(Long id, String userEmail) { // 👈 3. 파라미터에 userEmail 추가 (비로그인은 null)
+    public PostResponseDto getPostDetail(Long id, String userEmail, String viewerKey) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + id));
 
-        post.increaseViewCount(); // 조회수 1 증가
+        // 같은 사용자(로그인 이메일 또는 세션)가 짧은 시간 안에 재조회한 경우가 아니면 조회수 증가
+        if (!postViewRedisService.isRecentlyViewed(id, viewerKey)) {
+            post.increaseViewCount();
+        }
 
         // DB에서 좋아요 수와 로그인 사용자의 좋아요 눌렀는지 여부 조회
         int likeCount = postLikeRepository.countByPost(post);
@@ -91,12 +95,6 @@ public class PostService {
         }
 
         return new PostResponseDto(post, likeCount, liked);
-    }
-
-    // 기존 단일 id 기반 getPostDetail 하위 호환용 (비로그인 사용자용)
-    @Transactional
-    public PostResponseDto getPostDetail(Long id) {
-        return getPostDetail(id, null);
     }
 
     // 검색 및 페이징 목록 조회

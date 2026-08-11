@@ -35,20 +35,26 @@
 
         <!-- ✅ 비밀번호 재설정 성공 알림 -->
         <div th:if="${param.reset}" class="alert alert-success">
-            <span>✨</span>
+            <span>✅</span>
             <span th:text="#{member.login.reset_success}">비밀번호가 재설정되었습니다. 새 비밀번호로 로그인해 주세요.</span>
         </div>
 
         <!-- ✅ 마이페이지 비밀번호 변경 성공 알림 -->
         <div th:if="${param.passwordChanged}" class="alert alert-success">
-            <span>✨</span>
+            <span>✅</span>
             <span th:text="#{member.mypage.password.success}">비밀번호가 성공적으로 변경되었습니다!</span>
         </div>
 
         <!-- ℹ️ 로그아웃 성공 알림 -->
         <div th:if="${param.logout}" class="alert alert-success">
-            <span>✨</span>
+            <span>✅</span>
             <span th:text="#{member.logout_success}">성공적으로 로그아웃되었습니다.</span>
+        </div>
+
+        <!-- ℹ️ 회원 탈퇴 완료 알림 -->
+        <div th:if="${param.withdrawn}" class="alert alert-success">
+            <span>👋</span>
+            <span th:text="#{member.withdraw.success}">회원 탈퇴가 완료되었습니다. 그동안 이용해 주셔서 감사합니다.</span>
         </div>
 
         <!-- 로그인 폼 -->

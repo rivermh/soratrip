@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${schedule.title} + ' - SoraTrip'">여행 일정 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container" style="max-width: 900px;">
+        <div class="schedule-hero">
+            <span th:text="${schedule.region.displayName}" class="region-badge region-badge--solid">TOKYO</span>
+            <span class="badge" th:text="#{schedule.shared.badge}">공유된 일정</span>
+
+            <div class="schedule-title-row">
+                <h2 th:text="${schedule.title}">도쿄 3박 4일 일정</h2>
+            </div>
+
+            <p class="schedule-dates">📅 <span th:text="${schedule.startDate}">2026-08-01</span> ~ <span th:text="${schedule.endDate}">2026-08-04</span></p>
+            <div th:unless="${#lists.isEmpty(schedule.tags)}" class="schedule-tags">
+                <span th:each="t : ${schedule.tags}" th:text="${t.displayName}" class="tag-chip">태그</span>
+            </div>
+        </div>
+
+        <!-- Google Map 핀 동선 출력 (읽기 전용) -->
+        <div id="map" class="map-container"></div>
+
+        <!-- 일차별 일정 타임라인 (읽기 전용) -->
+        <h3>🗓️ <span th:text="#{schedule.day_title}">일차별 일정</span></h3>
+        <div class="day-timeline">
+        <div th:each="day : ${schedule.days}" class="day-card">
+            <div class="day-card__header">
+                <h4 class="day-card__title">
+                    <span class="day-badge" th:text="${day.dayNumber}">1</span>
+                    <span th:text="#{schedule.day_title}">일차</span>
+                    <span class="day-date" th:text="'(' + ${day.visitDate} + ')'">(2026-08-01)</span>
+                </h4>
+            </div>
+
+            <div th:if="${#lists.isEmpty(day.items)}" class="day-empty" th:text="#{schedule.empty_places}">
+                등록된 장소가 없습니다.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(day.items)}"
+                 th:id="'itemList-' + ${day.id}"
+                 class="item-list-container">
+
+                <div th:each="item : ${day.items}"
+                     class="schedule-item-card"
+                     th:data-lat="${item.latitude}"
+                     th:data-lng="${item.longitude}"
+                     th:data-name="${item.placeName}">
+
+                    <div class="item-card__main">
+                        <div class="item-card__detail">
+                            <strong class="item-card__name">
+                                <span class="order-badge" th:text="${item.visitOrder}">1</span>.
+                                <span th:text="${item.placeName}">도쿄 타워</span>
+                            </strong>
+                            <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" class="item-time-chip">⏰ 10:00</span>
+                            <span th:if="${item.placeType != null}" th:text="${item.placeType.emoji + ' ' + item.placeType.displayName}" class="item-type-chip">🍜 맛집</span>
+                            <div class="item-card__address" th:text="${item.placeAddress}">주소 정보</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- 비로그인 방문자를 위한 가입 유도 -->
+        <div class="schedule-hero" style="margin-top: var(--space-6); text-align: center;">
+            <p style="margin-bottom: var(--space-3);" th:text="#{schedule.shared.cta}">SoraTrip에서 나만의 여행 일정을 만들어보세요.</p>
+            <a th:href="@{/members/join}" class="btn btn-primary" style="width: auto;" th:text="#{schedule.shared.cta_button}">✈️ SoraTrip 시작하기</a>
+        </div>
+    </div>
+
+    <!-- Map Script (읽기 전용 마커/동선만 표시) -->
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const scheduleDaysData = [
+            /*[# th:each="day : ${schedule.days}"]*/
+            {
+                dayNumber: /*[[${day.dayNumber}]]*/ 1,
+                items: [
+                    /*[# th:each="item : ${day.items}"]*/
+                    {
+                        placeName: /*[[${item.placeName}]]*/ '',
+                        lat: /*[[${item.latitude}]]*/ null,
+                        lng: /*[[${item.longitude}]]*/ null
+                    },
+                    /*[/]*/
+                ]
+            },
+            /*[/]*/
+        ];
+        /*]]>*/
+
+        function initMap() {
+            const defaultLoc = { lat: 35.681236, lng: 139.767125 };
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 12,
+                center: defaultLoc,
+                mapTypeControl: false,
+                streetViewControl: false
+            });
+
+            const bounds = new google.maps.LatLngBounds();
+            let hasValidMarkers = false;
+            const dayColors = ['#0284c7', '#16a34a', '#d97706', '#9333ea', '#dc2626', '#0891b2'];
+
+            scheduleDaysData.forEach((day, dayIdx) => {
+                const color = dayColors[dayIdx % dayColors.length];
+                const dayPath = [];
+
+                day.items.forEach((item, idx) => {
+                    if (item.lat == null || item.lng == null) return;
+                    const pos = { lat: item.lat, lng: item.lng };
+                    dayPath.push(pos);
+                    bounds.extend(pos);
+                    hasValidMarkers = true;
+
+                    new google.maps.Marker({
+                        position: pos,
+                        map: map,
+                        title: item.placeName,
+                        label: {
+                            text: `${dayIdx + 1}-${idx + 1}`,
+                            color: "#ffffff",
+                            fontWeight: "bold",
+                            fontSize: "12px"
+                        }
+                    });
+                });
+
+                if (dayPath.length >= 2) {
+                    new google.maps.Polyline({
+                        path: dayPath,
+                        geodesic: true,
+                        strokeColor: color,
+                        strokeOpacity: 0.8,
+                        strokeWeight: 4
+                    }).setMap(map);
+                }
+            });
+
+            if (hasValidMarkers) {
+                map.fitBounds(bounds);
+            }
+        }
+    </script>
+    <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" async defer></script>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

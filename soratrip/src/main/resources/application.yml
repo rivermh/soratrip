@@ -83,6 +83,14 @@ mail:
 file:
   upload-dir: uploads
 
+# 10-1. 제휴(어필리에이트) 딥링크 ID - 승인 전까지는 빈 값으로 두면 cid/aid 파라미터 없이 일반 검색 링크로 동작.
+#       승인 후에는 application-secret.yml에 같은 키로 덮어써서 실제 아고다/부킹닷컴 파트너 ID를 넣을 것.
+affiliate:
+  agoda:
+    cid: ""
+  booking:
+    aid: ""
+
 # 11. 로그 출력 설정
 logging:
   level:

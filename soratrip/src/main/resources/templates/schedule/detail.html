@@ -43,9 +43,15 @@
                 <a th:if="${owner}" th:href="@{/schedules/{id}/settings(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.settings.button}">⚙️ 공개 설정</a>
                 <a th:if="${owner}" th:href="@{/schedules/{id}/settlement(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.settlement.button}">💸 정산하기</a>
                 <a th:href="@{/schedules/{id}/weather(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.weather.button}">☀️ 날씨 & 준비물</a>
+                <a th:href="@{/schedules/{id}/checklist(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.checklist.button}">🧳 준비물 체크리스트</a>
+                <a th:href="@{/schedules/{id}/bookings(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.bookings.button}">✈️ 예약 정보</a>
                 <a th:href="@{/schedules/{id}/expenses(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.expenses.button}">💰 가계부</a>
                 <a th:href="@{/schedules/{id}/photos(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.photos.button}">📷 사진</a>
+                <a th:href="${agodaLink}" target="_blank" rel="noopener sponsored" class="btn btn-secondary" th:text="#{schedule.booking.agoda}">🏨 아고다에서 숙소 보기</a>
+                <a th:href="${bookingLink}" target="_blank" rel="noopener sponsored" class="btn btn-secondary" th:text="#{schedule.booking.bookingcom}">🏨 부킹닷컴에서 숙소 보기</a>
                 <a th:href="@{/schedules/{id}/reviews(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.reviews.button}">📝 후기</a>
+                <a th:href="@{/schedules/{id}/calendar.ics(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.ics.button}">📅 캘린더에 추가</a>
+                <a th:href="@{/schedules/{id}/pdf(id=${schedule.id})}" class="btn btn-secondary" th:text="#{schedule.pdf.button}">🖨️ PDF 다운로드</a>
                 <a th:if="${schedule.endDate.isBefore(T(java.time.LocalDate).now())}" th:href="@{/schedules/{id}/journal(id=${schedule.id})}" class="btn btn-secondary" th:text="#{journal.title}">📖 여행 일지</a>
                 <a th:if="${schedule.public}" th:href="@{/portfolio/{id}(id=${schedule.member.id})}" class="btn btn-secondary" th:text="#{portfolio.title}">🖼️ 여행 포트폴리오</a>
             </div>
@@ -120,12 +126,14 @@
                                 <span th:text="${item.placeName}">도쿄 타워</span>
                             </strong>
                             <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" class="item-time-chip">⏰ 10:00</span>
+                            <span th:if="${item.placeType != null}" th:text="${item.placeType.emoji + ' ' + item.placeType.displayName}" class="item-type-chip">🍜 맛집</span>
                             <div class="item-card__address" th:text="${item.placeAddress}">주소 정보</div>
                             <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" class="item-card__memo">
                                 📝 <span th:text="#{schedule.memo}">메모</span>: <span th:text="${item.memo}">메모 내용</span>
                             </div>
                             <div th:if="${item.recommendReason != null and !#strings.isEmpty(item.recommendReason)}" class="item-card__ai-reason">
                                 🤖 <span th:text="#{schedule.ai_reason}">AI 추천 이유</span>: <span th:text="${item.recommendReason}">AI 추천 이유 내용</span>
+                                <span class="item-card__ai-reason-disclaimer" th:text="'(' + #{schedule.ai_reason_disclaimer} + ')'">(AI가 지어낸 설명이라 실제와 다를 수 있어요)</span>
                             </div>
                         </div>
                     </div>
@@ -139,7 +147,7 @@
         </div>
 
         <div style="margin-top: 30px;">
-            <a th:href="@{/schedules}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{schedule.back_to_list}">📋 내 일정 목록으로</a>
+            <a th:href="@{/schedules}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{schedule.back_to_list}">⬅️ 내 일정 목록으로</a>
         </div>
     </div>
 
@@ -329,13 +337,21 @@
 
         // AI로 특정 하루 다시 짜기 (POST /api/schedules/days/{dayId}/ai-regenerate)
         function regenerateDayWithAi(dayId, btnEl) {
-            if (!confirm(/*[[#{schedule.ai.regenerate_day_confirm}]]*/ '이 날의 장소들이 AI가 새로 짠 일정으로 교체됩니다. 계속할까요?')) return;
+            if (!confirm(/*[[#{schedule.ai.regenerate_day_confirm}]]*/ '이 날의 장소가 새 일정으로 교체돼요. 계속할까요?')) return;
 
-            const extraPrompt = prompt(/*[[#{schedule.ai.regenerate_day_prompt}]]*/ '이 날에 반영할 요청사항이 있다면 입력해주세요 (선택)', '') || '';
+            // 구체적인 요청 없이는 AI가 뻔한 관광지 위주로 짜는 경향이 있어, 최소 10자 이상을 요구한다.
+            // 취소하면(null) 전체를 중단하고, 너무 짧으면 다시 물어본다.
+            let extraPrompt = null;
+            while (true) {
+                extraPrompt = prompt(/*[[#{schedule.ai.regenerate_day_prompt}]]*/ '반영할 요청사항을 입력해주세요 (10자 이상)', extraPrompt || '');
+                if (extraPrompt === null) return; // 사용자가 취소함
+                if (extraPrompt.trim().length >= 10) break;
+                alert(/*[[#{schedule.ai.regenerate_day_prompt_required}]]*/ '요청사항은 최소 10자 이상 입력해주세요.');
+            }
 
             const originalText = btnEl.textContent;
             btnEl.disabled = true;
-            btnEl.textContent = /*[[#{schedule.ai.regenerating}]]*/ '🤖 AI가 생성 중...';
+            btnEl.textContent = /*[[#{schedule.ai.regenerating}]]*/ 'AI 생성 중...';
 
             fetch(`/api/schedules/days/${dayId}/ai-regenerate`, {
                 method: 'POST',

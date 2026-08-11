@@ -62,15 +62,23 @@
             </div>
 
             <div th:unless="${#lists.isEmpty(result.transactions)}" style="display: flex; flex-direction: column; gap: var(--space-2);">
-                <div th:each="t : ${result.transactions}" class="badge" style="width: fit-content;">
+                <div th:each="t : ${result.transactions}" class="badge settlement-transaction"
+                     th:classappend="${t.completed} ? 'settlement-transaction--completed' : ''"
+                     style="width: fit-content; display: flex; align-items: center; gap: 8px;">
                     <span th:text="${t.fromName}">영희</span> → <span th:text="${t.toName}">철수</span>:
                     <strong th:text="'₩' + ${#numbers.formatDecimal(t.amount, 0, 'COMMA', 0, 'POINT')}">₩0</strong>
+                    <form th:action="@{/schedules/{sid}/settlement/transactions/complete(sid=${schedule.id})}" method="post" style="display: inline;">
+                        <input type="hidden" name="fromParticipantId" th:value="${t.fromParticipantId}">
+                        <input type="hidden" name="toParticipantId" th:value="${t.toParticipantId}">
+                        <button type="submit" class="btn btn-secondary" style="padding: 1px 8px; font-size: 11px;"
+                                th:text="${t.completed} ? #{settlement.transaction.completed} : #{settlement.transaction.mark_complete}">완료 표시</button>
+                    </form>
                 </div>
             </div>
         </div>
 
         <div>
-            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{settlement.back}">📋 일정으로 돌아가기</a>
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{settlement.back}">⬅️ 일정으로 돌아가기</a>
         </div>
     </div>
 

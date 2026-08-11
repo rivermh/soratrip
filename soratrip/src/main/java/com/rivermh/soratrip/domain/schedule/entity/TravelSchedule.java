@@ -1,5 +1,6 @@
 package com.rivermh.soratrip.domain.schedule.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -56,9 +57,16 @@ public class TravelSchedule {
     private LocalDate startDate;
     private LocalDate endDate;
 
+    // 여행 예산 (원화 기준, 선택 입력)
+    private BigDecimal budgetKrw;
+
     @Builder.Default
     @Column(nullable = false)
     private boolean isPublic = false;
+
+    // 로그인 없이 볼 수 있는 공유 링크용 토큰 (미발급 시 null, 값이 있으면 /shared/{token}으로 열람 가능)
+    @Column(unique = true)
+    private String shareToken;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "schedule_tags", joinColumns = @JoinColumn(name = "travel_schedule_id"))
@@ -72,9 +80,30 @@ public class TravelSchedule {
     @Builder.Default
     private Set<ScheduleDay> days = new LinkedHashSet<>();
 
+    @OneToMany(mappedBy = "travelSchedule", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ChecklistItem> checklistItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "travelSchedule", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<TravelBooking> bookings = new ArrayList<>();
+
     // 공개 여부 변경
     public void updateVisibility(boolean isPublic) {
         this.isPublic = isPublic;
+    }
+
+    // 공유 링크 발급 (기존 토큰이 있으면 그대로 재사용)
+    public String issueShareToken() {
+        if (this.shareToken == null) {
+            this.shareToken = java.util.UUID.randomUUID().toString().replace("-", "");
+        }
+        return this.shareToken;
+    }
+
+    // 공유 링크 폐기
+    public void revokeShareToken() {
+        this.shareToken = null;
     }
 
     // 이메일 기준 소유자 여부 확인 (email이 null이어도 안전하게 false 반환)
@@ -86,6 +115,11 @@ public class TravelSchedule {
     public void updateTags(Set<ScheduleTag> tags) {
         this.tags.clear();
         this.tags.addAll(tags);
+    }
+
+    // 예산 변경 (null 허용 = 예산 미설정)
+    public void updateBudget(BigDecimal budgetKrw) {
+        this.budgetKrw = budgetKrw;
     }
     
     // 좋아요

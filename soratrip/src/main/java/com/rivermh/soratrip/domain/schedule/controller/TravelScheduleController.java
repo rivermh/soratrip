@@ -1,9 +1,12 @@
 package com.rivermh.soratrip.domain.schedule.controller;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -11,6 +14,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,7 +42,9 @@ import com.rivermh.soratrip.domain.schedule.dto.DayWeatherSummaryDto;
 import com.rivermh.soratrip.domain.schedule.dto.TravelScheduleForm;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
+import com.rivermh.soratrip.domain.schedule.service.AffiliateLinkService;
 import com.rivermh.soratrip.domain.schedule.service.ClaudeScheduleService;
+import com.rivermh.soratrip.domain.schedule.service.ScheduleExportService;
 import com.rivermh.soratrip.domain.schedule.service.ScheduleRecommendationService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.WeatherService;
@@ -53,6 +63,8 @@ public class TravelScheduleController {
     private final ReviewService reviewService;
     private final ClaudeScheduleService claudeScheduleService;
     private final WeatherService weatherService;
+    private final ScheduleExportService scheduleExportService;
+    private final AffiliateLinkService affiliateLinkService;
 
     // 북마크 조회를 위해 추가된 의존성
     private final ScheduleBookmarkRepository scheduleBookmarkRepository;
@@ -163,6 +175,8 @@ public class TravelScheduleController {
         model.addAttribute("bookmarked", bookmarked);
         model.addAttribute("bookmarkCount", bookmarkCount);
         model.addAttribute("mobilityScore", MobilityScoreDto.fromReviews(reviews));
+        model.addAttribute("agodaLink", affiliateLinkService.buildAgodaLink(schedule.getRegion(), schedule.getStartDate(), schedule.getEndDate()));
+        model.addAttribute("bookingLink", affiliateLinkService.buildBookingLink(schedule.getRegion(), schedule.getStartDate(), schedule.getEndDate()));
         return "schedule/detail";
     }
 
@@ -192,16 +206,32 @@ public class TravelScheduleController {
         return "schedule/settings";
     }
 
-    // 9. 일정 공개 설정 / 태그 저장 처리
+    // 9. 일정 공개 설정 / 태그 / 예산 저장 처리
     @PostMapping("/{id}/settings")
     public String updateSettings(@PathVariable("id") Long id,
                                  @RequestParam(name = "isPublic", required = false) Boolean isPublic,
                                  @RequestParam(name = "tags", required = false) Set<ScheduleTag> tags,
+                                 @RequestParam(name = "budgetKrw", required = false) BigDecimal budgetKrw,
                                  Principal principal) {
         travelScheduleService.updateSettings(id, principal.getName(),
                 Boolean.TRUE.equals(isPublic),
-                tags != null ? tags : new HashSet<>());
+                tags != null ? tags : new HashSet<>(),
+                budgetKrw);
         return "redirect:/schedules/" + id;
+    }
+
+    // 9-1. 공유 링크 발급 (소유자 전용)
+    @PostMapping("/{id}/share")
+    public String createShareLink(@PathVariable("id") Long id, Principal principal) {
+        travelScheduleService.createShareLink(id, principal.getName());
+        return "redirect:/schedules/" + id + "/settings";
+    }
+
+    // 9-2. 공유 링크 폐기 (소유자 전용)
+    @PostMapping("/{id}/share/revoke")
+    public String revokeShareLink(@PathVariable("id") Long id, Principal principal) {
+        travelScheduleService.revokeShareLink(id, principal.getName());
+        return "redirect:/schedules/" + id + "/settings";
     }
 
     // 10. AI 일정 자동 생성 폼
@@ -259,5 +289,55 @@ public class TravelScheduleController {
         model.addAttribute("owner", owner);
 
         return "schedule/weather";
+    }
+
+    // 12. 일정 캘린더(.ics) 다운로드 — 구글/애플/아웃룩 캘린더로 가져오기 가능
+    @GetMapping("/{id}/calendar.ics")
+    public ResponseEntity<byte[]> downloadIcs(@PathVariable("id") Long id,
+                                              @AuthenticationPrincipal Object principal) {
+        TravelSchedule schedule = travelScheduleService.getScheduleDetail(id);
+
+        String email = principal != null ? SecurityUtils.extractEmail(principal) : null;
+        if (!schedule.isPublic() && !schedule.isOwnedBy(email)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String ics = scheduleExportService.generateIcs(schedule);
+        byte[] body = ics.getBytes(StandardCharsets.UTF_8);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("soratrip-" + schedule.getId() + ".ics", StandardCharsets.UTF_8)
+                .build());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.parseMediaType("text/calendar;charset=UTF-8"))
+                .body(body);
+    }
+
+    // 13. 일정 PDF 다운로드
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable("id") Long id,
+                                              @AuthenticationPrincipal Object principal) {
+        TravelSchedule schedule = travelScheduleService.getScheduleDetail(id);
+
+        String email = principal != null ? SecurityUtils.extractEmail(principal) : null;
+        if (!schedule.isPublic() && !schedule.isOwnedBy(email)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Locale locale = LocaleContextHolder.getLocale();
+        byte[] pdf = scheduleExportService.generatePdf(schedule, locale);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentDisposition(ContentDisposition.attachment()
+                .filename("soratrip-" + schedule.getId() + ".pdf", StandardCharsets.UTF_8)
+                .build());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 }

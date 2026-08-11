@@ -43,6 +43,9 @@ dependencies {
 	// SockJS (폴백)
 	implementation 'org.webjars:sockjs-client:1.5.1'
 	implementation 'org.webjars:stomp-websocket:2.3.3'
+	// 일정 PDF 내보내기 (HTML -> PDF 렌더링)
+	implementation 'com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10'
+	implementation 'org.jsoup:jsoup:1.17.2'
 }
 
 tasks.named('test') {

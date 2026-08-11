@@ -23,9 +23,9 @@ public class Notification extends BaseTimeEntity {
 	@JoinColumn(name = "recipient_id", nullable = false)
 	private Member recipient;
 
-	// 알림을 발생시킨 사람 (좋아요/댓글을 남긴 사람)
+	// 알림을 발생시킨 사람 (좋아요/댓글을 남긴 사람). 시스템이 발생시키는 알림(예: 여행 D-day 알림)은 null
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "actor_id", nullable = false)
+	@JoinColumn(name = "actor_id")
 	private Member actor;
 
 	@Enumerated(EnumType.STRING)

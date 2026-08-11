@@ -14,6 +14,12 @@ public interface ScheduleLikeRepository extends JpaRepository<ScheduleLike, Long
     
     // 💡 추가: 특정 일정의 총 좋아요 수 카운트
     int countByTravelSchedule(TravelSchedule travelSchedule);
-    
+
     List<ScheduleLike> findByMemberEmailOrderByIdDesc(String email);
+
+    // 회원 탈퇴용: 탈퇴 회원의 일정에 달린 좋아요 일괄 삭제
+    void deleteByTravelScheduleIn(List<TravelSchedule> travelSchedules);
+
+    // 회원 탈퇴용: 탈퇴 회원이 누른 좋아요 일괄 삭제
+    void deleteByMember(Member member);
 }

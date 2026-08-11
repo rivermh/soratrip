@@ -52,4 +52,13 @@ public interface TravelScheduleRepository extends JpaRepository<TravelSchedule, 
 
     // 특정 회원의 공개된 완료 여행 목록 (포트폴리오)
     List<TravelSchedule> findByMemberIdAndIsPublicTrueAndEndDateBeforeOrderByEndDateDesc(Long memberId, LocalDate today);
+
+    // D-day 알림 배치용: 특정 날짜에 출발하는 일정 조회
+    List<TravelSchedule> findByStartDate(LocalDate startDate);
+
+    // 공유 링크 열람용: 토큰으로 일정 + 일자 Fetch Join 조회 (로그인 없이 접근하므로 N+1 방지 필요)
+    @Query("select distinct ts from TravelSchedule ts " +
+               "left join fetch ts.days d " +
+               "where ts.shareToken = :token")
+    Optional<TravelSchedule> findByShareTokenWithDetails(@Param("token") String token);
 }

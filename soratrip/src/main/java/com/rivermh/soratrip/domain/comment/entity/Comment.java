@@ -31,17 +31,33 @@ public class Comment {
     @JoinColumn(name = "member_id", nullable = false)
     private Member writer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Comment parent;
+
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 
     @Builder
-    public Comment(String content, Post post, Member writer) {
+    public Comment(String content, Post post, Member writer, Comment parent) {
         this.content = content;
         this.post = post;
         this.writer = writer;
+        this.parent = parent;
+    }
+
+    public void updateContent(String content) {
+        this.content = content;
     }
 }

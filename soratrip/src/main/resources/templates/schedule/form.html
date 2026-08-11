@@ -39,6 +39,13 @@
                 </div>
             </div>
 
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label th:text="#{schedule.form.budget_label}">💰 여행 예산 (선택, 원화 기준)</label>
+                <input type="number" th:field="*{budgetKrw}" class="form-control" min="0" step="1"
+                       th:placeholder="#{schedule.form.budget_placeholder}"
+                       placeholder="예: 1000000" />
+            </div>
+
             <!-- 🏷️ 여행 스타일 및 이동 편의 태그 선택 영역 (신규 추가) -->
             <div class="form-group" style="margin-bottom: 20px;">
                 <label style="font-weight: 700; margin-bottom: var(--space-2); display: block; font-size: var(--text-sm); color: var(--text-sub);" th:text="#{schedule.form.tags_label}">🏷️ 여행 스타일 & 이동 편의 태그 (선택)</label>
@@ -69,6 +76,11 @@
                 </div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <input type="time" id="selectedTime" class="form-control" style="width: 150px;" />
+                    <select id="selectedPlaceType" class="form-control" style="width: 140px;">
+                        <option value="" th:text="#{schedule.form.select_place_type}">-- 유형 (선택) --</option>
+                        <option th:each="pt : ${T(com.rivermh.soratrip.domain.schedule.entity.PlaceType).values()}"
+                                th:value="${pt}" th:text="${pt.emoji + ' ' + pt.displayName}">🍜 맛집</option>
+                    </select>
                     <input type="text" id="selectedMemo" class="form-control"
                            th:placeholder="#{schedule.form.memo_placeholder}"
                            placeholder="메모 (예: 오픈시간 맞춰 방문)" style="flex: 1; min-width: 160px;" />
@@ -134,18 +146,20 @@
 
             const time = document.getElementById("selectedTime").value;
             const memo = document.getElementById("selectedMemo").value;
+            const placeType = document.getElementById("selectedPlaceType").value;
 
-            const item = { ...selectedPlace, time, memo };
+            const item = { ...selectedPlace, time, memo, placeType };
             addedPlaces.push(item);
 
             renderPlaces();
-            
+
             // 입력창 초기화
             document.getElementById("pac-input").value = '';
             document.getElementById("selectedPlaceName").value = '';
             document.getElementById("selectedPlaceAddress").value = '';
             document.getElementById("selectedTime").value = '';
             document.getElementById("selectedMemo").value = '';
+            document.getElementById("selectedPlaceType").value = '';
             selectedPlace = null;
         }
 
@@ -183,6 +197,7 @@
                     <input type="hidden" name="days[0].items[${idx}].longitude" value="${p.lng}" />
                     <input type="hidden" name="days[0].items[${idx}].visitTime" value="${p.time}" />
                     <input type="hidden" name="days[0].items[${idx}].memo" value="${p.memo}" />
+                    ${p.placeType ? `<input type="hidden" name="days[0].items[${idx}].placeType" value="${p.placeType}" />` : ''}
                 `;
             });
         }

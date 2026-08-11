@@ -195,6 +195,61 @@
   margin-bottom: 0;
 }
 
+.post-application-box {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-color);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-6);
+}
+
+.post-application-box h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--text-base);
+}
+
+.post-application-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-light);
+}
+
+.post-application-item:first-of-type {
+  border-top: none;
+}
+
+.post-application-item__message {
+  color: var(--text-sub);
+  font-size: var(--text-sm);
+  width: 100%;
+}
+
+.application-status-badge {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: var(--radius-full);
+}
+
+.application-status-badge--pending {
+  background: var(--surface);
+  color: var(--text-sub);
+  border: 1px solid var(--border-color);
+}
+
+.application-status-badge--accepted {
+  background: var(--color-success-soft, #e6f7ee);
+  color: var(--color-success);
+}
+
+.application-status-badge--rejected {
+  background: var(--color-error-soft, #fdeaea);
+  color: var(--color-error);
+}
+
 .post-content {
   min-height: 160px;
   font-size: var(--text-base);
@@ -299,11 +354,71 @@
   padding: 0;
 }
 
+.comment-edit-btn,
+.comment-reply-btn {
+  background: none;
+  border: none;
+  color: var(--text-sub);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.comment-edit-btn:hover,
+.comment-reply-btn:hover {
+  color: var(--primary-color);
+}
+
+.comment-card__edited {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
 .comment-card__body {
   white-space: pre-wrap;
   font-size: var(--text-sm);
   color: var(--text-main);
   line-height: var(--leading-normal);
+}
+
+.comment-card--reply {
+  margin-left: var(--space-6);
+  border-left: 2px solid var(--border-light);
+}
+
+.comment-card__reply-to {
+  font-size: var(--text-xs);
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.comment-edit-form,
+.comment-reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.comment-edit-form .form-control,
+.comment-reply-form .form-control {
+  resize: vertical;
+  min-height: 50px;
+}
+
+.comment-edit-form__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.comment-edit-form__actions .btn,
+.comment-reply-form .btn {
+  width: auto;
+  padding: 6px 16px;
+  height: auto;
+  font-size: var(--text-sm);
 }
 
 /* ------------------------------------------

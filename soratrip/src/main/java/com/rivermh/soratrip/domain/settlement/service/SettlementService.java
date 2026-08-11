@@ -7,6 +7,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +20,9 @@ import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
 import com.rivermh.soratrip.domain.settlement.dto.ParticipantBalanceDto;
 import com.rivermh.soratrip.domain.settlement.dto.SettlementResultDto;
 import com.rivermh.soratrip.domain.settlement.dto.SettlementTransactionDto;
+import com.rivermh.soratrip.domain.settlement.entity.SettlementCompletion;
 import com.rivermh.soratrip.domain.settlement.entity.TripParticipant;
+import com.rivermh.soratrip.domain.settlement.repository.SettlementCompletionRepository;
 import com.rivermh.soratrip.domain.settlement.repository.TripParticipantRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +35,7 @@ public class SettlementService {
     private final TripParticipantRepository tripParticipantRepository;
     private final ExpenseRepository expenseRepository;
     private final TravelScheduleRepository travelScheduleRepository;
+    private final SettlementCompletionRepository settlementCompletionRepository;
 
     // 참여자 추가 (본인 일정에만)
     @Transactional
@@ -67,6 +72,9 @@ public class SettlementService {
             }
             expense.getSharedWith().remove(participant);
         }
+
+        // 이 참여자가 걸린 송금완료 기록(보내는 쪽/받는 쪽 어느 방향이든)도 함께 정리
+        settlementCompletionRepository.deleteByFromParticipant_IdOrToParticipant_Id(participantId, participantId);
 
         tripParticipantRepository.delete(participant);
     }
@@ -113,19 +121,50 @@ public class SettlementService {
             balances.add(new ParticipantBalanceDto(p.getId(), p.getName(), netAmount.get(p.getId())));
         }
 
-        return new SettlementResultDto(balances, simplifyDebts(balances));
+        Set<String> completedPairs = settlementCompletionRepository.findByFromParticipant_TravelSchedule_Id(scheduleId)
+                .stream()
+                .map(c -> pairKey(c.getFromParticipant().getId(), c.getToParticipant().getId()))
+                .collect(Collectors.toSet());
+
+        return new SettlementResultDto(balances, simplifyDebts(balances, completedPairs));
+    }
+
+    // 송금 완료 표시를 토글한다 (기록이 없으면 생성 = 완료 표시, 있으면 삭제 = 완료 취소)
+    @Transactional
+    public void toggleTransactionCompletion(Long scheduleId, Long fromParticipantId, Long toParticipantId, String email) {
+        TravelSchedule schedule = travelScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("일정을 찾을 수 없습니다. id=" + scheduleId));
+        if (!schedule.isOwnedBy(email)) {
+            throw new IllegalStateException("본인의 일정에서만 정산 완료 여부를 변경할 수 있습니다.");
+        }
+
+        settlementCompletionRepository.findByFromParticipant_IdAndToParticipant_Id(fromParticipantId, toParticipantId)
+                .ifPresentOrElse(
+                        settlementCompletionRepository::delete,
+                        () -> {
+                            TripParticipant from = tripParticipantRepository.findById(fromParticipantId)
+                                    .orElseThrow(() -> new IllegalArgumentException("참여자를 찾을 수 없습니다. id=" + fromParticipantId));
+                            TripParticipant to = tripParticipantRepository.findById(toParticipantId)
+                                    .orElseThrow(() -> new IllegalArgumentException("참여자를 찾을 수 없습니다. id=" + toParticipantId));
+                            settlementCompletionRepository.save(
+                                    SettlementCompletion.builder().fromParticipant(from).toParticipant(to).build());
+                        });
+    }
+
+    private static String pairKey(Long fromId, Long toId) {
+        return fromId + ":" + toId;
     }
 
     // 채권자/채무자를 큰 금액순으로 매칭해서 총 송금 횟수를 최소화
-    private List<SettlementTransactionDto> simplifyDebts(List<ParticipantBalanceDto> balances) {
+    private List<SettlementTransactionDto> simplifyDebts(List<ParticipantBalanceDto> balances, Set<String> completedPairs) {
         List<MutableBalance> creditors = new ArrayList<>();
         List<MutableBalance> debtors = new ArrayList<>();
         for (ParticipantBalanceDto b : balances) {
             int cmp = b.getNetAmount().compareTo(BigDecimal.ZERO);
             if (cmp > 0) {
-                creditors.add(new MutableBalance(b.getName(), b.getNetAmount()));
+                creditors.add(new MutableBalance(b.getParticipantId(), b.getName(), b.getNetAmount()));
             } else if (cmp < 0) {
-                debtors.add(new MutableBalance(b.getName(), b.getNetAmount().negate()));
+                debtors.add(new MutableBalance(b.getParticipantId(), b.getName(), b.getNetAmount().negate()));
             }
         }
         creditors.sort((a, b) -> b.amount.compareTo(a.amount));
@@ -140,7 +179,8 @@ public class SettlementService {
             BigDecimal settled = creditor.amount.min(debtor.amount);
 
             if (settled.compareTo(BigDecimal.ZERO) > 0) {
-                transactions.add(new SettlementTransactionDto(debtor.name, creditor.name, settled));
+                boolean completed = completedPairs.contains(pairKey(debtor.id, creditor.id));
+                transactions.add(new SettlementTransactionDto(debtor.id, creditor.id, debtor.name, creditor.name, settled, completed));
             }
             creditor.amount = creditor.amount.subtract(settled);
             debtor.amount = debtor.amount.subtract(settled);
@@ -156,10 +196,12 @@ public class SettlementService {
     }
 
     private static class MutableBalance {
+        private final Long id;
         private final String name;
         private BigDecimal amount;
 
-        private MutableBalance(String name, BigDecimal amount) {
+        private MutableBalance(Long id, String name, BigDecimal amount) {
+            this.id = id;
             this.name = name;
             this.amount = amount;
         }

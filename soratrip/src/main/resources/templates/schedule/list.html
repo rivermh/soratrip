@@ -15,14 +15,14 @@
             <h2 th:text="#{schedule.list.title}">🗓️ 내 여행 일정 목록</h2>
             <div class="page-actions">
                 <a th:href="@{/schedules/explore}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{schedule.explore.title}">🧭 둘러보기</a>
-                <a th:href="@{/schedules/recommended}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{schedule.recommend.title}">✨ 추천</a>
+                <a th:href="@{/schedules/recommended}" class="btn btn-secondary" style="text-decoration: none;" th:text="#{schedule.recommend.title}">🎯 추천</a>
                 <a th:href="@{/schedules/new}" class="btn btn-primary" style="text-decoration: none;" th:text="#{schedule.new_btn}">➕ 새 일정 만들기</a>
             </div>
         </div>
 
         <!-- 일정 카드 목록 -->
         <div th:if="${#lists.isEmpty(schedules)}" class="empty-state" th:text="#{schedule.list.empty}">
-            아직 등록된 여행 일정이 없습니다. 멋진 여행 계획을 세워보세요!
+            아직 등록된 일정이 없어요.
         </div>
 
         <div th:unless="${#lists.isEmpty(schedules)}" class="schedule-grid">

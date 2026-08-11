@@ -51,6 +51,58 @@
 			</p>
 		</div>
 
+		<!-- 🙋 동행 신청 영역 (동행구하기 게시글에 한해 표시) -->
+		<div th:if="${post.category.name() == 'COMPANION'}" class="post-application-box">
+
+			<!-- 글쓴이: 들어온 신청 목록 + 수락/거절 -->
+			<div th:if="${isPostOwner}">
+				<h3 th:text="#{post.application.title.owner}">동행 신청 현황</h3>
+				<div th:if="${#lists.isEmpty(applications)}" class="empty-state" th:text="#{post.application.empty}">
+					아직 들어온 신청이 없습니다.
+				</div>
+				<div th:each="a : ${applications}" class="post-application-item">
+					<strong th:text="${a.applicantNickname}">신청자</strong>
+
+					<span th:if="${a.status.name() == 'PENDING'}" class="application-status-badge application-status-badge--pending" th:text="#{post.application.status.pending}">대기중</span>
+					<span th:if="${a.status.name() == 'ACCEPTED'}" class="application-status-badge application-status-badge--accepted" th:text="#{post.application.status.accepted}">수락됨</span>
+					<span th:if="${a.status.name() == 'REJECTED'}" class="application-status-badge application-status-badge--rejected" th:text="#{post.application.status.rejected}">거절됨</span>
+
+					<span th:if="${a.message != null and !#strings.isEmpty(a.message)}" class="post-application-item__message" th:text="${a.message}">신청 메시지</span>
+
+					<form th:if="${a.status.name() == 'PENDING'}" th:action="@{/posts/{postId}/applications/{appId}/accept(postId=${post.id}, appId=${a.id})}" method="post" style="display: inline;">
+						<button type="submit" class="btn btn-primary" style="width: auto; padding: 4px 14px; font-size: 12px;" th:text="#{post.application.accept}">수락</button>
+					</form>
+					<form th:if="${a.status.name() == 'PENDING'}" th:action="@{/posts/{postId}/applications/{appId}/reject(postId=${post.id}, appId=${a.id})}" method="post" style="display: inline;">
+						<button type="submit" class="btn btn-secondary" style="width: auto; padding: 4px 14px; font-size: 12px;" th:text="#{post.application.reject}">거절</button>
+					</form>
+				</div>
+			</div>
+
+			<!-- 로그인한 다른 사용자: 신청 폼 또는 신청 상태 -->
+			<div th:if="${!isPostOwner}" sec:authorize="isAuthenticated()">
+				<div th:if="${myApplication == null}">
+					<h3 th:text="#{post.application.title.guest}">동행 신청하기</h3>
+					<form th:action="@{/posts/{postId}/applications(postId=${post.id})}" method="post" class="comment-form-row">
+						<textarea name="message" class="form-control" rows="2" th:placeholder="#{post.application.message.placeholder}"
+						          placeholder="간단한 소개나 인사말을 남겨보세요 (선택)" maxlength="200"></textarea>
+						<button type="submit" class="btn btn-primary" th:text="#{post.application.apply}">신청하기</button>
+					</form>
+				</div>
+				<div th:if="${myApplication != null}">
+					<h3 th:text="#{post.application.title.guest}">동행 신청하기</h3>
+					<p th:text="#{post.application.already_applied}">이미 이 게시글에 신청했습니다.</p>
+					<span th:if="${myApplication.status.name() == 'PENDING'}" class="application-status-badge application-status-badge--pending" th:text="#{post.application.status.pending}">대기중</span>
+					<span th:if="${myApplication.status.name() == 'ACCEPTED'}" class="application-status-badge application-status-badge--accepted" th:text="#{post.application.status.accepted}">수락됨</span>
+					<span th:if="${myApplication.status.name() == 'REJECTED'}" class="application-status-badge application-status-badge--rejected" th:text="#{post.application.status.rejected}">거절됨</span>
+				</div>
+			</div>
+
+			<!-- 비로그인 안내 -->
+			<div th:if="${!isPostOwner}" sec:authorize="isAnonymous()" class="comment-login-notice">
+				<span th:text="#{post.application.login_required.prefix}">동행을 신청하려면</span> <a th:href="@{/members/login}" style="color: var(--primary-color); font-weight: 700; text-decoration: none;" th:text="#{member.login}">로그인</a><span th:text="#{post.application.login_required.suffix}">이 필요합니다.</span>
+			</div>
+		</div>
+
 		<!-- 본문 내용 -->
 		<div class="post-content" th:text="${post.content}">본문 내용이 들어가는 자리입니다.</div>
 
@@ -102,11 +154,24 @@
 
 		<!-- 댓글 목록 -->
 		<div class="comment-list">
-			<div th:each="c : ${comments}" class="comment-card">
+			<div th:each="c : ${comments}" th:id="'comment-' + ${c.id}"
+			     th:class="${c.parentId != null} ? 'comment-card comment-card--reply' : 'comment-card'">
+				<div th:if="${c.parentId != null}" class="comment-card__reply-to">
+					<span th:text="'↳ @' + ${c.parentWriterNickname}">↳ @원댓글작성자</span>
+				</div>
 				<div class="comment-card__header">
 					<strong class="comment-card__writer" th:text="${c.writerNickname}">작성자</strong>
 					<div class="comment-card__actions">
 						<span class="comment-card__date" th:text="${#temporals.format(c.createdAt, 'yyyy-MM-dd HH:mm')}">2026-03-07</span>
+						<span th:if="${c.edited}" class="comment-card__edited" th:text="#{comment.edited_mark}">(수정됨)</span>
+
+						<!-- 수정 버튼 (작성자만) -->
+						<button th:if="${c.owner}" type="button" class="comment-edit-btn"
+						        th:onclick="'toggleCommentEdit(' + ${c.id} + ')'" th:text="#{comment.edit}">수정</button>
+
+						<!-- 답글 버튼 (로그인 사용자만) -->
+						<button sec:authorize="isAuthenticated()" type="button" class="comment-reply-btn"
+						        th:onclick="'toggleCommentReply(' + ${c.id} + ')'" th:text="#{comment.reply}">답글</button>
 
 						<!-- 댓글 삭제 버튼 -->
 						<form th:if="${c.owner}" th:action="@{/posts/{postId}/comments/{commentId}/delete(postId=${post.id}, commentId=${c.id})}" method="post" style="display: inline;">
@@ -114,7 +179,28 @@
 						</form>
 					</div>
 				</div>
-				<div class="comment-card__body" th:text="${c.content}">댓글 내용</div>
+
+				<div th:id="'comment-body-' + ${c.id}" class="comment-card__body" th:text="${c.content}">댓글 내용</div>
+
+				<!-- 수정 폼 (기본 숨김, 작성자만) -->
+				<form th:if="${c.owner}" th:id="'comment-edit-form-' + ${c.id}" class="comment-edit-form"
+				      th:action="@{/posts/{postId}/comments/{commentId}/edit(postId=${post.id}, commentId=${c.id})}"
+				      method="post" style="display: none;">
+					<textarea name="content" class="form-control" rows="2" required th:text="${c.content}"></textarea>
+					<div class="comment-edit-form__actions">
+						<button type="submit" class="btn btn-primary" th:text="#{comment.save}">저장</button>
+						<button type="button" class="btn btn-secondary" th:onclick="'cancelCommentEdit(' + ${c.id} + ')'" th:text="#{comment.cancel}">취소</button>
+					</div>
+				</form>
+
+				<!-- 답글 작성 폼 (기본 숨김, 로그인 사용자만) -->
+				<form sec:authorize="isAuthenticated()" th:id="'comment-reply-form-' + ${c.id}" class="comment-reply-form"
+				      th:action="@{/posts/{postId}/comments(postId=${post.id})}" method="post" style="display: none;">
+					<input type="hidden" name="parentId" th:value="${c.id}">
+					<textarea name="content" class="form-control" rows="2" th:placeholder="#{comment.reply.placeholder}"
+					          placeholder="답글을 입력하세요..." required></textarea>
+					<button type="submit" class="btn btn-primary" th:text="#{comment.reply}">답글</button>
+				</form>
 			</div>
 
 			<!-- 댓글이 없을 경우 -->
@@ -125,7 +211,7 @@
 
 		<!-- 하단 버튼 영역 -->
 		<div style="margin-top: 36px;">
-			<a th:href="@{/posts}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.back_to_list}">📋 목록으로 돌아가기</a>
+			<a th:href="@{/posts}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.back_to_list}">⬅️ 목록으로 돌아가기</a>
 		</div>
 	</div>
 
@@ -177,6 +263,29 @@
 			.catch(error => {
 				console.error('Error:', error);
 			});
+		}
+	</script>
+
+	<!-- 💬 댓글 수정/답글 폼 토글 스크립트 -->
+	<script>
+		function toggleCommentEdit(id) {
+			const body = document.getElementById('comment-body-' + id);
+			const form = document.getElementById('comment-edit-form-' + id);
+			if (body) body.style.display = 'none';
+			if (form) form.style.display = 'flex';
+		}
+
+		function cancelCommentEdit(id) {
+			const body = document.getElementById('comment-body-' + id);
+			const form = document.getElementById('comment-edit-form-' + id);
+			if (body) body.style.display = '';
+			if (form) form.style.display = 'none';
+		}
+
+		function toggleCommentReply(id) {
+			const form = document.getElementById('comment-reply-form-' + id);
+			if (!form) return;
+			form.style.display = (form.style.display === 'none' || !form.style.display) ? 'flex' : 'none';
 		}
 	</script>
 

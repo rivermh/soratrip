@@ -38,7 +38,8 @@ public class SecurityConfig {
 						.requestMatchers("/", "/members/join", "/members/signup-success", "/members/login",
 								"/members/password-reset", "/members/password-reset/confirm",
 								"/api/members/**", "/css/**", "/js/**",
-								"/images/**", "/favicon.ico", "/error", "/uploads/**")
+								"/images/**", "/favicon.ico", "/error", "/uploads/**",
+								"/shared/**")
 						.permitAll()
 						// WebSocket 핸드셰이크 경로 허용 (인증된 사용자만 연결 가능하도록 authenticated() 처리)
 						.requestMatchers("/ws/chat/**").authenticated()

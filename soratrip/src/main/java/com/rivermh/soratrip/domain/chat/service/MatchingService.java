@@ -131,6 +131,9 @@ public class MatchingService {
         private String email;
         private String profileImage;
         private double similarity;
+        private String bio;
+        private String nationality;
+        private String languageLevel;
 
         public MemberMatchInfo(Member member, double similarity) {
             this.id = member.getId();
@@ -138,6 +141,9 @@ public class MatchingService {
             this.email = member.getEmail();
             this.profileImage = member.getProfileImage();
             this.similarity = Math.round(similarity * 100.0) / 100.0;  // 소수점 2자리
+            this.bio = member.getBio();
+            this.nationality = member.getNationality();
+            this.languageLevel = member.getLanguageLevel();
         }
     }
 }

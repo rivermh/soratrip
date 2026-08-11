@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="#{schedule.bookings.title} + ' - SoraTrip'">✈️ 예약 정보 - SoraTrip</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <div class="container" style="max-width: 700px;">
+        <span class="eyebrow">Bookings</span>
+        <h2 th:text="#{schedule.bookings.title}" style="margin-bottom: 4px;">✈️ 예약 정보</h2>
+        <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-6);" th:text="${schedule.title}">3박 4일 도쿄 여행</p>
+
+        <div class="expense-summary" style="margin-bottom: var(--space-6);">
+
+            <!-- 예약 정보 목록 -->
+            <div th:if="${#lists.isEmpty(bookings)}" class="empty-state" th:text="#{schedule.bookings.empty}">
+                아직 등록된 예약 정보가 없습니다.
+            </div>
+
+            <div th:each="b : ${bookings}" class="checklist-item" style="align-items: flex-start; flex-direction: column; gap: 4px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <strong th:text="${b.bookingType.emoji} + ' ' + ${b.bookingType.displayName} + ' - ' + ${b.carrierName}">✈️ 항공편 - 대한항공 KE001</strong>
+                    <form th:if="${owner}" th:action="@{/schedules/{sid}/bookings/{bid}/delete(sid=${schedule.id}, bid=${b.id})}" method="post" style="display: inline;">
+                        <button type="submit" class="btn btn-secondary btn-danger-ghost" style="padding: 1px 6px; font-size: 11px;" th:title="#{schedule.bookings.delete}">✕</button>
+                    </form>
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--text-sub);">
+                    <span th:if="${b.confirmationNumber != null and !#strings.isEmpty(b.confirmationNumber)}"
+                          th:text="#{schedule.bookings.confirmation_no} + ': ' + ${b.confirmationNumber}">예약번호: ABC123</span>
+                </div>
+                <div style="font-size: var(--text-sm); color: var(--text-sub);">
+                    <span th:if="${b.departureTime != null}" th:text="#{schedule.bookings.departure} + ': ' + ${#temporals.format(b.departureTime, 'yyyy-MM-dd HH:mm')}">출발: 2026-09-01 09:00</span>
+                    <span th:if="${b.arrivalTime != null}" th:text="' → ' + #{schedule.bookings.arrival} + ': ' + ${#temporals.format(b.arrivalTime, 'yyyy-MM-dd HH:mm')}"> → 도착: 2026-09-01 11:00</span>
+                </div>
+                <div th:if="${b.memo != null and !#strings.isEmpty(b.memo)}" style="font-size: var(--text-sm); color: var(--text-faint);" th:text="${b.memo}">메모</div>
+            </div>
+
+            <!-- 예약 정보 추가 (소유자 전용) -->
+            <form th:if="${owner}" th:action="@{/schedules/{id}/bookings(id=${schedule.id})}" method="post"
+                  style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-4);">
+                <select name="bookingType" class="form-control" style="max-width: 160px;">
+                    <option th:each="t : ${bookingTypes}" th:value="${t}" th:text="${t.emoji} + ' ' + ${t.displayName}">✈️ 항공편</option>
+                </select>
+                <input type="text" name="carrierName" class="form-control" th:placeholder="#{schedule.bookings.carrier.placeholder}"
+                       placeholder="편명/업체명 (예: 대한항공 KE001)" required maxlength="100">
+                <input type="text" name="confirmationNumber" class="form-control" th:placeholder="#{schedule.bookings.confirmation_no.placeholder}"
+                       placeholder="예약번호" maxlength="50">
+                <label style="display: flex; flex-direction: column; font-size: var(--text-xs); color: var(--text-faint); gap: 2px;">
+                    <span th:text="#{schedule.bookings.departure}">출발</span>
+                    <input type="datetime-local" name="departureTime" class="form-control">
+                </label>
+                <label style="display: flex; flex-direction: column; font-size: var(--text-xs); color: var(--text-faint); gap: 2px;">
+                    <span th:text="#{schedule.bookings.arrival}">도착</span>
+                    <input type="datetime-local" name="arrivalTime" class="form-control">
+                </label>
+                <input type="text" name="memo" class="form-control" th:placeholder="#{schedule.bookings.memo.placeholder}" placeholder="메모 (선택)" maxlength="200">
+                <button type="submit" class="btn btn-primary" style="width: auto;" th:text="#{schedule.bookings.add}">추가</button>
+            </form>
+        </div>
+
+        <div>
+            <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{settlement.back}">⬅️ 일정으로 돌아가기</a>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+</body>
+</html>

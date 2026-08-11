@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rivermh.soratrip.domain.member.entity.Member;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
+import com.rivermh.soratrip.domain.post.entity.Region;
 import com.rivermh.soratrip.domain.schedule.dto.AiScheduleRequest;
 import com.rivermh.soratrip.domain.schedule.dto.ClaudeScheduleResponse;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleDay;
+import com.rivermh.soratrip.domain.schedule.entity.PlaceType;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleItem;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
@@ -15,11 +17,13 @@ import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
@@ -36,12 +40,45 @@ public class ClaudeScheduleService {
     private final TravelScheduleRepository travelScheduleRepository;
     private final ScheduleDayRepository scheduleDayRepository;
     private final MemberRepository memberRepository;
+    private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RestTemplate restTemplate = new RestTemplate();
 
     private static final int MAX_RETRIES = 2;
 
+    // AI 일정 생성/재생성은 매 호출마다 유료 API 비용이 발생하므로, 회원당 시간당 호출 횟수를 제한한다
+    // (MailService.checkPasswordResetRequestRate와 동일한 스타일)
+    private static final String AI_GEN_PREFIX = "ai-gen:";
+    private static final int AI_GEN_THRESHOLD = 10;
+    private static final long AI_GEN_WINDOW_SECONDS = 3600L; // 1시간
+
+    private void checkAiGenerationRate(String email) {
+        String key = AI_GEN_PREFIX + email;
+        Long count = redisTemplate.opsForValue().increment(key);
+        if (count != null && count == 1L) {
+            redisTemplate.expire(key, Duration.ofSeconds(AI_GEN_WINDOW_SECONDS));
+        }
+        if (count != null && count > AI_GEN_THRESHOLD) {
+            throw new IllegalStateException("AI 일정 생성 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+        }
+    }
+
+    // AI 응답의 placeType은 검증되지 않은 문자열이므로, enum에 없는 값/null은 조용히 null로 흡수한다
+    private PlaceType parsePlaceType(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return PlaceType.valueOf(raw.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            log.warn("⚠️ AI 응답의 placeType이 유효하지 않아 무시합니다: {}", raw);
+            return null;
+        }
+    }
+
     public Long createScheduleWithAi(AiScheduleRequest request, String email) {
+        checkAiGenerationRate(email);
+
         Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
 
@@ -103,6 +140,7 @@ public class ClaudeScheduleService {
                                 .visitTime(time)
                                 .memo(itemDto.getMemo())
                                 .recommendReason(itemDto.getRecommendReason())
+                                .placeType(parsePlaceType(itemDto.getPlaceType()))
                                 .build();
 
                         day.addItem(item);
@@ -120,6 +158,8 @@ public class ClaudeScheduleService {
      * 특정 하루만 AI로 다시 생성한다. 기존 dayNumber/visitDate는 그대로 두고, 그 날의 장소(items)만 교체한다.
      */
     public void regenerateDay(Long dayId, String extraPrompt, String email) {
+        checkAiGenerationRate(email);
+
         ScheduleDay day = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다."));
 
@@ -129,7 +169,7 @@ public class ClaudeScheduleService {
         }
 
         String prompt = buildDayRegeneratePrompt(schedule, day, extraPrompt);
-        ClaudeScheduleResponse.DayDto dayDto = callOpenRouterApiForDay(prompt);
+        ClaudeScheduleResponse.DayDto dayDto = callOpenRouterApiForDay(prompt, schedule.getRegion());
 
         day.getItems().clear();
         if (dayDto.getItems() != null) {
@@ -149,6 +189,7 @@ public class ClaudeScheduleService {
                         .visitTime(time)
                         .memo(itemDto.getMemo())
                         .recommendReason(itemDto.getRecommendReason())
+                        .placeType(parsePlaceType(itemDto.getPlaceType()))
                         .build();
 
                 day.addItem(item);
@@ -198,10 +239,15 @@ public class ClaudeScheduleService {
                 - User's request for this day: %s
 
                 Important Guidelines:
-                1. EXCLUDE chain restaurants, franchises, and already-famous landmark attractions.
-                   Prefer small, generational, neighborhood places.
+                1. EXCLUDE chain restaurants and franchises entirely. For famous, iconic landmark
+                   attractions, don't ban them outright, but keep them to a minimum -- at most ONE
+                   for this day, and only if it genuinely fits the trip. Fill the rest with small,
+                   generational, neighborhood places.
                 2. At least half of the places suggested for this day should be food-related spots
                    chosen for their story, not their fame.
+                3. The user's request for this day (below) is a MANDATORY constraint, not optional
+                   flavor text. Make sure EVERY item you choose is compatible with it, even if an
+                   otherwise-fitting local place would conflict with it.
 
                 STRICT JSON Format Requirement:
                 Return ONLY valid JSON for this single day (no markdown, no comments). Use this EXACT structure:
@@ -215,7 +261,8 @@ public class ClaudeScheduleService {
                       "visitTime": "09:00",
                       "visitOrder": 1,
                       "memo": "Memo text",
-                      "recommendReason": "2-3 sentences telling this place's story"
+                      "recommendReason": "2-3 sentences telling this place's story",
+                      "placeType": "RESTAURANT"
                     }
                   ]
                 }
@@ -227,6 +274,10 @@ public class ClaudeScheduleService {
                 - visitOrder is a number (no quotes), starting from 1
                 - Do NOT include markdown backticks
                 - Do NOT include any text outside the JSON object
+                - 'placeType' MUST be exactly one of: ATTRACTION, RESTAURANT, CAFE, LODGING,
+                  TRANSPORT, SHOPPING, ETC (uppercase, no other values). Pick the one that best
+                  describes the place itself (e.g. a ramen shop or izakaya is RESTAURANT, a
+                  standalone dessert/coffee spot is CAFE, a temple/park/viewpoint is ATTRACTION).
                 - Write 'placeName', 'placeAddress', 'memo', and 'recommendReason' in Korean or Japanese, matching the current plan's language (default to Korean if unclear).
                 - 'recommendReason' MUST be 2-3 concrete sentences that include AT LEAST TWO of
                   the following: the shop's history or why it opened, the story behind its
@@ -237,6 +288,12 @@ public class ClaudeScheduleService {
                 - NEVER use generic praise or guidebook phrases such as "인기 명소예요", "유명한",
                   "필수 코스", "여행객이라면 꼭", "인스타 핫플", "관광지로 유명한", or their
                   English/Japanese equivalents.
+                - Do NOT assert precise unverifiable facts (an exact founding year, "3rd
+                  generation", a named award, a specific celebrity visit, etc.) as certain fact
+                  unless you are reasonably confident they are true for this real place. When
+                  unsure, describe plausible general characteristics instead (worn signage, a
+                  handwritten menu, regulars who work nearby, a market-adjacent feel) rather than
+                  inventing specific unverifiable claims.
                 - Before returning the JSON, silently re-check every item against the rules above
                   and replace any item that fails.
 
@@ -252,7 +309,7 @@ public class ClaudeScheduleService {
      * 하루치 재생성 전용 OpenRouter 호출 (재시도 로직 포함). 실패 시 fallback 없이 예외를 던져
      * 기존 day의 items를 건드리지 않고 그대로 유지한다 (호출부에서 items.clear() 하기 전에 실패해야 함).
      */
-    private ClaudeScheduleResponse.DayDto callOpenRouterApiForDay(String promptText) {
+    private ClaudeScheduleResponse.DayDto callOpenRouterApiForDay(String promptText, Region region) {
         String url = "https://openrouter.ai/api/v1/chat/completions";
 
         for (int attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -299,6 +356,14 @@ public class ClaudeScheduleService {
                     log.warn("⚠️ 하루 재생성 응답에 서사 없는 추천 이유가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
                     if (attempt == MAX_RETRIES) {
                         throw new IllegalStateException("AI가 서사 있는 추천을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+                    }
+                    continue;
+                }
+
+                if (hasInvalidCoordinates(result.getItems(), region)) {
+                    log.warn("⚠️ 하루 재생성 응답에 지역을 벗어난 좌표가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
+                    if (attempt == MAX_RETRIES) {
+                        throw new IllegalStateException("AI가 정확한 위치 정보를 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
                     }
                     continue;
                 }
@@ -388,6 +453,29 @@ public class ClaudeScheduleService {
                     continue;
                 }
 
+                // 파싱/서사 검증은 통과했지만, 요청한 지역과 동떨어진 좌표가 섞여 있으면 지도가 엉뚱하게 찍히므로 재시도한다
+                boolean hasBadCoords = result.getDays() != null
+                        && result.getDays().stream().anyMatch(day -> hasInvalidCoordinates(day.getItems(), request.getRegion()));
+                if (hasBadCoords) {
+                    log.warn("⚠️ 요청 지역을 벗어난 좌표가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
+                    if (attempt == MAX_RETRIES) {
+                        log.error("❌ 재시도 후에도 좌표 오류가 남아있어 Fallback 일정으로 대체합니다.");
+                        return createFallbackSchedule(request);
+                    }
+                    continue;
+                }
+
+                // 파싱/서사/좌표 검증은 통과했지만, 같은 장소가 여러 날에 걸쳐 중복되면 날짜별로
+                // 똑같은 일정이 나온 것처럼 보이므로 재시도한다
+                if (hasDuplicateAcrossDays(result.getDays())) {
+                    log.warn("⚠️ 날짜 간 중복된 장소가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
+                    if (attempt == MAX_RETRIES) {
+                        log.error("❌ 재시도 후에도 날짜 간 중복 장소가 남아있어 Fallback 일정으로 대체합니다.");
+                        return createFallbackSchedule(request);
+                    }
+                    continue;
+                }
+
                 log.info("✅ OpenRouter API 호출 성공! (시도: {})", attempt + 1);
                 log.debug("응답: {}", cleanedJson.substring(0, Math.min(200, cleanedJson.length())));
                 return result;
@@ -429,6 +517,68 @@ public class ClaudeScheduleService {
             return false;
         }
         return items.stream().anyMatch(item -> isGenericRecommendation(item.getRecommendReason()));
+    }
+
+    // 지역별 대략적인 위도/경도 범위 { latMin, latMax, lonMin, lonMax }.
+    // AI가 완전히 엉뚱한 지역 좌표를 지어내는 경우(지도 오표시)만 걸러내는 용도라, 인접 당일치기
+    // 명소(가마쿠라/요코하마/교토/나라 등)까지 포용하도록 넉넉하게 잡는다.
+    private static final Map<Region, double[]> REGION_BOUNDS = Map.of(
+            Region.TOKYO, new double[]{34.9, 36.8, 138.5, 140.6},
+            Region.OSAKA, new double[]{34.0, 35.3, 134.8, 136.2},
+            Region.FUKUOKA, new double[]{32.5, 34.0, 129.5, 131.5},
+            Region.HOKKAIDO, new double[]{41.3, 45.6, 139.3, 145.9},
+            Region.SEOUL, new double[]{37.0, 38.0, 126.4, 127.5},
+            Region.BUSAN, new double[]{34.8, 35.5, 128.7, 129.3},
+            Region.JEJU, new double[]{33.1, 33.6, 126.1, 126.9}
+    );
+
+    /**
+     * 응답에 좌표가 아예 없거나(null), 선택된 지역의 대략적인 범위를 벗어난 항목이 있는지 검사한다.
+     * region이 매핑에 없으면(향후 지역 추가 등) 검증을 건너뛴다.
+     */
+    private boolean hasInvalidCoordinates(List<ClaudeScheduleResponse.ItemDto> items, Region region) {
+        if (items == null || items.isEmpty()) {
+            return false;
+        }
+        double[] bounds = region != null ? REGION_BOUNDS.get(region) : null;
+        if (bounds == null) {
+            return false;
+        }
+        return items.stream().anyMatch(item -> {
+            Double lat = item.getLatitude();
+            Double lon = item.getLongitude();
+            if (lat == null || lon == null) {
+                return true;
+            }
+            return lat < bounds[0] || lat > bounds[1] || lon < bounds[2] || lon > bounds[3];
+        });
+    }
+
+    /**
+     * 전체 일정 생성 응답에서 같은 장소(placeName)가 여러 날에 걸쳐 중복되는지 검사한다.
+     * 단발성 하루 재생성(regenerateDay)은 다른 날의 장소를 프롬프트에서 직접 제외 목록으로
+     * 넘기므로 이 검사가 필요 없고, 전체 일정을 한 번에 받는 이 경로에서만 사용한다.
+     */
+    private boolean hasDuplicateAcrossDays(List<ClaudeScheduleResponse.DayDto> days) {
+        if (days == null || days.size() < 2) {
+            return false;
+        }
+        Set<String> seenPlaceNames = new HashSet<>();
+        for (ClaudeScheduleResponse.DayDto day : days) {
+            if (day.getItems() == null) {
+                continue;
+            }
+            for (ClaudeScheduleResponse.ItemDto item : day.getItems()) {
+                String placeName = item.getPlaceName();
+                if (placeName == null || placeName.isBlank()) {
+                    continue;
+                }
+                if (!seenPlaceNames.add(placeName.trim().toLowerCase())) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -476,17 +626,19 @@ public class ClaudeScheduleService {
                 item1.setVisitOrder(1);
                 item1.setMemo("아침 일찍 갈수록 줄이 짧음, 평지 노점이라 이동 편함");
                 item1.setRecommendReason("경매가 끝난 새벽 시장 상인들의 아침 끼니로 시작된 다마고야키 집으로, 3대째 같은 화로에서 한 겹씩 말아 굽는 방식을 고집한다. 관광객보다 근처 수산물 상인들이 출근길에 먼저 들르는 곳이다.");
+                item1.setPlaceType("RESTAURANT");
                 items.add(item1);
 
                 ClaudeScheduleResponse.ItemDto item2 = new ClaudeScheduleResponse.ItemDto();
-                item2.setPlaceName("도쿄 타워 (Tokyo Tower)");
-                item2.setPlaceAddress("4 Chome-2-8 Shibakoen, Minato City, Tokyo");
-                item2.setLatitude(35.6586);
-                item2.setLongitude(139.7454);
+                item2.setPlaceName("몬자야키 골목 노포");
+                item2.setPlaceAddress("3 Chome-12 Tsukishima, Chuo City, Tokyo");
+                item2.setLatitude(35.6640);
+                item2.setLongitude(139.7825);
                 item2.setVisitTime("15:00");
                 item2.setVisitOrder(2);
-                item2.setMemo("야경 명소, 메인 데크 진입 시 완만한 경사로 및 엘리베이터 완비");
-                item2.setRecommendReason("전망대 자체는 유명하지만, 엘리베이터가 지상부터 메인 데크까지 단차 없이 연결돼 있어 캐리어나 휠체어 이동이 있는 일행이 하루 동선에 부담 없이 끼워 넣을 수 있는 몇 안 되는 랜드마크다.");
+                item2.setMemo("몬자야키 골목 전체가 평지, 매장 입구 단차 거의 없음");
+                item2.setRecommendReason("공장 노동자들의 저녁 끼니용으로 시작된 몬자야키 골목의 원조 격 가게로, 철판 앞에서 손님이 직접 구워 먹는 방식을 처음 정착시킨 곳 중 하나로 알려져 있다. 관광객보다 퇴근길 동네 회사원들이 더 많이 보인다.");
+                item2.setPlaceType("RESTAURANT");
                 items.add(item2);
             } else {
                 ClaudeScheduleResponse.ItemDto item1 = new ClaudeScheduleResponse.ItemDto();
@@ -498,6 +650,7 @@ public class ClaudeScheduleService {
                 item1.setVisitOrder(1);
                 item1.setMemo("좁은 상점가 초입 평지 매장, 서서 먹거나 포장 가능");
                 item1.setRecommendReason("원래는 동네 정육점이었는데, 남는 자투리 고기로 만든 멘치카츠가 입소문이 나며 지금은 골목 명물이 됐다. 튀김옷 배합은 3대째 손자에게만 구전으로 전해진다고 가게 앞에 적혀 있다.");
+                item1.setPlaceType("RESTAURANT");
                 items.add(item1);
 
                 ClaudeScheduleResponse.ItemDto item2 = new ClaudeScheduleResponse.ItemDto();
@@ -509,6 +662,7 @@ public class ClaudeScheduleService {
                 item2.setVisitOrder(2);
                 item2.setMemo("공원 내 산책로 정비 잘 됨, 카페 및 휴게 공간 다수 보유");
                 item2.setRecommendReason("공원 자체보다 서쪽 출구 인근 벤치가 숨은 포인트인데, 근처 상점가 상인들이 점심시간마다 이곳에서 도시락을 먹어 '상인들의 마당'이라 불린다.");
+                item2.setPlaceType("ATTRACTION");
                 items.add(item2);
             }
 
@@ -544,16 +698,24 @@ public class ClaudeScheduleService {
                 - Additional Preferences & Requests: %s
 
                 Important Guidelines:
-                1. EXCLUDE chain restaurants, franchises, and already-famous landmark attractions.
-                   Prefer small, generational, neighborhood places over anything a typical
-                   guidebook would list first.
+                1. EXCLUDE chain restaurants and franchises entirely. For famous, iconic landmark
+                   attractions, don't ban them outright, but keep them to a minimum -- at most ONE
+                   per day, and only if it genuinely fits the trip. Fill the rest of the itinerary
+                   with small, generational, neighborhood places over anything a typical guidebook
+                   would list first.
                 2. At least half of the places suggested per day should be food-related spots
                    (a restaurant, izakaya, market stall, cafe, etc.) chosen for their story, not
                    their fame.
-                3. Reflect the 'Additional Preferences & Requests' strictly (e.g. stairs, walking
-                   distance, luggage, specific spot requests).
+                3. The 'Additional Preferences & Requests' field is a MANDATORY constraint from the
+                   user, not optional flavor text. Read it carefully and make sure EVERY item you
+                   choose is compatible with it. If an item would conflict with that request (even
+                   if it otherwise fits the local-food theme), do not include it.
                 4. Automatically detect whether Korean or Japanese is requested or appropriate
                    based on the input context, and write all content in that matching language.
+                5. EVERY day must be built around entirely different places from every other day
+                   in this itinerary. Never reuse the same place -- even a great one -- across
+                   multiple days. Before finalizing, check the full place list across all days
+                   and replace any place that appears more than once.
 
                 STRICT JSON Format Requirement:
                 Return ONLY valid JSON (no markdown, no comments). Use this EXACT structure:
@@ -571,7 +733,8 @@ public class ClaudeScheduleService {
                           "visitTime": "09:00",
                           "visitOrder": 1,
                           "memo": "Memo text",
-                          "recommendReason": "2-3 sentences telling this place's story"
+                          "recommendReason": "2-3 sentences telling this place's story",
+                          "placeType": "RESTAURANT"
                         }
                       ]
                     }
@@ -585,6 +748,10 @@ public class ClaudeScheduleService {
                 - visitOrder is a number (no quotes)
                 - Do NOT include markdown backticks
                 - Do NOT include any text outside the JSON object
+                - 'placeType' MUST be exactly one of: ATTRACTION, RESTAURANT, CAFE, LODGING,
+                  TRANSPORT, SHOPPING, ETC (uppercase, no other values). Pick the one that best
+                  describes the place itself (e.g. a ramen shop or izakaya is RESTAURANT, a
+                  standalone dessert/coffee spot is CAFE, a temple/park/viewpoint is ATTRACTION).
                 - Write 'title', 'placeName', 'placeAddress', 'memo', and 'recommendReason' in the detected language (Korean or Japanese).
                 - 'recommendReason' MUST be 2-3 concrete sentences that include AT LEAST TWO of
                   the following: the shop's history or why it opened, the story behind its
@@ -600,6 +767,12 @@ public class ClaudeScheduleService {
                   Good example: "3대째 이어온 라멘집으로, 창업자가 시장 상인들 아침 끼니용으로 팔던
                   국물이 지금의 시그니처가 됐다. 관광 거리에서 두 블록 떨어져 있어 여행객보다 근처
                   공장 직원들이 아침 7시부터 줄을 선다."
+                - Do NOT assert precise unverifiable facts (an exact founding year, "3rd
+                  generation", a named award, a specific celebrity visit, etc.) as certain fact
+                  unless you are reasonably confident they are true for this real place. When
+                  unsure, describe plausible general characteristics instead (worn signage, a
+                  handwritten menu, regulars who work nearby, a market-adjacent feel) rather than
+                  inventing specific unverifiable claims.
                 - Before returning the JSON, silently re-check every item against the rules above
                   and replace any item that fails.
 

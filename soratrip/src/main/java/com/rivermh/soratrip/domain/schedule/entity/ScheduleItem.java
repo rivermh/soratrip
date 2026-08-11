@@ -4,6 +4,8 @@ import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -46,6 +48,9 @@ public class ScheduleItem {
 
     @Column(length = 300)
     private String recommendReason; // AI가 이 장소를 추천한 이유 (AI 생성 시에만 채워짐, 사용자 수동 추가 시 null)
+
+    @Enumerated(EnumType.STRING)
+    private PlaceType placeType; // 장소 유형 (맛집/카페/명소 등). 기존 데이터 및 미지정 시 null
 
     public void setVisitOrder(Integer visitOrder) {
         this.visitOrder = visitOrder;

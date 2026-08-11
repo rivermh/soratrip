@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="#{schedule.ai.page_title}">🤖 AI 맞춤 일정 생성 - SoraTrip</title>
+    <title th:text="#{schedule.ai.page_title}">AI 맞춤 일정 생성 - SoraTrip</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -12,15 +12,15 @@
 
     <div class="container form-container" style="max-width: 650px;">
         <span class="eyebrow">AI Planner</span>
-        <h2 style="margin-bottom: var(--space-2);" th:text="#{schedule.ai.title}">🤖 AI 여행 일정 자동 생성</h2>
+        <h2 style="margin-bottom: var(--space-2);" th:text="#{schedule.ai.title}">AI 여행 일정 자동 생성</h2>
         <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-2);" th:text="#{schedule.ai.description}">
-            원하는 조건과 이동 스타일을 입력하시면, AI가 지도 동선과 좌표가 연결된 최적의 일정을 자동으로 등록해 드립니다.
+            조건을 입력하면 AI가 지도 동선까지 연결된 일정을 자동으로 만들어 드려요.
         </p>
         <p style="color: var(--text-sub); font-size: var(--text-xs); margin-bottom: var(--space-6);" th:text="#{schedule.ai.disclaimer}">
-            🤖 AI가 만든 추천이에요. 방문 전 영업시간·위치 등 정확한 정보를 다시 확인해주세요.
+            🤖 AI가 만든 추천이에요. 방문 전 정보를 다시 확인해주세요.
         </p>
 
-        <form th:action="@{/schedules/ai-new}" th:object="${aiRequest}" method="post" style="display: grid; gap: var(--space-5);">
+        <form id="aiScheduleForm" th:action="@{/schedules/ai-new}" th:object="${aiRequest}" method="post" style="display: grid; gap: var(--space-5);">
             <div class="form-group" style="margin-bottom: 0;">
                 <label th:text="#{schedule.ai.region_label}">📍 여행 지역</label>
                 <select th:field="*{region}" class="form-control" required>
@@ -40,8 +40,7 @@
                 <label th:text="#{schedule.ai.days_label}">📅 여행 기간 (일수)</label>
                 <input type="number" th:field="*{daysCount}" min="1" max="7" value="3" class="form-control" required
                        th:placeholder="#{schedule.ai.days_placeholder}" placeholder="예: 3 (3일차)">
-                <!-- 💡 7일 제한 안내 메모 추가 -->
-                <small class="hint-text" th:text="#{schedule.ai.days_hint}">* AI 안정성 유지를 위해 여행 기간은 최대 7일까지 설정할 수 있습니다.</small>
+                <small class="hint-text" th:text="#{schedule.ai.days_hint}">최대 7일까지 설정할 수 있어요.</small>
                 <div class="error-message" th:if="${#fields.hasErrors('daysCount')}">
                     <span th:errors="*{daysCount}"></span>
                 </div>
@@ -64,14 +63,38 @@
             </div>
 
             <div class="form-group" style="margin-bottom: 0;">
-                <label th:text="#{schedule.ai.extra_label}">📝 추가 요청사항 (선택)</label>
-                <textarea th:field="*{extraPrompt}" class="form-control" rows="3"
+                <label th:text="#{schedule.ai.extra_label}">📝 추가 요청사항 (필수)</label>
+                <textarea th:field="*{extraPrompt}" class="form-control" rows="3" required minlength="10" maxlength="300"
                           th:placeholder="#{schedule.ai.extra_placeholder}" placeholder="예: 계단이 많은 곳은 피해주세요, 하루 1.5만보 이하로 걷고 싶어요, 대형 캐리어 보관 가능한 곳 위주로 짜주세요."></textarea>
+                <small class="hint-text" th:text="#{schedule.ai.extra_hint}">구체적으로 적을수록 로컬 맛집 위주로 잘 나와요. (예: "체인점 말고 노포 위주로")</small>
+                <div class="error-message" th:if="${#fields.hasErrors('extraPrompt')}">
+                    <span th:errors="*{extraPrompt}"></span>
+                </div>
             </div>
 
-            <button type="submit" class="btn btn-ai" style="font-size: var(--text-base); padding: 14px;" th:text="#{schedule.ai.submit_btn}">✨ AI 일정 생성 시작하기</button>
+            <button type="submit" id="aiSubmitBtn" class="btn btn-ai" style="font-size: var(--text-base); padding: 14px;" th:text="#{schedule.ai.submit_btn}">AI 일정 생성 시작하기</button>
         </form>
     </div>
+
+    <!-- AI 일정 생성 로딩 오버레이: 폼이 실제 페이지 이동으로 제출되므로, submit 시점에 보여주고
+         응답이 올 때까지(=페이지가 새로 렌더링될 때까지) 그대로 화면을 덮고 있는다 -->
+    <div id="aiLoadingOverlay" class="ai-loading-overlay" hidden>
+        <div class="ai-loading-overlay__box">
+            <div class="ai-loading-overlay__spinner"></div>
+            <p class="ai-loading-overlay__title" th:text="#{schedule.ai.loading_title}">로컬 맛집 위주로 일정을 짜는 중이에요...</p>
+            <p class="ai-loading-overlay__hint" th:text="#{schedule.ai.loading_hint}">최대 1분 정도 걸릴 수 있어요. 이 화면을 벗어나지 말고 잠시만 기다려주세요.</p>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        document.getElementById('aiScheduleForm').addEventListener('submit', function () {
+            // HTML5 required/minlength 검증을 통과한 뒤에만 submit 이벤트가 발생하므로,
+            // 여기 도달했다는 건 이미 유효한 제출이라는 뜻 -> 바로 오버레이를 띄운다
+            document.getElementById('aiLoadingOverlay').hidden = false;
+            const btn = document.getElementById('aiSubmitBtn');
+            if (btn) btn.disabled = true;
+        });
+    </script>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>

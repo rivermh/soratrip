@@ -71,7 +71,7 @@ public class ExpenseController {
 
         model.addAttribute("schedule", schedule);
         model.addAttribute("owner", owner);
-        model.addAttribute("summary", expenseService.getScheduleSummary(scheduleId));
+        model.addAttribute("summary", expenseService.getScheduleSummary(scheduleId, schedule.getBudgetKrw()));
         model.addAttribute("expensesByDay", expenses.stream()
                 .collect(Collectors.groupingBy(e -> e.getScheduleDay().getId())));
         model.addAttribute("expenseCategories", ExpenseCategory.values());

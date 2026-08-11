@@ -75,7 +75,8 @@
             roomWithUser: /*[[#{chat.room.with_user}]]*/ '{0} 님과의 대화',
             senderUnknown: /*[[#{chat.sender.unknown}]]*/ '상대방',
             matchingEmpty: /*[[#{chat.matching.empty}]]*/ '매칭된 사용자가 없습니다',
-            similarity: /*[[#{chat.similarity}]]*/ '유사도: {0}%'
+            similarity: /*[[#{chat.similarity}]]*/ '유사도: {0}%',
+            viewPortfolio: /*[[#{chat.matching.view_portfolio}]]*/ '여행 포트폴리오 보기'
         };
 
         // 전역 변수
@@ -274,9 +275,13 @@
                     users.forEach(user => {
                         const userCard = document.createElement('div');
                         userCard.className = 'user-card';
+                        const metaParts = [user.nationality, user.languageLevel].filter(Boolean).map(escapeHtml);
                         userCard.innerHTML = `
                             <div class="user-name">${escapeHtml(user.nickname)}</div>
                             <div class="user-similarity">${I18N.similarity.replace('{0}', (user.similarity * 100).toFixed(0))}</div>
+                            ${metaParts.length ? `<div class="user-meta">${metaParts.join(' · ')}</div>` : ''}
+                            ${user.bio ? `<div class="user-bio">${escapeHtml(user.bio)}</div>` : ''}
+                            <a href="/portfolio/${user.id}" class="user-portfolio-link" onclick="event.stopPropagation()">${I18N.viewPortfolio}</a>
                         `;
                         userCard.onclick = () => createChatWithUser(user.id, user.nickname);
                         container.appendChild(userCard);

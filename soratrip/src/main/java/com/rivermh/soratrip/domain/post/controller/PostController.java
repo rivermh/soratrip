@@ -3,10 +3,12 @@ package com.rivermh.soratrip.domain.post.controller;
 import com.rivermh.soratrip.domain.comment.dto.CommentRequestDto;
 import com.rivermh.soratrip.domain.comment.dto.CommentResponseDto;
 import com.rivermh.soratrip.domain.comment.service.CommentService;
+import com.rivermh.soratrip.domain.post.dto.PostApplicationResponseDto;
 import com.rivermh.soratrip.domain.post.dto.PostCreateDto;
 import com.rivermh.soratrip.domain.post.dto.PostResponseDto;
 import com.rivermh.soratrip.domain.post.entity.Category;
 import com.rivermh.soratrip.domain.post.entity.Region;
+import com.rivermh.soratrip.domain.post.service.PostApplicationService;
 import com.rivermh.soratrip.domain.post.service.PostService;
 import com.rivermh.soratrip.global.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Sort;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 
 @Controller
@@ -29,6 +33,7 @@ public class PostController {
 
 	private final PostService postService;
 	private final CommentService commentService;
+	private final PostApplicationService postApplicationService;
 
 	// 1. 게시글 목록 조회 (필터링 지원)
 	@GetMapping
@@ -71,23 +76,40 @@ public class PostController {
 
 	// 4. 게시글 상세 페이지 
 	@GetMapping("/{id}")
-	public String postDetail(@PathVariable(name = "id") Long id, 
-							 @AuthenticationPrincipal Object principal, 
+	public String postDetail(@PathVariable(name = "id") Long id,
+							 @AuthenticationPrincipal Object principal,
+							 HttpServletRequest request,
 							 Model model) {
-		
+
 		// 💡 1. 이메일 추출을 먼저 수행 (비로그인 사용자는 null)
 		String loginEmail = null;
 		if (principal != null) {
 			loginEmail = SecurityUtils.extractEmail(principal);
 		}
 
+		// 조회수 중복 방지용 식별자: 로그인 사용자는 이메일, 비로그인은 세션ID
+		String viewerKey = (loginEmail != null) ? loginEmail : request.getSession().getId();
+
 		// 💡 2. postService.getPostDetail에 loginEmail 전달 (좋아요 여부 판단용)
-		PostResponseDto post = postService.getPostDetail(id, loginEmail);
+		PostResponseDto post = postService.getPostDetail(id, loginEmail, viewerKey);
 		List<CommentResponseDto> comments = commentService.getComments(id, loginEmail);
-		
+
 		model.addAttribute("post", post);
 		model.addAttribute("comments", comments);
 		model.addAttribute("commentForm", new CommentRequestDto());
+
+		// 동행구하기(COMPANION) 게시글에 한해 신청 관련 정보를 함께 내려준다.
+		// 글쓴이 본인이면 들어온 신청 목록을, 그 외 로그인 사용자면 본인의 신청 여부/상태를 전달한다.
+		if (post.getCategory() == Category.COMPANION) {
+			boolean isOwner = loginEmail != null && loginEmail.equals(post.getWriterEmail());
+			model.addAttribute("isPostOwner", isOwner);
+			if (isOwner) {
+				model.addAttribute("applications", postApplicationService.getApplications(id));
+			} else {
+				model.addAttribute("myApplication", postApplicationService.getMyApplication(id, loginEmail).orElse(null));
+			}
+		}
+
 		return "post/detail";
 	}
 }

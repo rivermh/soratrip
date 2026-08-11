@@ -60,4 +60,14 @@ public class SettlementController {
         settlementService.removeParticipant(participantId, principal.getName());
         return "redirect:/schedules/" + scheduleId + "/settlement";
     }
+
+    // 정산 결과의 특정 송금 건 완료 표시 토글
+    @PostMapping("/transactions/complete")
+    public String toggleTransactionCompletion(@PathVariable("scheduleId") Long scheduleId,
+                                              @RequestParam("fromParticipantId") Long fromParticipantId,
+                                              @RequestParam("toParticipantId") Long toParticipantId,
+                                              Principal principal) {
+        settlementService.toggleTransactionCompletion(scheduleId, fromParticipantId, toParticipantId, principal.getName());
+        return "redirect:/schedules/" + scheduleId + "/settlement";
+    }
 }

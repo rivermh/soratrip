@@ -242,4 +242,25 @@ public class MemberController {
 
         return "redirect:/members/login?passwordChanged";
     }
+
+    // 회원 탈퇴 처리 (소셜 로그인 계정은 password가 비어와도 서비스단에서 확인을 건너뜀)
+    @PostMapping("/mypage/withdraw")
+    public String withdraw(@AuthenticationPrincipal Object principal,
+                           @RequestParam(name = "password", required = false) String password,
+                           RedirectAttributes redirectAttributes,
+                           HttpServletRequest request) {
+        String email = SecurityUtils.requireEmail(principal);
+
+        try {
+            memberService.withdraw(email, password);
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("withdrawError", e.getMessage());
+            return "redirect:/members/mypage";
+        }
+
+        // 탈퇴 성공 시 세션을 무효화해 즉시 로그아웃시킨다.
+        request.getSession().invalidate();
+
+        return "redirect:/members/login?withdrawn";
+    }
 }

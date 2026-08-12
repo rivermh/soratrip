@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface PostRepository extends JpaRepository<Post, Long> {
@@ -40,4 +41,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     
 	// 내가 작성한 게시글 목록 (최신순)
 	List<Post> findByWriterEmailOrderByIdDesc(String email);
+
+	// 관리자 통계용: 특정 시점 이후 작성된 게시글 수
+	long countByCreatedAtAfter(LocalDateTime dateTime);
 }

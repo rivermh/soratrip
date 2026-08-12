@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserServ
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         // DB에 저장 또는 업데이트
         Member member = saveOrUpdate(email, name, picture, registrationId, providerId);
+
+        // 정지된 계정은 소셜 로그인도 막는다 (폼 로그인 쪽 DisabledException과 동일한 의도).
+        // 에러 코드를 "suspended_account"로 지정해 OAuth2LoginFailureHandler가 구분해서 리다이렉트한다.
+        if (member.isSuspended()) {
+            throw new OAuth2AuthenticationException(new OAuth2Error("suspended_account"), "정지된 계정입니다.");
+        }
 
         // Authentication.getName()/Principal.getName()이 provider의 PK(sub)가 아닌
         // 이메일을 반환하도록 name attribute key를 "email"로 고정한다.

@@ -53,6 +53,11 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false)
     private Role role; // USER, ADMIN 등
 
+    // 정지 여부 (관리자 전용). 기존 행은 ddl-auto가 NULL로 남기므로 nullable로 두고
+    // isSuspended()에서 null을 "정지 아님"으로 취급한다.
+    @Enumerated(EnumType.STRING)
+    private MemberStatus status = MemberStatus.ACTIVE;
+
     private String provider; // kakao, line 등 (소셜 로그인용)
     private String providerId;
     
@@ -108,5 +113,19 @@ public class Member extends BaseTimeEntity {
     // 비밀번호 변경 (인코딩된 값을 받는다 — 인코딩 책임은 서비스 계층)
     public void updatePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    // 권한 변경 (관리자 전용)
+    public void updateRole(Role role) {
+        this.role = role;
+    }
+
+    // 정지/정지 해제 (관리자 전용)
+    public void updateStatus(MemberStatus status) {
+        this.status = status;
+    }
+
+    public boolean isSuspended() {
+        return status == MemberStatus.SUSPENDED;
     }
 }

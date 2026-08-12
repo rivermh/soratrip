@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/common :: head(~{::title})}">
+    <title th:text="#{admin.members.title} + ' - SoraTrip'">👤 회원 관리 - SoraTrip</title>
+</head>
+
+<body>
+
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="container" style="max-width: 1000px;">
+
+        <div class="page-header-row">
+            <div>
+                <span class="eyebrow">Admin</span>
+                <h2 th:text="#{admin.members.title}" style="margin-bottom: 0;">👤 회원 관리</h2>
+            </div>
+        </div>
+
+        <section class="filter-panel">
+            <form th:action="@{/admin/members}" method="get" class="post-search-row">
+                <input type="text" name="keyword" th:value="${keyword}" class="form-control"
+                       th:placeholder="#{admin.members.search_placeholder}"
+                       placeholder="이메일이나 닉네임으로 검색해 보세요..." />
+                <button type="submit" class="btn btn-primary" th:text="#{post.search.btn}">검색</button>
+            </form>
+        </section>
+
+        <div th:if="${members.totalElements == 0}" class="empty-state" th:text="#{admin.members.empty}">조건에 맞는 회원이 없습니다.</div>
+
+        <div th:unless="${members.totalElements == 0}" class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th th:text="#{admin.members.table.email}">이메일</th>
+                        <th th:text="#{admin.members.table.nickname}">닉네임</th>
+                        <th th:text="#{admin.members.table.role}">권한</th>
+                        <th th:text="#{admin.members.table.status}">상태</th>
+                        <th th:text="#{admin.members.table.joined}">가입일</th>
+                        <th th:text="#{admin.members.table.actions}">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="m : ${members}">
+                        <td th:text="${m.email}">user@example.com</td>
+                        <td th:text="${m.nickname}">닉네임</td>
+                        <td>
+                            <span th:if="${m.role.name() == 'ADMIN'}" class="admin-role-badge" th:text="#{admin.members.role.admin}">ADMIN</span>
+                            <span th:unless="${m.role.name() == 'ADMIN'}" class="admin-role-badge admin-role-badge--user" th:text="#{admin.members.role.user}">USER</span>
+                        </td>
+                        <td>
+                            <span th:if="${m.suspended}" class="admin-status-badge admin-status-badge--suspended" th:text="#{admin.members.status.suspended}">정지</span>
+                            <span th:unless="${m.suspended}" class="admin-status-badge" th:text="#{admin.members.status.active}">정상</span>
+                        </td>
+                        <td th:text="${#temporals.format(m.createdAt, 'yyyy-MM-dd')}">2026-01-01</td>
+                        <td>
+                            <div th:if="${m.email == #authentication.name}" class="admin-self-label" th:text="#{admin.members.self}">본인 계정</div>
+                            <div th:unless="${m.email == #authentication.name}" class="admin-row-actions">
+                                <form th:if="${m.role.name() == 'ADMIN'}" th:action="@{/admin/members/{id}/role(id=${m.id})}" method="post" style="display: inline;">
+                                    <input type="hidden" name="role" value="USER" />
+                                    <button type="submit" class="btn btn-secondary" style="width: auto; padding: 5px 12px; font-size: 12.5px;" th:text="#{admin.members.demote}">일반회원으로</button>
+                                </form>
+                                <form th:unless="${m.role.name() == 'ADMIN'}" th:action="@{/admin/members/{id}/role(id=${m.id})}" method="post" style="display: inline;">
+                                    <input type="hidden" name="role" value="ADMIN" />
+                                    <button type="submit" class="btn btn-secondary" style="width: auto; padding: 5px 12px; font-size: 12.5px;" th:text="#{admin.members.promote}">관리자로</button>
+                                </form>
+                                <form th:if="${m.suspended}" th:action="@{/admin/members/{id}/status(id=${m.id})}" method="post" style="display: inline;">
+                                    <input type="hidden" name="status" value="ACTIVE" />
+                                    <button type="submit" class="btn btn-secondary" style="width: auto; padding: 5px 12px; font-size: 12.5px;" th:text="#{admin.members.unsuspend}">정지 해제</button>
+                                </form>
+                                <form th:unless="${m.suspended}" th:action="@{/admin/members/{id}/status(id=${m.id})}" method="post" style="display: inline;">
+                                    <input type="hidden" name="status" value="SUSPENDED" />
+                                    <button type="submit"
+                                            onclick="return confirm(/*[[#{admin.members.suspend_confirm}]]*/ '이 회원을 정지하시겠습니까? 로그인이 차단됩니다.');"
+                                            class="btn btn-secondary" style="width: auto; padding: 5px 12px; font-size: 12.5px; color: #b45309; border-color: #fcd34d;"
+                                            th:text="#{admin.members.suspend}">정지</button>
+                                </form>
+                                <form th:action="@{/admin/members/{id}/delete(id=${m.id})}" method="post" style="display: inline;">
+                                    <button type="submit"
+                                            onclick="return confirm(/*[[#{admin.members.delete_confirm}]]*/ '이 회원을 삭제하시겠습니까? 되돌릴 수 없습니다.');"
+                                            class="btn btn-secondary" style="width: auto; padding: 5px 12px; font-size: 12.5px; color: #e11d48; border-color: #fca5a5;"
+                                            th:text="#{admin.members.delete}">삭제</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:if="${members.totalPages > 1}" class="pagination">
+            <a th:if="${members.hasPrevious()}"
+               th:href="@{/admin/members(page=${members.number - 1}, keyword=${keyword})}"
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;" th:text="#{page.prev}">이전</a>
+
+            <a th:each="pageNumber : ${#numbers.sequence(0, members.totalPages - 1)}"
+               th:href="@{/admin/members(page=${pageNumber}, keyword=${keyword})}"
+               th:text="${pageNumber + 1}"
+               th:classappend="${pageNumber == members.number} ? 'active'">1</a>
+
+            <a th:if="${members.hasNext()}"
+               th:href="@{/admin/members(page=${members.number + 1}, keyword=${keyword})}"
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;" th:text="#{page.next}">다음</a>
+        </div>
+
+        <div style="margin-top: 24px; text-align: center;">
+            <a th:href="@{/admin}" class="btn btn-secondary" style="width: auto; padding: 10px 24px; text-decoration: none;" th:text="#{admin.dashboard.title}">🛠️ 관리자 대시보드</a>
+        </div>
+
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

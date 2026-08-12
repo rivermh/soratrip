@@ -38,6 +38,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .password(member.getPassword())
                 .authorities(member.getRole().getKey())
                 .accountLocked(locked)
+                .disabled(member.isSuspended())
                 .build();
     }
 }

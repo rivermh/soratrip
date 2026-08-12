@@ -1,6 +1,9 @@
 package com.rivermh.soratrip.global.security;
 
+import java.util.Collection;
+
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
@@ -39,5 +42,17 @@ public final class SecurityUtils {
             throw new IllegalArgumentException("인증 정보를 찾을 수 없습니다.");
         }
         return email;
+    }
+
+    // principal이 ROLE_ADMIN 권한을 가지고 있는지 확인 (일반 로그인/소셜 로그인 공통)
+    public static boolean isAdmin(Object principal) {
+        Collection<? extends GrantedAuthority> authorities = null;
+        if (principal instanceof OAuth2User oAuth2User) {
+            authorities = oAuth2User.getAuthorities();
+        } else if (principal instanceof UserDetails userDetails) {
+            authorities = userDetails.getAuthorities();
+        }
+        return authorities != null && authorities.stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
     }
 }

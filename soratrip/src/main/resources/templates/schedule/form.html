@@ -111,6 +111,16 @@
         </form>
     </div>
 
+    <!-- 일정 생성 로딩 오버레이: 폼이 실제 페이지 이동으로 제출되므로, submit 시점에 보여주고
+         응답이 올 때까지(=페이지가 새로 렌더링될 때까지) 그대로 화면을 덮고 있는다 (ai-form.html과 동일 패턴) -->
+    <div id="scheduleLoadingOverlay" class="ai-loading-overlay" hidden>
+        <div class="ai-loading-overlay__box">
+            <div class="ai-loading-overlay__spinner"></div>
+            <p class="ai-loading-overlay__title" th:text="#{schedule.form.loading_title}">일정 생성 중입니다...</p>
+            <p class="ai-loading-overlay__hint" th:text="#{schedule.form.loading_hint}">잠시만 기다려주세요.</p>
+        </div>
+    </div>
+
     <!-- Google Maps Scripts & Dynamic Add Logic -->
     <script th:inline="javascript">
         let map, autocomplete, selectedPlace = null;
@@ -272,6 +282,14 @@
             addedPlaces.splice(originalIdx, 1);
             renderPlaces();
         }
+
+        // HTML5 required 검증을 통과한 뒤에만 submit 이벤트가 발생하므로,
+        // 여기 도달했다는 건 이미 유효한 제출이라는 뜻 -> 바로 오버레이를 띄운다 (ai-form.html과 동일 패턴)
+        document.getElementById('scheduleForm').addEventListener('submit', function () {
+            document.getElementById('scheduleLoadingOverlay').hidden = false;
+            const submitBtn = document.querySelector('#scheduleForm button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+        });
     </script>
 <script th:src="@{'https://maps.googleapis.com/maps/api/js?key=' + ${googleApiKey} + '&libraries=places&callback=initMap'}" async defer></script>
 

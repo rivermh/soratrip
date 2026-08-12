@@ -31,6 +31,7 @@
                 </div>
             </div>
 
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}" class="nav-link" th:text="#{nav.admin}">🛠️ 관리자</a>
             <a th:href="@{/members/mypage}" class="nav-link" th:text="#{nav.mypage}">마이페이지</a>
             <form th:action="@{/members/logout}" method="post">
                 <button type="submit" class="nav-link nav-link--muted" th:text="#{nav.logout}">로그아웃</button>

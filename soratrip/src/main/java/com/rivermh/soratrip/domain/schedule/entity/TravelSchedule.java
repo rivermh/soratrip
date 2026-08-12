@@ -2,6 +2,7 @@ package com.rivermh.soratrip.domain.schedule.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,6 +27,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -87,6 +89,14 @@ public class TravelSchedule {
     @OneToMany(mappedBy = "travelSchedule", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TravelBooking> bookings = new ArrayList<>();
+
+    // 일정 생성 시각 (관리자 통계용). 기존 행은 이 컬럼 추가 시점에 NULL로 남는다.
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 
     // 공개 여부 변경
     public void updateVisibility(boolean isPublic) {

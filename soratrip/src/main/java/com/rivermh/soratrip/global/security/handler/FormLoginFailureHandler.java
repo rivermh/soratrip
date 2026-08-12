@@ -2,6 +2,7 @@ package com.rivermh.soratrip.global.security.handler;
 
 import java.io.IOException;
 
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
@@ -31,6 +32,11 @@ public class FormLoginFailureHandler implements AuthenticationFailureHandler {
 
         if (exception instanceof LockedException) {
             response.sendRedirect(request.getContextPath() + "/members/login?locked");
+            return;
+        }
+
+        if (exception instanceof DisabledException) {
+            response.sendRedirect(request.getContextPath() + "/members/login?suspended");
             return;
         }
 

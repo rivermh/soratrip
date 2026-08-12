@@ -41,7 +41,7 @@
                 
                 <!-- 필드 에러 메시지 (서버 검증) -->
                 <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.email')}">
-                    <span th:errors="memberJoinDto.email"></span>
+                    <span th:errors="${memberJoinDto.email}"></span>
                 </div>
                 
                 <!-- 실시간 및 중복확인 검증 메시지 -->
@@ -78,7 +78,7 @@
                 
                 <!-- 필드 에러 메시지 (서버 검증) -->
                 <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.password')}">
-                    <span th:errors="memberJoinDto.password"></span>
+                    <span th:errors="${memberJoinDto.password}"></span>
                 </div>
                 
                 <!-- 실시간 검증 메시지 (클라이언트 사이드) -->
@@ -108,7 +108,7 @@
                 
                 <!-- 필드 에러 메시지 (서버 검증) -->
                 <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.passwordConfirm')}">
-                    <span th:errors="memberJoinDto.passwordConfirm"></span>
+                    <span th:errors="${memberJoinDto.passwordConfirm}"></span>
                 </div>
                 
                 <!-- 실시간 검증 메시지 (클라이언트 사이드) -->
@@ -129,7 +129,7 @@
                 
                 <!-- 필드 에러 메시지 (서버 검증) -->
                 <div class="error-message" th:if="${#fields.hasErrors('memberJoinDto.nickname')}">
-                    <span th:errors="memberJoinDto.nickname"></span>
+                    <span th:errors="${memberJoinDto.nickname}"></span>
                 </div>
                 
                 <!-- 실시간 검증 메시지 (클라이언트 사이드) -->

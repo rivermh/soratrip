@@ -1,0 +1,110 @@
+/* ==========================================
+   Admin — 관리자 대시보드 / 회원 관리
+   ========================================== */
+
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+.admin-stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+}
+
+.admin-stat-card__label {
+  font-size: var(--text-sm);
+  color: var(--text-sub);
+  margin-bottom: 4px;
+}
+
+.admin-stat-card__value {
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--ink-900);
+}
+
+.admin-stat-card__delta {
+  margin-top: 4px;
+  font-size: var(--text-xs);
+  color: var(--primary-color);
+  font-weight: var(--fw-semibold);
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 12px var(--space-4);
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--text-sm);
+}
+
+.admin-table th {
+  color: var(--text-sub);
+  font-weight: var(--fw-semibold);
+  background: var(--surface-elevated);
+}
+
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  background: var(--primary-soft);
+  color: var(--primary-color);
+}
+
+.admin-role-badge--user {
+  background: var(--surface-elevated);
+  color: var(--text-sub);
+}
+
+.admin-row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-self-label {
+  font-size: var(--text-xs);
+  color: var(--text-sub);
+}
+
+.admin-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: var(--fw-semibold);
+  background: var(--surface-elevated);
+  color: var(--text-sub);
+}
+
+.admin-status-badge--suspended {
+  background: #fef3c7;
+  color: #b45309;
+}

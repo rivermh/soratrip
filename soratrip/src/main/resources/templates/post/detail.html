@@ -17,6 +17,16 @@
 
 	<div class="container" style="max-width: 780px;">
 		
+		<!-- 🚨 신고 처리 결과 안내 -->
+		<div th:if="${param.reported}" class="alert alert-success">
+			<span>✅</span>
+			<span th:text="#{post.report.success}">신고가 접수되었습니다.</span>
+		</div>
+		<div th:if="${param.already_reported}" class="alert alert-success">
+			<span>ℹ️</span>
+			<span th:text="#{post.report.already}">이미 신고한 게시글입니다.</span>
+		</div>
+
 		<!-- 카테고리 & 지역 배지 -->
 		<div class="post-detail-badges">
 			<span class="region-badge" th:text="${post.region.displayName}">도쿄</span>
@@ -130,6 +140,21 @@
 			</button>
 		</div>
 
+		<!-- 🚨 신고하기 (작성자 본인이 아닌 로그인 사용자에게만 노출) -->
+		<div th:if="${post.writerEmail != #authentication.name}" sec:authorize="isAuthenticated()" style="text-align: center; margin-bottom: 20px;">
+			<button type="button" class="comment-reply-btn" onclick="toggleReportForm()" th:text="#{post.report.button}">🚨 신고하기</button>
+			<form id="reportForm" th:action="@{/posts/{id}/report(id=${post.id})}" method="post" style="display: none; margin-top: 10px; max-width: 420px; margin-left: auto; margin-right: auto;">
+				<textarea name="reason" class="form-control" rows="2" maxlength="200" required
+				          th:placeholder="#{post.report.placeholder}" placeholder="신고 사유를 입력해 주세요"></textarea>
+				<button type="submit" class="btn btn-secondary" style="width: auto; margin-top: 8px;" th:text="#{post.report.submit}">신고 제출</button>
+			</form>
+		</div>
+
+		<!-- 비로그인 사용자에겐 로그인 안내만 -->
+		<div sec:authorize="isAnonymous()" class="comment-login-notice" style="margin-bottom: 20px;">
+			<span th:text="#{post.report.login_required}">신고하려면 </span><a th:href="@{/members/login}" style="color: var(--primary-color); font-weight: 700; text-decoration: none;" th:text="#{member.login}">로그인</a><span th:text="#{comment.login_required.suffix}">이 필요합니다.</span>
+		</div>
+
 		<hr style="border: none; border-top: 1px solid var(--border-light); margin: 36px 0;">
 
 		<!-- 💬 댓글 섹션 -->
@@ -213,9 +238,9 @@
 		<div style="margin-top: 36px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
 			<a th:href="@{/posts}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.back_to_list}">⬅️ 목록으로 돌아가기</a>
 
-			<!-- 작성자 본인에게만 노출되는 수정/삭제 버튼 -->
-			<div th:if="${post.writerEmail == #authentication.name}" style="display: flex; gap: 10px;">
-				<a th:href="@{/posts/{id}/edit(id=${post.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.edit}">✏️ 수정</a>
+			<!-- 수정은 작성자 본인에게만, 삭제는 작성자 본인 또는 관리자에게 노출 -->
+			<div th:if="${post.writerEmail == #authentication.name or isAdmin}" style="display: flex; gap: 10px;">
+				<a th:if="${post.writerEmail == #authentication.name}" th:href="@{/posts/{id}/edit(id=${post.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.edit}">✏️ 수정</a>
 				<form th:action="@{/posts/{id}/delete(id=${post.id})}" method="post" style="display: inline;">
 					<button type="submit" onclick="return confirm(/*[[#{post.delete.confirm}]]*/ '게시글을 삭제하시겠습니까?');" class="btn btn-secondary" style="width: auto; color: #e11d48; border-color: #fca5a5;" th:text="#{post.delete}">🗑️ 삭제</button>
 				</form>
@@ -294,6 +319,12 @@
 			const form = document.getElementById('comment-reply-form-' + id);
 			if (!form) return;
 			form.style.display = (form.style.display === 'none' || !form.style.display) ? 'flex' : 'none';
+		}
+
+		function toggleReportForm() {
+			const form = document.getElementById('reportForm');
+			if (!form) return;
+			form.style.display = (form.style.display === 'none' || !form.style.display) ? 'block' : 'none';
 		}
 	</script>
 

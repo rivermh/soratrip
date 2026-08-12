@@ -11,6 +11,7 @@ import com.rivermh.soratrip.domain.post.entity.Region;
 import com.rivermh.soratrip.domain.post.repository.PostApplicationRepository;
 import com.rivermh.soratrip.domain.post.repository.PostRepository;
 import com.rivermh.soratrip.domain.comment.repository.CommentRepository;
+import com.rivermh.soratrip.domain.report.repository.PostReportRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -32,6 +33,7 @@ public class PostService {
     private final PostViewRedisService postViewRedisService;
     private final CommentRepository commentRepository;
     private final PostApplicationRepository postApplicationRepository;
+    private final PostReportRepository postReportRepository;
 
     // 글 작성
     @Transactional
@@ -143,13 +145,13 @@ public class PostService {
         }
     }
 
-    // 게시글 삭제 (작성자 본인만 가능, 댓글/좋아요/신청 내역도 함께 정리)
+    // 게시글 삭제 (작성자 본인 또는 관리자만 가능, 댓글/좋아요/신청 내역도 함께 정리)
     @Transactional
-    public void deletePost(Long id, String userEmail) {
+    public void deletePost(Long id, String userEmail, boolean isAdmin) {
         Post post = postRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + id));
 
-        if (!post.getWriter().getEmail().equals(userEmail)) {
+        if (!isAdmin && !post.getWriter().getEmail().equals(userEmail)) {
             throw new IllegalStateException("해당 게시글을 삭제할 권한이 없습니다.");
         }
 
@@ -157,6 +159,7 @@ public class PostService {
         commentRepository.deleteByPostIn(posts);
         postLikeRepository.deleteByPostIn(posts);
         postApplicationRepository.deleteByPostIn(posts);
+        postReportRepository.deleteByPostIn(posts);
         postRepository.delete(post);
     }
 

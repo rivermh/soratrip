@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/common :: head(~{::title})}">
+    <title th:text="#{admin.dashboard.title} + ' - SoraTrip'">🛠️ 관리자 대시보드 - SoraTrip</title>
+</head>
+
+<body>
+
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="container" style="max-width: 900px;">
+
+        <div class="page-header-row">
+            <div>
+                <span class="eyebrow">Admin</span>
+                <h2 th:text="#{admin.dashboard.title}" style="margin-bottom: 0;">🛠️ 관리자 대시보드</h2>
+            </div>
+        </div>
+
+        <div class="admin-stat-grid">
+            <div class="admin-stat-card">
+                <div class="admin-stat-card__label" th:text="#{admin.stats.members}">총 회원 수</div>
+                <div class="admin-stat-card__value" th:text="${stats.totalMembers}">0</div>
+                <div class="admin-stat-card__delta" th:text="#{admin.stats.this_week(${stats.newMembersThisWeek})}">이번주 +0</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-card__label" th:text="#{admin.stats.posts}">총 게시글 수</div>
+                <div class="admin-stat-card__value" th:text="${stats.totalPosts}">0</div>
+                <div class="admin-stat-card__delta" th:text="#{admin.stats.this_week(${stats.newPostsThisWeek})}">이번주 +0</div>
+            </div>
+            <div class="admin-stat-card">
+                <div class="admin-stat-card__label" th:text="#{admin.stats.schedules}">총 일정 수</div>
+                <div class="admin-stat-card__value" th:text="${stats.totalSchedules}">0</div>
+                <div class="admin-stat-card__delta" th:text="#{admin.stats.this_week(${stats.newSchedulesThisWeek})}">이번주 +0</div>
+            </div>
+            <a th:href="@{/admin/reports}" class="admin-stat-card" style="text-decoration: none; color: inherit; display: block;">
+                <div class="admin-stat-card__label" th:text="#{admin.stats.reports}">미처리 신고</div>
+                <div class="admin-stat-card__value" th:text="${stats.pendingReports}">0</div>
+            </a>
+        </div>
+
+        <div class="page-actions">
+            <a th:href="@{/admin/members}" class="btn btn-primary" style="width: auto;" th:text="#{admin.members.title}">👤 회원 관리</a>
+            <a th:href="@{/admin/reports}" class="btn btn-secondary" style="width: auto;" th:text="#{admin.reports.title}">🚨 신고 관리</a>
+        </div>
+
+        <div style="margin-top: 24px; text-align: center;">
+            <a th:href="@{/}" class="btn btn-secondary" style="width: auto; padding: 10px 24px; text-decoration: none;" th:text="#{nav.home}">🏠 메인으로</a>
+        </div>
+
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

@@ -33,6 +33,12 @@
             <span th:text="#{member.login.locked}">로그인 5회 실패로 계정이 일시적으로 잠겼습니다. 30분 후 다시 시도해 주세요.</span>
         </div>
 
+        <!-- 🚫 관리자에 의해 정지된 계정 -->
+        <div th:if="${param.suspended}" class="alert alert-error">
+            <span>🚫</span>
+            <span th:text="#{member.login.suspended}">정지된 계정입니다. 문의가 필요하면 고객센터로 연락해 주세요.</span>
+        </div>
+
         <!-- ✅ 비밀번호 재설정 성공 알림 -->
         <div th:if="${param.reset}" class="alert alert-success">
             <span>✅</span>

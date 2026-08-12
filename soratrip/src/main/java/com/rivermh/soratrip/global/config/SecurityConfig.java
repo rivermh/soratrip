@@ -3,6 +3,7 @@ package com.rivermh.soratrip.global.config;
 import com.rivermh.soratrip.domain.member.service.CustomOAuth2UserService;
 import com.rivermh.soratrip.global.security.handler.FormLoginFailureHandler;
 import com.rivermh.soratrip.global.security.handler.FormLoginSuccessHandler;
+import com.rivermh.soratrip.global.security.handler.OAuth2LoginFailureHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,7 @@ public class SecurityConfig {
 	private final CustomOAuth2UserService customOAuth2UserService;
 	private final FormLoginSuccessHandler formLoginSuccessHandler;
 	private final FormLoginFailureHandler formLoginFailureHandler;
+	private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -41,6 +43,8 @@ public class SecurityConfig {
 								"/images/**", "/favicon.ico", "/error", "/uploads/**",
 								"/shared/**")
 						.permitAll()
+						// 관리자 전용 라우트 - ROLE_ADMIN만 접근 가능
+						.requestMatchers("/admin/**").hasRole("ADMIN")
 						// WebSocket 핸드셰이크 경로 허용 (인증된 사용자만 연결 가능하도록 authenticated() 처리)
 						.requestMatchers("/ws/chat/**").authenticated()
 						// 채팅 관련 REST API 경로 인증 설정
@@ -52,7 +56,8 @@ public class SecurityConfig {
 						.permitAll())
 				.oauth2Login(oauth2 -> oauth2.loginPage("/members/login")
 						.defaultSuccessUrl("/", true)
-						.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService)))
+						.userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
+						.failureHandler(oAuth2LoginFailureHandler))
 				.logout(logout -> logout.logoutUrl("/members/logout").logoutSuccessUrl("/")
 						// 예전 JWT 실험에서 발급된 쿠키가 브라우저에 남아있을 수 있어 로그아웃 시 함께 정리
 						.deleteCookies("access_token", "refresh_token"));

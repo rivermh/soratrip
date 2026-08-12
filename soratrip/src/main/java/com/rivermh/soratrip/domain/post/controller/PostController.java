@@ -10,6 +10,7 @@ import com.rivermh.soratrip.domain.post.entity.Category;
 import com.rivermh.soratrip.domain.post.entity.Region;
 import com.rivermh.soratrip.domain.post.service.PostApplicationService;
 import com.rivermh.soratrip.domain.post.service.PostService;
+import com.rivermh.soratrip.domain.report.service.ReportService;
 import com.rivermh.soratrip.global.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +35,7 @@ public class PostController {
 	private final PostService postService;
 	private final CommentService commentService;
 	private final PostApplicationService postApplicationService;
+	private final ReportService reportService;
 
 	// 1. 게시글 목록 조회 (필터링 지원)
 	@GetMapping
@@ -97,6 +99,7 @@ public class PostController {
 		model.addAttribute("post", post);
 		model.addAttribute("comments", comments);
 		model.addAttribute("commentForm", new CommentRequestDto());
+		model.addAttribute("isAdmin", principal != null && SecurityUtils.isAdmin(principal));
 
 		// 동행구하기(COMPANION) 게시글에 한해 신청 관련 정보를 함께 내려준다.
 		// 글쓴이 본인이면 들어온 신청 목록을, 그 외 로그인 사용자면 본인의 신청 여부/상태를 전달한다.
@@ -140,7 +143,17 @@ public class PostController {
 	@PostMapping("/{id}/delete")
 	public String deletePost(@PathVariable(name = "id") Long id, @AuthenticationPrincipal Object principal) {
 		String email = SecurityUtils.extractEmail(principal);
-		postService.deletePost(id, email);
+		boolean isAdmin = SecurityUtils.isAdmin(principal);
+		postService.deletePost(id, email, isAdmin);
 		return "redirect:/posts";
+	}
+
+	// 8. 게시글 신고
+	@PostMapping("/{id}/report")
+	public String reportPost(@PathVariable(name = "id") Long id, @RequestParam String reason,
+							  @AuthenticationPrincipal Object principal) {
+		String email = SecurityUtils.requireEmail(principal);
+		boolean reported = reportService.reportPost(id, reason, email);
+		return "redirect:/posts/" + id + (reported ? "?reported" : "?already_reported");
 	}
 }

@@ -1,6 +1,7 @@
 package com.rivermh.soratrip.domain.schedule.repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,4 +62,7 @@ public interface TravelScheduleRepository extends JpaRepository<TravelSchedule, 
                "left join fetch ts.days d " +
                "where ts.shareToken = :token")
     Optional<TravelSchedule> findByShareTokenWithDetails(@Param("token") String token);
+
+    // 관리자 통계용: 특정 시점 이후 생성된 일정 수 (createdAt이 null인 옛날 행은 집계에서 자연히 제외됨)
+    long countByCreatedAtAfter(LocalDateTime dateTime);
 }

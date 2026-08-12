@@ -20,6 +20,7 @@
 @import url('./domain/join-form.css');
 @import url('./domain/error.css');
 @import url('./domain/chat.css');
+@import url('./domain/admin.css');
 
 /* 4. Responsive Queries */
 @import url('./responsive.css');

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/common :: head(~{::title})}">
+    <title th:text="#{admin.reports.title} + ' - SoraTrip'">🚨 신고 관리 - SoraTrip</title>
+</head>
+
+<body>
+
+    <header th:replace="~{fragments/header :: header}"></header>
+
+    <main class="container" style="max-width: 1000px;">
+
+        <div class="page-header-row">
+            <div>
+                <span class="eyebrow">Admin</span>
+                <h2 th:text="#{admin.reports.title}" style="margin-bottom: 0;">🚨 신고 관리</h2>
+            </div>
+        </div>
+
+        <div th:if="${reports.totalElements == 0}" class="empty-state" th:text="#{admin.reports.empty}">처리할 신고가 없습니다.</div>
+
+        <div th:unless="${reports.totalElements == 0}" class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th th:text="#{admin.reports.table.post}">게시글</th>
+                        <th th:text="#{admin.reports.table.reporter}">신고자</th>
+                        <th th:text="#{admin.reports.table.reason}">사유</th>
+                        <th th:text="#{admin.reports.table.date}">신고일</th>
+                        <th th:text="#{admin.reports.table.actions}">관리</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="r : ${reports}">
+                        <td><a th:href="@{/posts/{id}(id=${r.post.id})}" th:text="${r.post.title}">게시글 제목</a></td>
+                        <td th:text="${r.reporter.nickname}">신고자</td>
+                        <td th:text="${r.reason}">사유</td>
+                        <td th:text="${#temporals.format(r.createdAt, 'yyyy-MM-dd')}">2026-01-01</td>
+                        <td>
+                            <form th:action="@{/admin/reports/{id}/resolve(id=${r.id})}" method="post" style="display: inline;">
+                                <button type="submit"
+                                        onclick="return confirm(/*[[#{admin.reports.resolve_confirm}]]*/ '이 신고를 처리 완료(기각) 처리하시겠습니까?');"
+                                        class="btn btn-secondary" style="width: auto; padding: 5px 12px; font-size: 12.5px;"
+                                        th:text="#{admin.reports.resolve}">처리 완료</button>
+                            </form>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:if="${reports.totalPages > 1}" class="pagination">
+            <a th:if="${reports.hasPrevious()}"
+               th:href="@{/admin/reports(page=${reports.number - 1})}"
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;" th:text="#{page.prev}">이전</a>
+
+            <a th:each="pageNumber : ${#numbers.sequence(0, reports.totalPages - 1)}"
+               th:href="@{/admin/reports(page=${pageNumber})}"
+               th:text="${pageNumber + 1}"
+               th:classappend="${pageNumber == reports.number} ? 'active'">1</a>
+
+            <a th:if="${reports.hasNext()}"
+               th:href="@{/admin/reports(page=${reports.number + 1})}"
+               class="btn btn-secondary" style="width: auto; padding: 5px 12px;" th:text="#{page.next}">다음</a>
+        </div>
+
+        <div style="margin-top: 24px; text-align: center;">
+            <a th:href="@{/admin}" class="btn btn-secondary" style="width: auto; padding: 10px 24px; text-decoration: none;" th:text="#{admin.dashboard.title}">🛠️ 관리자 대시보드</a>
+        </div>
+
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+</body>
+</html>

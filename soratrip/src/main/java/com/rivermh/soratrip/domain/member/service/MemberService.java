@@ -17,12 +17,14 @@ import com.rivermh.soratrip.domain.like.repository.ScheduleLikeRepository;
 import com.rivermh.soratrip.domain.member.dto.MemberJoinDto;
 import com.rivermh.soratrip.domain.member.dto.MemberProfileDto;
 import com.rivermh.soratrip.domain.member.entity.Member;
+import com.rivermh.soratrip.domain.member.entity.MemberStatus;
 import com.rivermh.soratrip.domain.member.entity.Role;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
 import com.rivermh.soratrip.domain.notification.repository.NotificationRepository;
 import com.rivermh.soratrip.domain.post.entity.Post;
 import com.rivermh.soratrip.domain.post.repository.PostApplicationRepository;
 import com.rivermh.soratrip.domain.post.repository.PostRepository;
+import com.rivermh.soratrip.domain.report.repository.PostReportRepository;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
@@ -49,6 +51,7 @@ public class MemberService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final NotificationRepository notificationRepository;
+    private final PostReportRepository postReportRepository;
 
     /**
      * 회원가입
@@ -235,6 +238,51 @@ public class MemberService {
             }
         }
 
+        deleteMemberCascade(member);
+    }
+
+    // 관리자가 다른 회원을 강제 삭제. 캐스케이드 정리 로직은 withdraw와 동일하나 비밀번호 확인이 없다.
+    @Transactional
+    public void adminDeleteMember(Long targetId, String adminEmail) {
+        Member target = memberRepository.findById(targetId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (target.getEmail().equals(adminEmail)) {
+            throw new IllegalStateException("본인 계정은 마이페이지의 탈퇴 기능을 이용해주세요.");
+        }
+
+        deleteMemberCascade(target);
+    }
+
+    // 관리자 권한 변경. 본인의 관리자 권한을 스스로 내리는 것은 막는다 (실수로 자기 자신을 잠그는 사고 방지).
+    @Transactional
+    public void updateRole(Long targetId, Role newRole, String adminEmail) {
+        Member target = memberRepository.findById(targetId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (target.getEmail().equals(adminEmail) && newRole != Role.ADMIN) {
+            throw new IllegalStateException("본인의 관리자 권한은 여기서 내릴 수 없습니다.");
+        }
+
+        target.updateRole(newRole);
+    }
+
+    // 회원 정지/정지 해제. 본인 계정은 정지할 수 없다 (실수로 자기 자신을 잠그는 사고 방지).
+    @Transactional
+    public void updateStatus(Long targetId, MemberStatus newStatus, String adminEmail) {
+        Member target = memberRepository.findById(targetId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+
+        if (target.getEmail().equals(adminEmail) && newStatus == MemberStatus.SUSPENDED) {
+            throw new IllegalStateException("본인 계정은 정지할 수 없습니다.");
+        }
+
+        target.updateStatus(newStatus);
+    }
+
+    // 회원 삭제 캐스케이드 정리 (withdraw/adminDeleteMember 공용). 순서가 중요하다 —
+    // 참조하는 쪽부터 지워야 FK 위반이 안 난다.
+    private void deleteMemberCascade(Member member) {
         List<TravelSchedule> schedules = travelScheduleRepository.findByMemberIdOrderByIdDesc(member.getId());
         for (TravelSchedule schedule : schedules) {
             // 정산 참여자(TripParticipant)는 일정에 cascade가 안 걸려 있고, 지출(Expense)의
@@ -251,11 +299,12 @@ public class MemberService {
 
         // 내가 쓴 글(Post)은 Member에 cascade가 없어 직접 정리해야 하고,
         // 그 글에 남이 단 댓글/좋아요도 글보다 먼저 지워야 한다
-        List<Post> posts = postRepository.findByWriterEmailOrderByIdDesc(email);
+        List<Post> posts = postRepository.findByWriterEmailOrderByIdDesc(member.getEmail());
         if (!posts.isEmpty()) {
             commentRepository.deleteByPostIn(posts);
             postLikeRepository.deleteByPostIn(posts);
             postApplicationRepository.deleteByPostIn(posts);
+            postReportRepository.deleteByPostIn(posts);
             postRepository.deleteAll(posts);
         }
 
@@ -265,6 +314,7 @@ public class MemberService {
         scheduleLikeRepository.deleteByMember(member);
         scheduleBookmarkRepository.deleteByMember(member);
         postApplicationRepository.deleteByApplicant(member);
+        postReportRepository.deleteByReporter(member);
 
         // 채팅방(상태 무관 - 활성/종료/차단 전부)과 그 메시지들
         List<ChatRoom> chatRooms = chatRoomRepository.findAllByInitiatorOrParticipant(member, member);

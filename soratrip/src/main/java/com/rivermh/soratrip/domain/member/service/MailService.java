@@ -2,28 +2,38 @@ package com.rivermh.soratrip.domain.member.service;
 
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class MailService {
 
-    private final JavaMailSender mailSender;
     private final StringRedisTemplate redisTemplate;
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    private static final String RESEND_API_URL = "https://api.resend.com/emails";
 
     // Resend 발신 주소. 커스텀 도메인을 인증하기 전까지는 Resend의 샌드박스 발신 주소만 사용 가능
     // (샌드박스 상태에서는 Resend 계정에 등록된 이메일로만 수신 가능)
     @Value("${mail.from:onboarding@resend.dev}")
     private String fromAddress;
+
+    // SMTP(587) 아웃바운드가 막혀있는 배포 환경(Railway 등)에서도 동작하도록, 이메일은
+    // JavaMailSender/SMTP 대신 Resend의 HTTPS REST API로 보낸다. 인증 키는 SMTP 비밀번호와
+    // 동일한 Resend API 키를 그대로 재사용한다(spring.mail.password).
+    @Value("${spring.mail.password}")
+    private String resendApiKey;
 
     private static final String CODE_PREFIX = "email:code:";
     private static final String VERIFIED_PREFIX = "email:verified:";
@@ -164,15 +174,20 @@ public class MailService {
     }
 
     private void sendMail(String to, String subject, String text) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + resendApiKey);
+
+        Map<String, Object> requestBody = Map.of(
+                "from", fromAddress,
+                "to", List.of(to),
+                "subject", subject,
+                "text", text
+        );
+
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromAddress);
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(text);
-            mailSender.send(message);
-        } catch (MessagingException e) {
+            restTemplate.postForEntity(RESEND_API_URL, new HttpEntity<>(requestBody, headers), String.class);
+        } catch (Exception e) {
             throw new RuntimeException("메일 발송에 실패했습니다.", e);
         }
     }

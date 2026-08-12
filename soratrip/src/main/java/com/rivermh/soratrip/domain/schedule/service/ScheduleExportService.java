@@ -9,7 +9,6 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.Map;
 
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Entities;
@@ -38,22 +37,12 @@ public class ScheduleExportService {
     // 일정 방문 시간이 비어있을 때 기본으로 사용할 시각 (오전 10시)
     private static final LocalTime DEFAULT_VISIT_TIME = LocalTime.of(10, 0);
 
-    private static final Map<Region, String> REGION_TIMEZONE = Map.of(
-            Region.TOKYO, "Asia/Tokyo",
-            Region.OSAKA, "Asia/Tokyo",
-            Region.FUKUOKA, "Asia/Tokyo",
-            Region.HOKKAIDO, "Asia/Tokyo",
-            Region.SEOUL, "Asia/Seoul",
-            Region.BUSAN, "Asia/Seoul",
-            Region.JEJU, "Asia/Seoul"
-    );
-
     /**
      * 일정을 RFC5545(iCalendar) 형식 문자열로 변환한다.
      * 각 장소(ScheduleItem)를 1시간짜리 이벤트로 매핑하며, 방문 시간이 없으면 기본값(오전 10시)을 사용한다.
      */
     public String generateIcs(TravelSchedule schedule) {
-        String tzId = REGION_TIMEZONE.getOrDefault(schedule.getRegion(), "Asia/Tokyo");
+        String tzId = schedule.getRegion() != null ? schedule.getRegion().getTimezoneId() : "Asia/Tokyo";
         String dtStamp = LocalDateTime.now(ZoneOffset.UTC).format(ICS_TIMESTAMP);
 
         StringBuilder sb = new StringBuilder();

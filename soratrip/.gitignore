@@ -39,3 +39,6 @@ out/
 # Secret configuration
 application-secret.yml
 src/main/resources/application-secret.yml
+
+# 사용자 업로드 파일 (로컬 디스크 저장, 배포 환경에서는 별도 볼륨/오브젝트 스토리지 사용)
+uploads/

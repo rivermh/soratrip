@@ -36,6 +36,7 @@ public class SettlementService {
     private final ExpenseRepository expenseRepository;
     private final TravelScheduleRepository travelScheduleRepository;
     private final SettlementCompletionRepository settlementCompletionRepository;
+    private final SettlementCleanupService settlementCleanupService;
 
     // 참여자 추가 (본인 일정에만)
     @Transactional
@@ -56,6 +57,20 @@ public class SettlementService {
         return tripParticipantRepository.save(participant).getId();
     }
 
+    // 참여자 이름 수정 (본인 일정에서만)
+    @Transactional
+    public void updateParticipantName(Long participantId, String name, String email) {
+        TripParticipant participant = tripParticipantRepository.findById(participantId)
+                .orElseThrow(() -> new IllegalArgumentException("참여자를 찾을 수 없습니다. id=" + participantId));
+        if (!participant.getTravelSchedule().isOwnedBy(email)) {
+            throw new IllegalStateException("본인의 일정에서만 참여자 이름을 수정할 수 있습니다.");
+        }
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("이름을 입력해주세요.");
+        }
+        participant.updateName(name.trim());
+    }
+
     // 참여자 삭제 (참여자가 걸려있는 지출의 낸사람/나눈사람 참조도 함께 정리)
     @Transactional
     public void removeParticipant(Long participantId, String email) {
@@ -65,18 +80,7 @@ public class SettlementService {
             throw new IllegalStateException("본인의 일정에서만 참여자를 삭제할 수 있습니다.");
         }
 
-        List<Expense> expenses = expenseRepository.findByTravelScheduleIdWithDay(participant.getTravelSchedule().getId());
-        for (Expense expense : expenses) {
-            if (expense.getPaidBy() != null && expense.getPaidBy().getId().equals(participantId)) {
-                expense.clearPaidBy();
-            }
-            expense.getSharedWith().remove(participant);
-        }
-
-        // 이 참여자가 걸린 송금완료 기록(보내는 쪽/받는 쪽 어느 방향이든)도 함께 정리
-        settlementCompletionRepository.deleteByFromParticipant_IdOrToParticipant_Id(participantId, participantId);
-
-        tripParticipantRepository.delete(participant);
+        settlementCleanupService.detachParticipant(participant);
     }
 
     public List<TripParticipant> getParticipants(Long scheduleId) {

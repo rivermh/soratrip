@@ -48,6 +48,7 @@ import com.rivermh.soratrip.domain.schedule.service.ScheduleExportService;
 import com.rivermh.soratrip.domain.schedule.service.ScheduleRecommendationService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.WeatherService;
+import com.rivermh.soratrip.global.file.FileStorageService;
 import com.rivermh.soratrip.global.security.SecurityUtils;
 
 import jakarta.validation.Valid;
@@ -69,6 +70,7 @@ public class TravelScheduleController {
     // 북마크 조회를 위해 추가된 의존성
     private final ScheduleBookmarkRepository scheduleBookmarkRepository;
     private final MemberRepository memberRepository;
+    private final FileStorageService fileStorageService;
 
     // 1. 내 여행 일정 목록 페이지
     @GetMapping
@@ -218,6 +220,14 @@ public class TravelScheduleController {
                 tags != null ? tags : new HashSet<>(),
                 budgetKrw);
         return "redirect:/schedules/" + id;
+    }
+
+    // 9-0. 일정 삭제 (소유자 전용). 사진 실물 파일은 DB 삭제 트랜잭션 커밋 후 디스크에서 지운다.
+    @PostMapping("/{id}/delete")
+    public String deleteSchedule(@PathVariable("id") Long id, Principal principal) {
+        List<String> photoUrls = travelScheduleService.deleteSchedule(id, principal.getName());
+        photoUrls.forEach(fileStorageService::delete);
+        return "redirect:/schedules";
     }
 
     // 9-1. 공유 링크 발급 (소유자 전용)

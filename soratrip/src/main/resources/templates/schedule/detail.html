@@ -143,6 +143,29 @@
                             th:onclick="'deleteScheduleItem(' + ${item.id} + ', this)'" th:text="#{schedule.item.delete}">삭제</button>
                 </div>
             </div>
+
+            <!-- 장소 추가 토글 (소유자 전용) -->
+            <div th:if="${owner}" style="margin-top: 12px;">
+                <button type="button" class="btn btn-secondary" style="width: auto;"
+                        th:onclick="'toggleAddPlaceForm(' + ${day.id} + ')'" th:text="#{schedule.item.add_toggle}">➕ 장소 추가</button>
+
+                <div th:id="'addPlaceForm-' + ${day.id}" style="display: none; margin-top: 10px; background: var(--surface); padding: var(--space-4); border-radius: var(--radius); border: 1px solid var(--border-color);">
+                    <input type="text" class="form-control add-place-input" th:id="'addPlaceInput-' + ${day.id}" th:data-day-id="${day.id}"
+                           th:placeholder="#{schedule.form.place_search_placeholder}" placeholder="검색할 장소명을 입력하세요 (예: 도쿄 타워)" style="margin-bottom: 10px;" />
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="time" class="form-control" th:id="'addPlaceTime-' + ${day.id}" style="width: 150px;" />
+                        <select class="form-control" th:id="'addPlaceType-' + ${day.id}" style="width: 140px;">
+                            <option value="" th:text="#{schedule.form.select_place_type}">-- 유형 (선택) --</option>
+                            <option th:each="pt : ${T(com.rivermh.soratrip.domain.schedule.entity.PlaceType).values()}"
+                                    th:value="${pt}" th:text="${pt.emoji + ' ' + pt.displayName}">🍜 맛집</option>
+                        </select>
+                        <input type="text" class="form-control" th:id="'addPlaceMemo-' + ${day.id}"
+                               th:placeholder="#{schedule.form.memo_placeholder}" placeholder="메모 (예: 오픈시간 맞춰 방문)" style="flex: 1; min-width: 160px;" />
+                        <button type="button" class="btn btn-primary" style="width: auto;"
+                                th:onclick="'submitAddPlace(' + ${day.id} + ')'" th:text="#{schedule.item.add_submit}">추가하기</button>
+                    </div>
+                </div>
+            </div>
         </div>
         </div>
 
@@ -181,11 +204,12 @@
         let map;
         let markers = [];
         let polylines = [];
+        const selectedPlaceByDay = {}; // dayId -> { name, address, lat, lng }, 장소 추가용 검색 결과 보관
 
         function initMap() {
             const defaultLoc = { lat: 35.681236, lng: 139.767125 };
-            map = new google.maps.Map(document.getElementById("map"), { 
-                zoom: 12, 
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 12,
                 center: defaultLoc,
                 mapTypeControl: false,
                 streetViewControl: false
@@ -205,7 +229,65 @@
                         }
                     });
                 });
+
+                // 일차별 "장소 추가" 검색창에 Google Places 자동완성 연결
+                document.querySelectorAll('.add-place-input').forEach(input => {
+                    const dayId = input.dataset.dayId;
+                    const autocomplete = new google.maps.places.Autocomplete(input);
+                    autocomplete.addListener("place_changed", () => {
+                        const place = autocomplete.getPlace();
+                        if (!place.geometry) return;
+                        selectedPlaceByDay[dayId] = {
+                            name: place.name,
+                            address: place.formatted_address,
+                            lat: place.geometry.location.lat(),
+                            lng: place.geometry.location.lng()
+                        };
+                    });
+                });
             }
+        }
+
+        // 일차별 "장소 추가" 폼 펼치기/접기
+        function toggleAddPlaceForm(dayId) {
+            const formEl = document.getElementById(`addPlaceForm-${dayId}`);
+            if (!formEl) return;
+            formEl.style.display = formEl.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // 장소 추가 (POST /api/schedules/days/{dayId}/items)
+        function submitAddPlace(dayId) {
+            const place = selectedPlaceByDay[dayId];
+            if (!place) {
+                alert(/*[[#{schedule.form.no_place_selected}]]*/ "먼저 지도 검색을 통해 장소를 선택해주세요.");
+                return;
+            }
+
+            const time = document.getElementById(`addPlaceTime-${dayId}`).value || null;
+            const memo = document.getElementById(`addPlaceMemo-${dayId}`).value || null;
+            const placeType = document.getElementById(`addPlaceType-${dayId}`).value || null;
+
+            fetch(`/api/schedules/days/${dayId}/items`, {
+                method: 'POST',
+                headers: getCsrfHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({
+                    placeName: place.name,
+                    placeAddress: place.address,
+                    latitude: place.lat,
+                    longitude: place.lng,
+                    visitTime: time,
+                    memo: memo,
+                    placeType: placeType
+                })
+            })
+            .then(res => {
+                if (res.ok) {
+                    location.reload();
+                } else {
+                    alert(/*[[#{schedule.item.add_failed}]]*/ '장소 추가에 실패했습니다.');
+                }
+            })
+            .catch(err => alert(/*[[#{common.error_prefix}]]*/ '오류가 발생했습니다:' + ' ' + err));
         }
 
         // 화면 뱃지 번호(1., 2., 3...) 재정렬
@@ -431,7 +513,7 @@
             });
         }
     </script>
-    <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&callback=initMap|}" async defer></script>
+    <script th:src="@{|https://maps.googleapis.com/maps/api/js?key=${googleApiKey}&libraries=places&callback=initMap|}" async defer></script>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>

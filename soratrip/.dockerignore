@@ -1,0 +1,10 @@
+.git
+.gradle
+build
+bin
+out
+.idea
+.vscode
+uploads
+src/main/resources/application-secret.yml
+*.md

@@ -224,17 +224,49 @@ public class ClaudeScheduleService {
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("None");
 
+        return buildDayPromptCore(regionName, tagNames, currentPlaces, otherDaysPlaces,
+                "REGENERATE just ONE day (day %d) of an existing %s itinerary".formatted(day.getDayNumber(), regionName),
+                extraPrompt != null && !extraPrompt.isBlank() ? extraPrompt : "Just make this day more interesting.");
+    }
+
+    /**
+     * 전체 일정을 새로 만들 때, 개별 날짜 하나만 생성하기 위한 프롬프트를 만든다.
+     * (한 번에 여러 날을 요청하면 저가형 모델이 날짜 간 중복을 잘 피하지 못해, 실패 시
+     * 이미 확정된 다른 날의 장소를 제외 목록으로 넘기며 하루씩 개별 호출하는 용도)
+     */
+    private String buildNewDayPrompt(AiScheduleRequest request, int dayNumber, String otherDaysPlaces) {
+        String regionName = (request.getRegion() != null) ? request.getRegion().getDisplayName() : "일본 주요 도시";
+
+        String tagNames = "None";
+        if (request.getTags() != null && !request.getTags().isEmpty()) {
+            tagNames = request.getTags().stream()
+                    .map(ScheduleTag::getDisplayName)
+                    .reduce((a, b) -> a + ", " + b)
+                    .orElse("None");
+        }
+
+        return buildDayPromptCore(regionName, tagNames, "None", otherDaysPlaces,
+                "create day %d of a new %d-day %s itinerary".formatted(dayNumber, request.getDaysCount(), regionName),
+                request.getExtraPrompt() != null && !request.getExtraPrompt().isBlank()
+                        ? request.getExtraPrompt() : "None");
+    }
+
+    /**
+     * buildDayRegeneratePrompt / buildNewDayPrompt가 공유하는 하루치 생성 프롬프트 본문.
+     */
+    private String buildDayPromptCore(String regionName, String tagNames, String currentPlaces,
+                                        String otherDaysPlaces, String taskDescription, String userRequest) {
         return String.format("""
                 You are a local food curator who has lived in %s for over a decade and knows its
                 back alleys, markets, and family-run shops -- not a generic tour guide.
-                The user wants to REGENERATE just ONE day (day %d) of an existing %s itinerary,
+                The user wants you to %s,
                 built around storied local eateries rather than famous landmarks or chain
                 restaurants. Do not return other days.
 
                 Context:
                 - Travel Region: %s
                 - Travel Style/Tags: %s
-                - Current plan for this day (to be fully replaced): %s
+                - Current plan for this day (to be fully replaced, or "None" if this day is new): %s
                 - Places already used on OTHER days of this trip (do NOT repeat these): %s
                 - User's request for this day: %s
 
@@ -299,9 +331,8 @@ public class ClaudeScheduleService {
 
                 Make sure latitude and longitude coordinates are accurate real-world values for the requested location.
                 """,
-                regionName, day.getDayNumber(), regionName,
-                regionName, tagNames, currentPlaces, otherDaysPlaces,
-                extraPrompt != null && !extraPrompt.isBlank() ? extraPrompt : "Just make this day more interesting."
+                regionName, taskDescription, regionName,
+                tagNames, currentPlaces, otherDaysPlaces, userRequest
         );
     }
 
@@ -364,6 +395,14 @@ public class ClaudeScheduleService {
                     log.warn("⚠️ 하루 재생성 응답에 지역을 벗어난 좌표가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
                     if (attempt == MAX_RETRIES) {
                         throw new IllegalStateException("AI가 정확한 위치 정보를 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
+                    }
+                    continue;
+                }
+
+                if (hasDuplicateItemNames(result.getItems())) {
+                    log.warn("⚠️ 하루 재생성 응답 내에 같은 장소가 중복 등장했습니다 (시도: {}). 재시도 중...", attempt + 1);
+                    if (attempt == MAX_RETRIES) {
+                        throw new IllegalStateException("AI가 중복 없는 장소 목록을 만들지 못했습니다. 잠시 후 다시 시도해주세요.");
                     }
                     continue;
                 }
@@ -447,8 +486,8 @@ public class ClaudeScheduleService {
                 if (hasGeneric) {
                     log.warn("⚠️ 서사 없는 추천 이유가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
                     if (attempt == MAX_RETRIES) {
-                        log.error("❌ 재시도 후에도 서사 없는 추천이 남아있어 Fallback 일정으로 대체합니다.");
-                        return createFallbackSchedule(request);
+                        log.error("❌ 재시도 후에도 서사 없는 추천이 남아있어 하루씩 개별 생성으로 대체합니다.");
+                        return createScheduleDayByDay(request);
                     }
                     continue;
                 }
@@ -459,8 +498,8 @@ public class ClaudeScheduleService {
                 if (hasBadCoords) {
                     log.warn("⚠️ 요청 지역을 벗어난 좌표가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
                     if (attempt == MAX_RETRIES) {
-                        log.error("❌ 재시도 후에도 좌표 오류가 남아있어 Fallback 일정으로 대체합니다.");
-                        return createFallbackSchedule(request);
+                        log.error("❌ 재시도 후에도 좌표 오류가 남아있어 하루씩 개별 생성으로 대체합니다.");
+                        return createScheduleDayByDay(request);
                     }
                     continue;
                 }
@@ -470,8 +509,8 @@ public class ClaudeScheduleService {
                 if (hasDuplicateAcrossDays(result.getDays())) {
                     log.warn("⚠️ 날짜 간 중복된 장소가 감지되었습니다 (시도: {}). 재시도 중...", attempt + 1);
                     if (attempt == MAX_RETRIES) {
-                        log.error("❌ 재시도 후에도 날짜 간 중복 장소가 남아있어 Fallback 일정으로 대체합니다.");
-                        return createFallbackSchedule(request);
+                        log.error("❌ 재시도 후에도 날짜 간 중복 장소가 남아있어 하루씩 개별 생성으로 대체합니다.");
+                        return createScheduleDayByDay(request);
                     }
                     continue;
                 }
@@ -485,13 +524,13 @@ public class ClaudeScheduleService {
                         attempt + 1, MAX_RETRIES + 1, e.getMessage());
 
                 if (attempt == MAX_RETRIES) {
-                    log.error("❌ 모든 재시도 실패. Fallback 일정 생성...", e);
-                    return createFallbackSchedule(request);
+                    log.error("❌ 모든 재시도 실패. 하루씩 개별 생성으로 대체합니다.", e);
+                    return createScheduleDayByDay(request);
                 }
             }
         }
 
-        return createFallbackSchedule(request);
+        return createScheduleDayByDay(request);
     }
 
     // recommendReason에 이 표현이 섞여 있으면 서사 없는 뻔한 홍보 문구로 간주한다
@@ -519,29 +558,15 @@ public class ClaudeScheduleService {
         return items.stream().anyMatch(item -> isGenericRecommendation(item.getRecommendReason()));
     }
 
-    // 지역별 대략적인 위도/경도 범위 { latMin, latMax, lonMin, lonMax }.
-    // AI가 완전히 엉뚱한 지역 좌표를 지어내는 경우(지도 오표시)만 걸러내는 용도라, 인접 당일치기
-    // 명소(가마쿠라/요코하마/교토/나라 등)까지 포용하도록 넉넉하게 잡는다.
-    private static final Map<Region, double[]> REGION_BOUNDS = Map.of(
-            Region.TOKYO, new double[]{34.9, 36.8, 138.5, 140.6},
-            Region.OSAKA, new double[]{34.0, 35.3, 134.8, 136.2},
-            Region.FUKUOKA, new double[]{32.5, 34.0, 129.5, 131.5},
-            Region.HOKKAIDO, new double[]{41.3, 45.6, 139.3, 145.9},
-            Region.SEOUL, new double[]{37.0, 38.0, 126.4, 127.5},
-            Region.BUSAN, new double[]{34.8, 35.5, 128.7, 129.3},
-            Region.JEJU, new double[]{33.1, 33.6, 126.1, 126.9}
-    );
-
     /**
      * 응답에 좌표가 아예 없거나(null), 선택된 지역의 대략적인 범위를 벗어난 항목이 있는지 검사한다.
-     * region이 매핑에 없으면(향후 지역 추가 등) 검증을 건너뛴다.
+     * 좌표 범위는 Region enum 자체에 있으므로(latMin/latMax/lonMin/lonMax) region이 없을 때만 검증을 건너뛴다.
      */
     private boolean hasInvalidCoordinates(List<ClaudeScheduleResponse.ItemDto> items, Region region) {
         if (items == null || items.isEmpty()) {
             return false;
         }
-        double[] bounds = region != null ? REGION_BOUNDS.get(region) : null;
-        if (bounds == null) {
+        if (region == null) {
             return false;
         }
         return items.stream().anyMatch(item -> {
@@ -550,7 +575,8 @@ public class ClaudeScheduleService {
             if (lat == null || lon == null) {
                 return true;
             }
-            return lat < bounds[0] || lat > bounds[1] || lon < bounds[2] || lon > bounds[3];
+            return lat < region.getLatMin() || lat > region.getLatMax()
+                    || lon < region.getLonMin() || lon > region.getLonMax();
         });
     }
 
@@ -582,6 +608,26 @@ public class ClaudeScheduleService {
     }
 
     /**
+     * 하루치 응답 안에서 같은 장소(placeName)가 두 번 이상 등장하는지 검사한다.
+     */
+    private boolean hasDuplicateItemNames(List<ClaudeScheduleResponse.ItemDto> items) {
+        if (items == null || items.size() < 2) {
+            return false;
+        }
+        Set<String> seenPlaceNames = new HashSet<>();
+        for (ClaudeScheduleResponse.ItemDto item : items) {
+            String placeName = item.getPlaceName();
+            if (placeName == null || placeName.isBlank()) {
+                continue;
+            }
+            if (!seenPlaceNames.add(placeName.trim().toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * API 응답을 정제하는 메서드
      */
     private String cleanJsonResponse(String jsonText) {
@@ -602,76 +648,87 @@ public class ClaudeScheduleService {
         return jsonText.trim();
     }
 
-    private ClaudeScheduleResponse createFallbackSchedule(AiScheduleRequest request) {
-        ClaudeScheduleResponse fallback = new ClaudeScheduleResponse();
-        String regionName = request.getRegion() != null ? request.getRegion().getDisplayName() : "도쿄";
-        fallback.setTitle("✨ [추천] " + regionName + " 힐링 인기 코스");
+    /**
+     * 전체 일정 한 번에 생성이 실패(중복/서사부족/좌표오류/파싱실패 등)했을 때의 복구 경로.
+     * 저가형 모델이 여러 날을 한 번에 요청받으면 날짜 간 중복을 잘 피하지 못하는 경향이 있어,
+     * 이미 검증된 하루 재생성(callOpenRouterApiForDay) 로직을 재사용해 하루씩 개별 호출하며
+     * 앞선 날짜에서 쓰인 장소는 제외 목록으로 넘긴다. 이렇게 하면 지역도 항상 요청과 일치하고,
+     * 날짜별 중복도 구조적으로 발생할 수 없다. 특정 날짜의 개별 생성마저 실패하면(극히 드문 경우)
+     * 그 날짜에만 안내용 자리표시자를 넣고 계속 진행한다.
+     */
+    private ClaudeScheduleResponse createScheduleDayByDay(AiScheduleRequest request) {
+        String regionName = request.getRegion() != null ? request.getRegion().getDisplayName() : "일본 주요 도시";
+
+        ClaudeScheduleResponse result = new ClaudeScheduleResponse();
+        result.setTitle(regionName + " 추천 일정");
 
         List<ClaudeScheduleResponse.DayDto> days = new ArrayList<>();
         int daysCount = request.getDaysCount() > 0 ? request.getDaysCount() : 2;
+        Set<String> usedPlaceNames = new LinkedHashSet<>();
 
         for (int i = 1; i <= daysCount; i++) {
             ClaudeScheduleResponse.DayDto day = new ClaudeScheduleResponse.DayDto();
             day.setDayNumber(i);
 
-            List<ClaudeScheduleResponse.ItemDto> items = new ArrayList<>();
+            try {
+                List<ClaudeScheduleResponse.ItemDto> items = null;
 
-            if (i == 1) {
-                ClaudeScheduleResponse.ItemDto item1 = new ClaudeScheduleResponse.ItemDto();
-                item1.setPlaceName("츠키지 장외시장 다마고야키 노점");
-                item1.setPlaceAddress("4 Chome-16-2 Tsukiji, Chuo City, Tokyo");
-                item1.setLatitude(35.6654);
-                item1.setLongitude(139.7707);
-                item1.setVisitTime("09:00");
-                item1.setVisitOrder(1);
-                item1.setMemo("아침 일찍 갈수록 줄이 짧음, 평지 노점이라 이동 편함");
-                item1.setRecommendReason("경매가 끝난 새벽 시장 상인들의 아침 끼니로 시작된 다마고야키 집으로, 3대째 같은 화로에서 한 겹씩 말아 굽는 방식을 고집한다. 관광객보다 근처 수산물 상인들이 출근길에 먼저 들르는 곳이다.");
-                item1.setPlaceType("RESTAURANT");
-                items.add(item1);
+                // 프롬프트에 제외 목록을 넘겨도 저가형 모델이 가끔 이전 날짜와 겹치는 장소를 다시
+                // 내놓는 경우가 있어, 실제로 겹치는지 코드로 재확인하고 겹치면 몇 번 더 재시도한다.
+                // 재시도 후에도 계속 겹치면 중복을 그냥 받아들이는 대신 실패로 간주해 자리표시자로
+                // 대체한다 -- "다른 날과 중복된 일정"보다는 "이 날짜만 재생성 필요" 쪽이 낫다.
+                for (int dupAttempt = 0; dupAttempt <= MAX_RETRIES; dupAttempt++) {
+                    String otherDaysPlaces = usedPlaceNames.isEmpty() ? "None" : String.join(", ", usedPlaceNames);
+                    String prompt = buildNewDayPrompt(request, i, otherDaysPlaces);
+                    ClaudeScheduleResponse.DayDto generated = callOpenRouterApiForDay(prompt, request.getRegion());
 
-                ClaudeScheduleResponse.ItemDto item2 = new ClaudeScheduleResponse.ItemDto();
-                item2.setPlaceName("몬자야키 골목 노포");
-                item2.setPlaceAddress("3 Chome-12 Tsukishima, Chuo City, Tokyo");
-                item2.setLatitude(35.6640);
-                item2.setLongitude(139.7825);
-                item2.setVisitTime("15:00");
-                item2.setVisitOrder(2);
-                item2.setMemo("몬자야키 골목 전체가 평지, 매장 입구 단차 거의 없음");
-                item2.setRecommendReason("공장 노동자들의 저녁 끼니용으로 시작된 몬자야키 골목의 원조 격 가게로, 철판 앞에서 손님이 직접 구워 먹는 방식을 처음 정착시킨 곳 중 하나로 알려져 있다. 관광객보다 퇴근길 동네 회사원들이 더 많이 보인다.");
-                item2.setPlaceType("RESTAURANT");
-                items.add(item2);
-            } else {
-                ClaudeScheduleResponse.ItemDto item1 = new ClaudeScheduleResponse.ItemDto();
-                item1.setPlaceName("야나카 긴자 멘치카츠 정육점");
-                item1.setPlaceAddress("3 Chome-13-3 Yanaka, Taito City, Tokyo");
-                item1.setLatitude(35.7280);
-                item1.setLongitude(139.7669);
-                item1.setVisitTime("11:00");
-                item1.setVisitOrder(1);
-                item1.setMemo("좁은 상점가 초입 평지 매장, 서서 먹거나 포장 가능");
-                item1.setRecommendReason("원래는 동네 정육점이었는데, 남는 자투리 고기로 만든 멘치카츠가 입소문이 나며 지금은 골목 명물이 됐다. 튀김옷 배합은 3대째 손자에게만 구전으로 전해진다고 가게 앞에 적혀 있다.");
-                item1.setPlaceType("RESTAURANT");
-                items.add(item1);
+                    boolean overlapsUsedPlaces = generated.getItems() != null && generated.getItems().stream()
+                            .map(ClaudeScheduleResponse.ItemDto::getPlaceName)
+                            .filter(name -> name != null && !name.isBlank())
+                            .anyMatch(name -> usedPlaceNames.contains(name.trim().toLowerCase()));
 
-                ClaudeScheduleResponse.ItemDto item2 = new ClaudeScheduleResponse.ItemDto();
-                item2.setPlaceName("우에노 온시 공원 (Ueno Park)");
-                item2.setPlaceAddress("Uenokoen, Taito City, Tokyo");
-                item2.setLatitude(35.7140);
-                item2.setLongitude(139.7741);
-                item2.setVisitTime("14:30");
-                item2.setVisitOrder(2);
-                item2.setMemo("공원 내 산책로 정비 잘 됨, 카페 및 휴게 공간 다수 보유");
-                item2.setRecommendReason("공원 자체보다 서쪽 출구 인근 벤치가 숨은 포인트인데, 근처 상점가 상인들이 점심시간마다 이곳에서 도시락을 먹어 '상인들의 마당'이라 불린다.");
-                item2.setPlaceType("ATTRACTION");
-                items.add(item2);
+                    if (!overlapsUsedPlaces) {
+                        items = generated.getItems();
+                        break;
+                    }
+                    log.warn("⚠️ {}일차 개별 생성 결과가 이전 날짜와 겹쳐 재시도합니다 (시도: {}).", i, dupAttempt + 1);
+                }
+
+                if (items == null) {
+                    throw new IllegalStateException("이전 날짜와 겹치지 않는 장소를 만들지 못했습니다.");
+                }
+
+                day.setItems(items);
+                items.stream()
+                        .map(ClaudeScheduleResponse.ItemDto::getPlaceName)
+                        .filter(name -> name != null && !name.isBlank())
+                        .forEach(name -> usedPlaceNames.add(name.trim().toLowerCase()));
+            } catch (Exception e) {
+                log.error("❌ {}일차 개별 생성도 실패하여 자리표시자로 대체합니다: {}", i, e.getMessage());
+                day.setItems(createPlaceholderItems(regionName, i));
             }
 
-            day.setItems(items);
             days.add(day);
         }
 
-        fallback.setDays(days);
-        return fallback;
+        result.setDays(days);
+        return result;
+    }
+
+    /**
+     * 하루 개별 생성마저 실패했을 때 넣는 안내용 자리표시자. 실제 장소를 지어내지 않고,
+     * 사용자가 '하루 재생성' 버튼으로 다시 시도하도록 안내한다.
+     */
+    private List<ClaudeScheduleResponse.ItemDto> createPlaceholderItems(String regionName, int dayNumber) {
+        ClaudeScheduleResponse.ItemDto item = new ClaudeScheduleResponse.ItemDto();
+        item.setPlaceName(dayNumber + "일차 장소를 생성하지 못했어요");
+        item.setPlaceAddress(regionName);
+        item.setVisitTime("10:00");
+        item.setVisitOrder(1);
+        item.setMemo("AI가 이 날짜의 장소를 만들지 못했어요. '하루 재생성' 버튼을 눌러 다시 시도해 주세요.");
+        item.setRecommendReason("일시적인 오류로 이 날짜만 자동 생성에 실패했어요. 다른 날짜는 정상적으로 생성되었으니, 이 날짜만 재생성해 주세요.");
+        item.setPlaceType("ETC");
+        return new ArrayList<>(List.of(item));
     }
 
     private String buildPrompt(AiScheduleRequest req) {

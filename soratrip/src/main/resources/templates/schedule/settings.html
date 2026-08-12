@@ -71,6 +71,17 @@
             </div>
         </div>
 
+        <div class="form-group" style="margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--border-color);">
+            <label style="color: #e11d48;" th:text="#{schedule.delete.zone_label}">⚠️ 위험 구역</label>
+            <p style="color: var(--text-sub); font-size: var(--text-sm); margin-bottom: var(--space-3);" th:text="#{schedule.delete.description}">
+                일정을 삭제하면 일차별 장소, 가계부, 사진, 정산 내역이 모두 함께 삭제되고 되돌릴 수 없어요.
+            </p>
+            <form th:action="@{/schedules/{id}/delete(id=${schedule.id})}" method="post"
+                  onsubmit="return confirm(/*[[#{schedule.delete.confirm}]]*/ '정말 이 일정을 삭제할까요? 가계부, 사진, 정산 내역까지 전부 삭제되며 되돌릴 수 없어요.');">
+                <button type="submit" class="btn btn-secondary btn-danger-ghost" th:text="#{schedule.delete.button}">🗑️ 이 일정 삭제하기</button>
+            </form>
+        </div>
+
         <div class="form-footer">
             <a th:href="@{/schedules/{id}(id=${schedule.id})}" th:text="#{btn.cancel}">취소</a>
         </div>

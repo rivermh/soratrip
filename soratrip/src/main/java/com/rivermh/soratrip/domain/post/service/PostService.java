@@ -8,7 +8,9 @@ import com.rivermh.soratrip.domain.post.dto.PostResponseDto;
 import com.rivermh.soratrip.domain.post.entity.Category;
 import com.rivermh.soratrip.domain.post.entity.Post;
 import com.rivermh.soratrip.domain.post.entity.Region;
+import com.rivermh.soratrip.domain.post.repository.PostApplicationRepository;
 import com.rivermh.soratrip.domain.post.repository.PostRepository;
+import com.rivermh.soratrip.domain.comment.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
@@ -28,6 +30,8 @@ public class PostService {
     private final MemberRepository memberRepository;
     private final PostLikeRepository postLikeRepository; //  1. 좋아요 리포지토리
     private final PostViewRedisService postViewRedisService;
+    private final CommentRepository commentRepository;
+    private final PostApplicationRepository postApplicationRepository;
 
     // 글 작성
     @Transactional
@@ -95,6 +99,65 @@ public class PostService {
         }
 
         return new PostResponseDto(post, likeCount, liked);
+    }
+
+    // 게시글 수정 폼 진입용 조회 (작성자 본인만 가능)
+    public PostCreateDto getPostForEdit(Long id, String userEmail) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + id));
+
+        if (!post.getWriter().getEmail().equals(userEmail)) {
+            throw new IllegalStateException("해당 게시글을 수정할 권한이 없습니다.");
+        }
+
+        PostCreateDto dto = new PostCreateDto();
+        dto.setTitle(post.getTitle());
+        dto.setContent(post.getContent());
+        dto.setRegion(post.getRegion());
+        dto.setCategory(post.getCategory());
+        dto.setTravelStartDate(post.getTravelStartDate());
+        dto.setTravelEndDate(post.getTravelEndDate());
+        dto.setRecruitmentCount(post.getRecruitmentCount());
+        dto.setPlaceName(post.getPlaceName());
+        dto.setPlaceAddress(post.getPlaceAddress());
+        dto.setLatitude(post.getLatitude());
+        dto.setLongitude(post.getLongitude());
+        return dto;
+    }
+
+    // 게시글 수정 (작성자 본인만 가능)
+    @Transactional
+    public void updatePost(Long id, PostCreateDto dto, String userEmail) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + id));
+
+        if (!post.getWriter().getEmail().equals(userEmail)) {
+            throw new IllegalStateException("해당 게시글을 수정할 권한이 없습니다.");
+        }
+
+        post.update(dto.getTitle(), dto.getContent(), dto.getRegion(), dto.getCategory(),
+                dto.getTravelStartDate(), dto.getTravelEndDate(), dto.getRecruitmentCount());
+
+        if (dto.getLatitude() != null && dto.getLongitude() != null) {
+            post.updateLocation(dto.getPlaceName(), dto.getPlaceAddress(), dto.getLatitude(), dto.getLongitude());
+        }
+    }
+
+    // 게시글 삭제 (작성자 본인만 가능, 댓글/좋아요/신청 내역도 함께 정리)
+    @Transactional
+    public void deletePost(Long id, String userEmail) {
+        Post post = postRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글이 존재하지 않습니다. id=" + id));
+
+        if (!post.getWriter().getEmail().equals(userEmail)) {
+            throw new IllegalStateException("해당 게시글을 삭제할 권한이 없습니다.");
+        }
+
+        List<Post> posts = List.of(post);
+        commentRepository.deleteByPostIn(posts);
+        postLikeRepository.deleteByPostIn(posts);
+        postApplicationRepository.deleteByPostIn(posts);
+        postRepository.delete(post);
     }
 
     // 검색 및 페이징 목록 조회

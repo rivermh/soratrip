@@ -42,10 +42,24 @@
             <div th:unless="${#lists.isEmpty(photosByDay.get(day.id))}" class="photo-grid" style="margin-bottom: 12px;">
                 <div th:each="p : ${photosByDay.get(day.id)}" class="photo-grid-item">
                     <img th:src="@{${p.imageUrl}}" th:alt="${p.caption}">
-                    <div th:if="${p.caption != null and !#strings.isEmpty(p.caption)}" style="font-size: 13px; color: var(--text-main); margin-top: 4px; word-break: break-all;" th:text="${p.caption}">설명</div>
-                    <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/photos/{pid}/delete(sid=${schedule.id},did=${day.id},pid=${p.id})}" method="post">
-                        <button type="submit" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;" th:text="#{photo.delete}">삭제</button>
+                    <div th:id="'caption-view-' + ${p.id}" th:if="${p.caption != null and !#strings.isEmpty(p.caption)}" style="font-size: 13px; color: var(--text-main); margin-top: 4px; word-break: break-all;" th:text="${p.caption}">설명</div>
+
+                    <!-- 캡션 수정 폼 (기본 숨김, 소유자 전용) -->
+                    <form th:if="${owner}" th:id="'caption-edit-form-' + ${p.id}"
+                          th:action="@{/schedules/{sid}/days/{did}/photos/{pid}/caption(sid=${schedule.id},did=${day.id},pid=${p.id})}"
+                          method="post" style="display: none; gap: 4px; margin-top: 4px;">
+                        <input type="text" name="caption" class="form-control" th:value="${p.caption}"
+                               th:placeholder="#{photo.caption.placeholder}" placeholder="설명 (선택)" style="flex: 1; font-size: 12px;">
+                        <button type="submit" class="btn btn-primary" style="width: auto; padding: 2px 8px; font-size: 12px;" th:text="#{photo.save}">저장</button>
                     </form>
+
+                    <div th:if="${owner}" style="display: flex; gap: 4px; margin-top: 4px;">
+                        <button type="button" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;"
+                                th:onclick="'toggleCaptionEdit(' + ${p.id} + ')'" th:text="#{photo.caption.edit}">설명 수정</button>
+                        <form th:action="@{/schedules/{sid}/days/{did}/photos/{pid}/delete(sid=${schedule.id},did=${day.id},pid=${p.id})}" method="post">
+                            <button type="submit" class="btn btn-secondary" style="width: auto; padding: 2px 8px; font-size: 12px;" th:text="#{photo.delete}">삭제</button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
@@ -63,6 +77,17 @@
             <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{photo.back_to_schedule}">⬅️ 일정으로 돌아가기</a>
         </div>
     </div>
+
+    <script>
+        function toggleCaptionEdit(id) {
+            const view = document.getElementById('caption-view-' + id);
+            const form = document.getElementById('caption-edit-form-' + id);
+            if (!form) return;
+            const showingForm = form.style.display !== 'none' && form.style.display !== '';
+            form.style.display = showingForm ? 'none' : 'flex';
+            if (view) view.style.display = showingForm ? '' : 'none';
+        }
+    </script>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>

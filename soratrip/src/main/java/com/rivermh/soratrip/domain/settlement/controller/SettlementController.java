@@ -52,6 +52,16 @@ public class SettlementController {
         return "redirect:/schedules/" + scheduleId + "/settlement";
     }
 
+    // 참여자 이름 수정
+    @PostMapping("/participants/{participantId}/edit")
+    public String updateParticipant(@PathVariable("scheduleId") Long scheduleId,
+                                    @PathVariable("participantId") Long participantId,
+                                    @RequestParam("name") String name,
+                                    Principal principal) {
+        settlementService.updateParticipantName(participantId, name, principal.getName());
+        return "redirect:/schedules/" + scheduleId + "/settlement";
+    }
+
     // 참여자 삭제
     @PostMapping("/participants/{participantId}/delete")
     public String deleteParticipant(@PathVariable("scheduleId") Long scheduleId,

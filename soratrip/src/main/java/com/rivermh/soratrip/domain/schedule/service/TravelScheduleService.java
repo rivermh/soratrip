@@ -14,9 +14,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.rivermh.soratrip.domain.bookmark.repository.ScheduleBookmarkRepository;
+import com.rivermh.soratrip.domain.like.repository.ScheduleLikeRepository;
 import com.rivermh.soratrip.domain.member.entity.Member;
 import com.rivermh.soratrip.domain.member.entity.Role;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
+import com.rivermh.soratrip.domain.photo.entity.Photo;
+import com.rivermh.soratrip.domain.photo.repository.PhotoRepository;
 import com.rivermh.soratrip.domain.post.entity.Region;
 import com.rivermh.soratrip.domain.schedule.dto.ScheduleDayForm;
 import com.rivermh.soratrip.domain.schedule.dto.ScheduleItemForm;
@@ -26,8 +30,10 @@ import com.rivermh.soratrip.domain.schedule.entity.ScheduleDay;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleItem;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
+import com.rivermh.soratrip.domain.schedule.repository.ScheduleDayRepository;
 import com.rivermh.soratrip.domain.schedule.repository.ScheduleItemRepository;
 import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
+import com.rivermh.soratrip.domain.settlement.service.SettlementCleanupService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,6 +45,11 @@ public class TravelScheduleService {
     private final TravelScheduleRepository travelScheduleRepository;
     private final MemberRepository memberRepository;
     private final ScheduleItemRepository scheduleItemRepository;
+    private final ScheduleDayRepository scheduleDayRepository;
+    private final SettlementCleanupService settlementCleanupService;
+    private final ScheduleLikeRepository scheduleLikeRepository;
+    private final ScheduleBookmarkRepository scheduleBookmarkRepository;
+    private final PhotoRepository photoRepository;
 
     // 회원이 없으면 자동으로 DB에 가입시키는 도우미 메서드 (소셜 로그인 방어 로직)
     private Member getOrRegisterMember(String email) {
@@ -131,14 +142,29 @@ public class TravelScheduleService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 일정을 찾을 수 없습니다. id=" + id));
     }
 
-    // 일정 삭제
+    // 일정 삭제. ScheduleDay(-> ScheduleItem/Expense/Photo/Review), 체크리스트, 예약, 태그는
+    // TravelSchedule에 cascade가 걸려있어 자동 정리되지만, 정산 참여자(+정산완료 기록)와
+    // 다른 사람이 남긴 좋아요/북마크는 cascade 밖이라 먼저 정리해야 FK 위반이 안 난다.
+    // 사진 실물 파일은 DB 삭제(cascade)와 별개로 커밋 후 디스크에서 지워야 해서, 삭제 전
+    // URL 목록을 미리 뽑아 반환한다 (PhotoService.deletePhoto와 동일한 패턴).
     @Transactional
-    public void deleteSchedule(Long id, Long memberId) {
+    public List<String> deleteSchedule(Long id, String email) {
         TravelSchedule schedule = getScheduleDetail(id);
-        if (!schedule.getMember().getId().equals(memberId)) {
+        if (!schedule.isOwnedBy(email)) {
             throw new IllegalStateException("삭제 권한이 없습니다.");
         }
+
+        settlementCleanupService.detachAllParticipants(id);
+
+        scheduleLikeRepository.deleteByTravelScheduleIn(List.of(schedule));
+        scheduleBookmarkRepository.deleteByTravelScheduleIn(List.of(schedule));
+
+        List<String> photoUrls = photoRepository.findByTravelScheduleId(id).stream()
+                .map(Photo::getImageUrl)
+                .toList();
+
         travelScheduleRepository.delete(schedule);
+        return photoUrls;
     }
 
     // 공개 일정 둘러보기 (지역/태그 필터 + 페이징)
@@ -260,6 +286,40 @@ public class TravelScheduleService {
     public TravelSchedule getScheduleByShareToken(String token) {
         return travelScheduleRepository.findByShareTokenWithDetails(token)
                 .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 공유 링크입니다."));
+    }
+
+    // 기존 일정에 장소 단건 추가 (일정 상세 페이지에서 사용)
+    @Transactional
+    public Long addScheduleItem(Long dayId, ScheduleItemForm form, String email) {
+        ScheduleDay day = scheduleDayRepository.findById(dayId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 일정입니다. id=" + dayId));
+
+        if (!day.getTravelSchedule().isOwnedBy(email)) {
+            throw new IllegalStateException("해당 일정을 수정할 권한이 없습니다.");
+        }
+
+        if (form.getPlaceName() == null || form.getPlaceName().isBlank()) {
+            throw new IllegalArgumentException("장소명은 필수입니다.");
+        }
+
+        int nextOrder = day.getItems().stream()
+                .mapToInt(item -> item.getVisitOrder() != null ? item.getVisitOrder() : 0)
+                .max().orElse(0) + 1;
+
+        ScheduleItem item = ScheduleItem.builder()
+                .scheduleDay(day)
+                .placeName(form.getPlaceName())
+                .placeAddress(form.getPlaceAddress())
+                .latitude(form.getLatitude())
+                .longitude(form.getLongitude())
+                .visitOrder(nextOrder)
+                .visitTime(form.getVisitTime())
+                .memo(form.getMemo())
+                .placeType(form.getPlaceType())
+                .build();
+
+        day.addItem(item);
+        return scheduleItemRepository.save(item).getId();
     }
 
     // 2. 장소 단건 삭제

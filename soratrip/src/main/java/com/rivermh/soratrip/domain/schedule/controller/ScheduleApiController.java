@@ -2,6 +2,7 @@ package com.rivermh.soratrip.domain.schedule.controller;
 
 import com.rivermh.soratrip.domain.schedule.dto.AiScheduleRequest;
 import com.rivermh.soratrip.domain.schedule.dto.DayRegenerateRequest;
+import com.rivermh.soratrip.domain.schedule.dto.ScheduleItemForm;
 import com.rivermh.soratrip.domain.schedule.dto.ScheduleOrderUpdateRequest;
 import com.rivermh.soratrip.domain.schedule.service.ClaudeScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
@@ -40,6 +41,17 @@ public class ScheduleApiController {
         String extraPrompt = request != null ? request.getExtraPrompt() : null;
         claudeScheduleService.regenerateDay(dayId, extraPrompt, principal.getName());
         return ResponseEntity.ok("AI가 이 날 일정을 새로 짜드렸어요.");
+    }
+
+    // 기존 일정에 장소 추가 API (일정 상세 페이지에서 사용)
+    @PostMapping("/days/{dayId}/items")
+    public ResponseEntity<Long> addItem(
+            @PathVariable("dayId") Long dayId,
+            @RequestBody ScheduleItemForm form,
+            Principal principal) {
+
+        Long itemId = travelScheduleService.addScheduleItem(dayId, form, principal.getName());
+        return ResponseEntity.ok(itemId);
     }
 
     // 순서 변경 저장 API

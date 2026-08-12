@@ -53,4 +53,9 @@ public class Photo extends BaseTimeEntity {
         this.originalFileName = originalFileName;
         this.caption = caption;
     }
+
+    // 캡션 수정
+    public void updateCaption(String caption) {
+        this.caption = caption;
+    }
 }

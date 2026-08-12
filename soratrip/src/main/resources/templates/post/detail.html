@@ -210,8 +210,16 @@
 		</div>
 
 		<!-- 하단 버튼 영역 -->
-		<div style="margin-top: 36px;">
+		<div style="margin-top: 36px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
 			<a th:href="@{/posts}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.back_to_list}">⬅️ 목록으로 돌아가기</a>
+
+			<!-- 작성자 본인에게만 노출되는 수정/삭제 버튼 -->
+			<div th:if="${post.writerEmail == #authentication.name}" style="display: flex; gap: 10px;">
+				<a th:href="@{/posts/{id}/edit(id=${post.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{post.edit}">✏️ 수정</a>
+				<form th:action="@{/posts/{id}/delete(id=${post.id})}" method="post" style="display: inline;">
+					<button type="submit" onclick="return confirm(/*[[#{post.delete.confirm}]]*/ '게시글을 삭제하시겠습니까?');" class="btn btn-secondary" style="width: auto; color: #e11d48; border-color: #fca5a5;" th:text="#{post.delete}">🗑️ 삭제</button>
+				</form>
+			</div>
 		</div>
 	</div>
 

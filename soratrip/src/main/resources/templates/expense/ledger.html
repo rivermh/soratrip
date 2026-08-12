@@ -71,7 +71,7 @@
                 등록된 지출 내역이 없습니다.
             </div>
 
-            <div th:each="e : ${expensesByDay.get(day.id)}" class="expense-row">
+            <div th:each="e : ${expensesByDay.get(day.id)}" class="expense-row" th:id="'expense-row-' + ${e.id}">
                 <span th:text="${e.category.displayName} + (${e.memo != null and !#strings.isEmpty(e.memo)} ? ' - ' + ${e.memo} : '')">분류 - 메모</span>
                 <span class="expense-row__amount">
                     <strong>
@@ -81,6 +81,8 @@
                     <span th:if="${e.currency.name() == 'JPY'}" class="expense-row__krw-note">
                         (≈ ₩<span th:text="${#numbers.formatDecimal(e.amountKrw, 0, 'COMMA', 0, 'POINT')}">0</span>)
                     </span>
+                    <button th:if="${owner}" type="button" class="btn btn-secondary" style="padding: 1px 6px; font-size: 11px;"
+                            th:onclick="'toggleExpenseEdit(' + ${e.id} + ')'" th:text="#{expense.edit}">수정</button>
                     <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses/{eid}/delete(sid=${schedule.id},did=${day.id},eid=${e.id})}" method="post" style="display: inline;">
                         <button type="submit" class="btn btn-secondary btn-danger-ghost" style="padding: 1px 6px; font-size: 11px;">✕</button>
                     </form>
@@ -90,6 +92,38 @@
                     · <span th:text="#{expense.shared_with}">나눈 사람</span>: <span th:text="${#strings.listJoin(e.sharedWith.![name], ', ')}">철수, 영희</span>
                 </div>
             </div>
+
+            <!-- 지출 수정 폼 (기본 숨김, 소유자 전용) -->
+            <form th:if="${owner}" th:id="'expense-edit-form-' + ${e.id}"
+                  th:each="e : ${expensesByDay.get(day.id)}"
+                  th:action="@{/schedules/{sid}/days/{did}/expenses/{eid}/edit(sid=${schedule.id},did=${day.id},eid=${e.id})}"
+                  method="post" class="expense-form" style="display: none;">
+                <select name="category" class="form-control" required>
+                    <option th:each="c : ${expenseCategories}" th:value="${c}" th:selected="${c == e.category}" th:text="${c.displayName}">분류</option>
+                </select>
+                <select name="currency" class="form-control">
+                    <option value="JPY" th:selected="${e.currency.name() == 'JPY'}">JPY (¥)</option>
+                    <option value="KRW" th:selected="${e.currency.name() == 'KRW'}">KRW (₩)</option>
+                </select>
+                <input type="number" step="any" name="amount" class="form-control" th:value="${e.amount}" th:placeholder="#{expense.amount.placeholder}" placeholder="금액" required>
+                <input type="number" step="0.01" name="exchangeRate" class="form-control" th:value="${e.exchangeRate}" th:placeholder="#{schedule.exchange_rate.placeholder}" placeholder="환율(100엔당 원, 기본900)">
+                <input type="text" name="memo" class="form-control" th:value="${e.memo}" th:placeholder="#{expense.memo.placeholder}" placeholder="메모">
+
+                <div th:if="${!#lists.isEmpty(participants)}" class="expense-form__settlement" style="width: 100%; display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; margin-top: 4px;">
+                    <select name="paidById" class="form-control" style="max-width: 160px;">
+                        <option value="" th:text="#{expense.paid_by.none}">정산 미대상</option>
+                        <option th:each="p : ${participants}" th:value="${p.id}" th:selected="${e.paidBy != null and e.paidBy.id == p.id}" th:text="${p.name} + #{expense.paid_by.option_suffix}">철수님이 냄</option>
+                    </select>
+                    <span style="font-size: var(--text-xs); color: var(--text-faint);" th:text="#{expense.shared_with}">나눈 사람</span>
+                    <label th:each="p : ${participants}" style="display: inline-flex; align-items: center; gap: 2px; font-size: var(--text-xs);">
+                        <input type="checkbox" name="sharedWithIds" th:value="${p.id}" th:checked="${e.sharedWith.contains(p)}">
+                        <span th:text="${p.name}">철수</span>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" th:text="#{expense.save}">저장</button>
+                <button type="button" class="btn btn-secondary" th:onclick="'toggleExpenseEdit(' + ${e.id} + ')'" th:text="#{expense.cancel}">취소</button>
+            </form>
 
             <!-- 지출 등록 (소유자 전용) -->
             <form th:if="${owner}" th:action="@{/schedules/{sid}/days/{did}/expenses(sid=${schedule.id},did=${day.id})}" method="post" class="expense-form">
@@ -126,6 +160,14 @@
             <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{expense.back_to_schedule}">⬅️ 일정으로 돌아가기</a>
         </div>
     </div>
+
+    <script>
+        function toggleExpenseEdit(id) {
+            const form = document.getElementById('expense-edit-form-' + id);
+            if (!form) return;
+            form.style.display = (form.style.display === 'none' || !form.style.display) ? 'flex' : 'none';
+        }
+    </script>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>

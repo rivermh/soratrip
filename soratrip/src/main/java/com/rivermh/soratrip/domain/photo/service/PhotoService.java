@@ -53,6 +53,18 @@ public class PhotoService {
         }
     }
 
+    // 사진 캡션 수정
+    @Transactional
+    public void updateCaption(Long photoId, String caption, String email) {
+        Photo photo = photoRepository.findById(photoId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 사진을 찾을 수 없습니다. id=" + photoId));
+
+        if (!photo.getTravelSchedule().isOwnedBy(email)) {
+            throw new IllegalStateException("본인의 사진만 수정할 수 있습니다.");
+        }
+        photo.updateCaption(caption);
+    }
+
     // 특정 일자의 사진 목록
     public List<Photo> getPhotosForDay(Long dayId) {
         return photoRepository.findByScheduleDayIdOrderByIdAsc(dayId);

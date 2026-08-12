@@ -25,9 +25,21 @@
 
             <div th:unless="${#lists.isEmpty(participants)}" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-4);">
                 <span th:each="p : ${participants}" class="tag-chip" style="display: inline-flex; align-items: center; gap: 6px;">
-                    <span th:text="${p.name}">철수</span>
+                    <span th:id="'participant-name-' + ${p.id}" th:text="${p.name}">철수</span>
+                    <button type="button" class="btn btn-secondary" style="padding: 0 4px; font-size: 11px;"
+                            th:onclick="'toggleParticipantEdit(' + ${p.id} + ')'" th:title="#{settlement.participant.edit}">✏️</button>
                     <form th:action="@{/schedules/{sid}/settlement/participants/{pid}/delete(sid=${schedule.id},pid=${p.id})}" method="post" style="display: inline;">
                         <button type="submit" class="btn btn-secondary btn-danger-ghost" style="padding: 0 4px; font-size: 11px;" th:title="#{settlement.participant.delete}">✕</button>
+                    </form>
+
+                    <!-- 이름 수정 폼 (기본 숨김) -->
+                    <form th:id="'participant-edit-form-' + ${p.id}"
+                          th:action="@{/schedules/{sid}/settlement/participants/{pid}/edit(sid=${schedule.id},pid=${p.id})}"
+                          method="post" style="display: none; align-items: center; gap: 4px;">
+                        <input type="text" name="name" class="form-control" th:value="${p.name}" required maxlength="30" style="width: 90px; font-size: 12px; padding: 2px 6px;">
+                        <button type="submit" class="btn btn-primary" style="padding: 1px 6px; font-size: 11px;" th:text="#{settlement.participant.save}">저장</button>
+                        <button type="button" class="btn btn-secondary" style="padding: 1px 6px; font-size: 11px;"
+                                th:onclick="'toggleParticipantEdit(' + ${p.id} + ')'" th:text="#{settlement.participant.cancel}">취소</button>
                     </form>
                 </span>
             </div>
@@ -81,6 +93,17 @@
             <a th:href="@{/schedules/{id}(id=${schedule.id})}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{settlement.back}">⬅️ 일정으로 돌아가기</a>
         </div>
     </div>
+
+    <script>
+        function toggleParticipantEdit(id) {
+            const name = document.getElementById('participant-name-' + id);
+            const form = document.getElementById('participant-edit-form-' + id);
+            if (!form) return;
+            const showingForm = form.style.display !== 'none' && form.style.display !== '';
+            form.style.display = showingForm ? 'none' : 'inline-flex';
+            if (name) name.style.display = showingForm ? '' : 'none';
+        }
+    </script>
 
     <footer th:replace="~{fragments/footer :: footer}"></footer>
 </body>

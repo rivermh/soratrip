@@ -43,6 +43,17 @@ public class PhotoController {
         return "redirect:/schedules/" + scheduleId + "/photos";
     }
 
+    // 사진 캡션 수정
+    @PostMapping("/days/{dayId}/photos/{photoId}/caption")
+    public String updateCaption(@PathVariable("scheduleId") Long scheduleId,
+                                @PathVariable("dayId") Long dayId,
+                                @PathVariable("photoId") Long photoId,
+                                @RequestParam(name = "caption", required = false) String caption,
+                                Principal principal) {
+        photoService.updateCaption(photoId, caption, principal.getName());
+        return "redirect:/schedules/" + scheduleId + "/photos";
+    }
+
     // 사진 삭제 (DB 삭제 트랜잭션 커밋 후, 실제 파일을 디스크에서 삭제)
     @PostMapping("/days/{dayId}/photos/{photoId}/delete")
     public String deletePhoto(@PathVariable("scheduleId") Long scheduleId,

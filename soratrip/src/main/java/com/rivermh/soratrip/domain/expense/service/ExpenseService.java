@@ -90,6 +90,44 @@ public class ExpenseService {
         return expenseRepository.save(expense).getId();
     }
 
+    // 지출 수정
+    @Transactional
+    public void updateExpense(Long expenseId, ExpenseCreateDto dto, String email) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 지출 내역을 찾을 수 없습니다. id=" + expenseId));
+
+        if (!expense.getTravelSchedule().isOwnedBy(email)) {
+            throw new IllegalStateException("본인의 지출 내역만 수정할 수 있습니다.");
+        }
+
+        Long scheduleId = expense.getTravelSchedule().getId();
+
+        Currency currency = dto.getCurrency() != null ? dto.getCurrency() : Currency.JPY;
+        BigDecimal exchangeRate = dto.getExchangeRate();
+        if (currency == Currency.JPY && (exchangeRate == null || exchangeRate.compareTo(BigDecimal.ZERO) <= 0)) {
+            exchangeRate = DEFAULT_JPY_EXCHANGE_RATE;
+        }
+
+        TripParticipant paidBy = null;
+        if (dto.getPaidById() != null) {
+            paidBy = tripParticipantRepository.findById(dto.getPaidById())
+                    .filter(p -> p.belongsTo(scheduleId))
+                    .orElseThrow(() -> new IllegalArgumentException("참여자 정보가 올바르지 않습니다."));
+        }
+
+        Set<TripParticipant> sharedWith = new HashSet<>();
+        if (dto.getSharedWithIds() != null && !dto.getSharedWithIds().isEmpty()) {
+            sharedWith.addAll(tripParticipantRepository.findAllById(dto.getSharedWithIds()));
+            for (TripParticipant p : sharedWith) {
+                if (!p.belongsTo(scheduleId)) {
+                    throw new IllegalArgumentException("참여자 정보가 올바르지 않습니다.");
+                }
+            }
+        }
+
+        expense.update(dto.getCategory(), currency, dto.getAmount(), exchangeRate, dto.getMemo(), paidBy, sharedWith);
+    }
+
     // 특정 일자의 지출 목록
     public List<Expense> getExpensesForDay(Long dayId) {
         return expenseRepository.findByScheduleDayIdOrderByIdAsc(dayId);

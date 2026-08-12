@@ -112,4 +112,35 @@ public class PostController {
 
 		return "post/detail";
 	}
+
+	// 5. 게시글 수정 폼 이동 (작성자 본인만)
+	@GetMapping("/{id}/edit")
+	public String editForm(@PathVariable(name = "id") Long id, @AuthenticationPrincipal Object principal, Model model) {
+		String email = SecurityUtils.extractEmail(principal);
+		PostCreateDto dto = postService.getPostForEdit(id, email);
+
+		model.addAttribute("postForm", dto);
+		model.addAttribute("regions", Region.values());
+		model.addAttribute("categories", Category.values());
+		model.addAttribute("editMode", true);
+		model.addAttribute("postId", id);
+		return "post/form";
+	}
+
+	// 6. 게시글 수정 처리
+	@PostMapping("/{id}/edit")
+	public String updatePost(@PathVariable(name = "id") Long id, @ModelAttribute("postForm") PostCreateDto dto,
+							  @AuthenticationPrincipal Object principal) {
+		String email = SecurityUtils.extractEmail(principal);
+		postService.updatePost(id, dto, email);
+		return "redirect:/posts/" + id;
+	}
+
+	// 7. 게시글 삭제 처리
+	@PostMapping("/{id}/delete")
+	public String deletePost(@PathVariable(name = "id") Long id, @AuthenticationPrincipal Object principal) {
+		String email = SecurityUtils.extractEmail(principal);
+		postService.deletePost(id, email);
+		return "redirect:/posts";
+	}
 }

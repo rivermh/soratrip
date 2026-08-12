@@ -99,6 +99,19 @@ public class Expense extends BaseTimeEntity {
         this.paidBy = null;
     }
 
+    // 지출 내역 수정
+    public void update(ExpenseCategory category, Currency currency, BigDecimal amount, BigDecimal exchangeRate,
+                        String memo, TripParticipant paidBy, Set<TripParticipant> sharedWith) {
+        this.category = category;
+        this.currency = currency != null ? currency : Currency.JPY;
+        this.amount = amount;
+        this.exchangeRate = exchangeRate;
+        this.memo = memo;
+        this.amountKrw = calculateKrwAmount(this.currency, amount, exchangeRate);
+        this.paidBy = paidBy;
+        this.sharedWith = sharedWith != null ? sharedWith : new HashSet<>();
+    }
+
     // 환율 환산 도우미 메서드 (JPY -> KRW 계산)
     private BigDecimal calculateKrwAmount(Currency currency, BigDecimal amount, BigDecimal exchangeRate) {
         if (currency == Currency.KRW || exchangeRate == null || exchangeRate.compareTo(BigDecimal.ZERO) == 0) {

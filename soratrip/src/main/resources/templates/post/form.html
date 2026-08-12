@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title th:text="#{post.write} + ' - SoraTrip'">✍️ 글쓰기 - SoraTrip</title>
+<title th:text="(${editMode} != null and ${editMode} ? #{post.edit} : #{post.write}) + ' - SoraTrip'">✍️ 글쓰기 - SoraTrip</title>
 <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
@@ -12,9 +12,9 @@
 
 	<div class="container" style="max-width: 800px;">
 		<span class="eyebrow">Community</span>
-		<h2 th:text="#{post.write}" style="margin-bottom: 24px;">✍️ 게시글 작성</h2>
+		<h2 th:text="${editMode} != null and ${editMode} ? #{post.edit} : #{post.write}" style="margin-bottom: 24px;">✍️ 게시글 작성</h2>
 
-		<form th:action="@{/posts/new}" th:object="${postForm}" method="post">
+		<form th:action="${editMode} != null and ${editMode} ? @{/posts/{id}/edit(id=${postId})} : @{/posts/new}" th:object="${postForm}" method="post">
 			
 			<!-- 지역 선택 -->
 			<div class="form-group">
@@ -89,7 +89,7 @@
 			<!-- 버튼 영역 -->
 			<div style="display: flex; gap: 12px; margin-top: 28px;">
 				<button type="submit" class="btn btn-primary" style="flex: 1;" th:text="#{btn.save}">등록</button>
-				<a href="/posts" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{btn.cancel}">취소</a>
+				<a th:href="${editMode} != null and ${editMode} ? @{/posts/{id}(id=${postId})} : @{/posts}" class="btn btn-secondary" style="width: auto; text-decoration: none;" th:text="#{btn.cancel}">취소</a>
 			</div>
 			
 		</form>
@@ -109,6 +109,16 @@
             });
 
             geocoder = new google.maps.Geocoder();
+
+            // 수정 모드: 기존에 선택된 장소가 있으면 지도에 마커 미리 표시
+            const existingLat = document.getElementById("latitude").value;
+            const existingLng = document.getElementById("longitude").value;
+            if (existingLat && existingLng) {
+                const existingLoc = { lat: parseFloat(existingLat), lng: parseFloat(existingLng) };
+                map.setCenter(existingLoc);
+                map.setZoom(16);
+                marker = new google.maps.Marker({ position: existingLoc, map: map });
+            }
 
             // 검색창 Autocomplete 연동
             const input = document.getElementById("pac-input");

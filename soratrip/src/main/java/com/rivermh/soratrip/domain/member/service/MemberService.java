@@ -12,8 +12,6 @@ import com.rivermh.soratrip.domain.chat.entity.ChatRoom;
 import com.rivermh.soratrip.domain.chat.repository.ChatMessageRepository;
 import com.rivermh.soratrip.domain.chat.repository.ChatRoomRepository;
 import com.rivermh.soratrip.domain.comment.repository.CommentRepository;
-import com.rivermh.soratrip.domain.expense.entity.Expense;
-import com.rivermh.soratrip.domain.expense.repository.ExpenseRepository;
 import com.rivermh.soratrip.domain.like.repository.PostLikeRepository;
 import com.rivermh.soratrip.domain.like.repository.ScheduleLikeRepository;
 import com.rivermh.soratrip.domain.member.dto.MemberJoinDto;
@@ -28,9 +26,7 @@ import com.rivermh.soratrip.domain.post.repository.PostRepository;
 import com.rivermh.soratrip.domain.schedule.entity.ScheduleTag;
 import com.rivermh.soratrip.domain.schedule.entity.TravelSchedule;
 import com.rivermh.soratrip.domain.schedule.repository.TravelScheduleRepository;
-import com.rivermh.soratrip.domain.settlement.entity.TripParticipant;
-import com.rivermh.soratrip.domain.settlement.repository.SettlementCompletionRepository;
-import com.rivermh.soratrip.domain.settlement.repository.TripParticipantRepository;
+import com.rivermh.soratrip.domain.settlement.service.SettlementCleanupService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,9 +39,7 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final MailService mailService;
     private final TravelScheduleRepository travelScheduleRepository;
-    private final ExpenseRepository expenseRepository;
-    private final TripParticipantRepository tripParticipantRepository;
-    private final SettlementCompletionRepository settlementCompletionRepository;
+    private final SettlementCleanupService settlementCleanupService;
     private final ScheduleLikeRepository scheduleLikeRepository;
     private final ScheduleBookmarkRepository scheduleBookmarkRepository;
     private final PostRepository postRepository;
@@ -244,20 +238,9 @@ public class MemberService {
         List<TravelSchedule> schedules = travelScheduleRepository.findByMemberIdOrderByIdDesc(member.getId());
         for (TravelSchedule schedule : schedules) {
             // 정산 참여자(TripParticipant)는 일정에 cascade가 안 걸려 있고, 지출(Expense)의
-            // paidBy/sharedWith가 참여자를 참조하므로 참여자를 지우기 전에 먼저 참조를 끊는다
-            // (SettlementService.removeParticipant와 동일한 패턴)
-            List<Expense> expenses = expenseRepository.findByTravelScheduleIdWithDay(schedule.getId());
-            for (Expense expense : expenses) {
-                expense.clearPaidBy();
-                expense.getSharedWith().clear();
-            }
-            List<TripParticipant> participants =
-                    tripParticipantRepository.findByTravelScheduleIdOrderByIdAsc(schedule.getId());
-            if (!participants.isEmpty()) {
-                List<Long> participantIds = participants.stream().map(TripParticipant::getId).toList();
-                settlementCompletionRepository.deleteByFromParticipant_IdInOrToParticipant_IdIn(participantIds, participantIds);
-                tripParticipantRepository.deleteAll(participants);
-            }
+            // paidBy/sharedWith가 참여자를 참조하므로 참여자를 지우기 전에 먼저 참조를 끊어야 한다
+            // (TravelScheduleService.deleteSchedule/SettlementService.removeParticipant와 공유하는 로직)
+            settlementCleanupService.detachAllParticipants(schedule.getId());
         }
 
         if (!schedules.isEmpty()) {

@@ -28,7 +28,7 @@
         <div th:unless="${#lists.isEmpty(schedules)}" class="schedule-grid">
             <div th:each="s : ${schedules}" class="schedule-card">
                 <div class="schedule-card__cover">
-                    <span th:text="${s.region}" class="schedule-card__cover-region">TOKYO</span>
+                    <span th:text="${s.region.displayName}" class="schedule-card__cover-region">TOKYO</span>
                 </div>
                 <div class="schedule-card__body">
                     <h3 class="schedule-card__title">

@@ -43,6 +43,17 @@ public class ExpenseController {
         return "redirect:/schedules/" + scheduleId + "/expenses";
     }
 
+    // 지출 수정
+    @PostMapping("/days/{dayId}/expenses/{expenseId}/edit")
+    public String updateExpense(@PathVariable("scheduleId") Long scheduleId,
+                                @PathVariable("dayId") Long dayId,
+                                @PathVariable("expenseId") Long expenseId,
+                                @ModelAttribute ExpenseCreateDto dto,
+                                Principal principal) {
+        expenseService.updateExpense(expenseId, dto, principal.getName());
+        return "redirect:/schedules/" + scheduleId + "/expenses";
+    }
+
     // 지출 삭제
     @PostMapping("/days/{dayId}/expenses/{expenseId}/delete")
     public String deleteExpense(@PathVariable("scheduleId") Long scheduleId,

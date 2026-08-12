@@ -9,14 +9,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+// 로컬 개발용 더미 데이터 생성기. 배포 환경(prod)에서는 절대 실행되지 않아야 한다.
 @Slf4j
 @Configuration
+@Profile("!prod")
 @RequiredArgsConstructor
 public class DataInitializer {
 

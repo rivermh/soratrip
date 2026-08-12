@@ -46,7 +46,9 @@ public class ScheduleItem {
     @Column(length = 500)
     private String memo;         // 메모 (예: "티켓 현장 발급, 30분 전 도착하기")
 
-    @Column(length = 300)
+    // AI가 요청받는 대로 2~3문장을 쓰다 보면 300자를 넘는 경우가 있어 저장이 실패했던 적이 있어(#recommend_reason 컬럼
+    // 길이 제한), Post/Comment의 content처럼 TEXT로 바꿔 길이 제한 자체를 없앤다.
+    @Column(columnDefinition = "TEXT")
     private String recommendReason; // AI가 이 장소를 추천한 이유 (AI 생성 시에만 채워짐, 사용자 수동 추가 시 null)
 
     @Enumerated(EnumType.STRING)

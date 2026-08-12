@@ -27,6 +27,11 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import jakarta.annotation.PreDestroy;
 
 @Slf4j
 @Service
@@ -45,6 +50,15 @@ public class ClaudeScheduleService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     private static final int MAX_RETRIES = 2;
+
+    // 하루씩 개별 생성(createScheduleDayByDay) 폴백에서 날짜별 요청을 동시에 보내기 위한 전용 풀.
+    // daysCount가 최대 7(AiScheduleRequest.daysCount @Max(7))이라 크게 잡을 필요가 없다.
+    private final ExecutorService dayGenerationExecutor = Executors.newFixedThreadPool(7);
+
+    @PreDestroy
+    public void shutdownDayGenerationExecutor() {
+        dayGenerationExecutor.shutdown();
+    }
 
     // AI 일정 생성/재생성은 매 호출마다 유료 API 비용이 발생하므로, 회원당 시간당 호출 횟수를 제한한다
     // (MailService.checkPasswordResetRequestRate와 동일한 스타일)
@@ -357,9 +371,9 @@ public class ClaudeScheduleService {
                 headers.set("X-Title", "Soratrip");
 
                 Map<String, Object> requestBody = new HashMap<>();
-                requestBody.put("model", "anthropic/claude-3-haiku");
+                requestBody.put("model", "google/gemini-3.5-flash-lite");
                 requestBody.put("temperature", 0.1);
-                requestBody.put("max_tokens", 2048);
+                requestBody.put("max_tokens", 4096);
 
                 List<Map<String, String>> messages = new ArrayList<>();
                 messages.add(Map.of("role", "system",
@@ -443,14 +457,12 @@ public class ClaudeScheduleService {
 
                 Map<String, Object> requestBody = new HashMap<>();
                 
-                // 모델 선택 (원하는 모델로 변경 가능)
-                // - meta-llama/llama-2-7b-chat (무료)
-                // - mistralai/mistral-7b-instruct (무료)
-                // - openai/gpt-4-turbo (유료)
-                // - anthropic/claude-3-haiku (유료)
-                requestBody.put("model", "anthropic/claude-3-haiku");
+                // claude-3-haiku는 2026-08 기준 OpenRouter 모델 목록에서 빠져 있고(사실상 단종),
+                // max_tokens 한도도 4096으로 낮아 긴 일정에서 잘림 문제가 있었다. gemini-3.5-flash-lite는
+                // 가격대는 비슷하면서 출력 한도가 65,536토큰이라 그 문제가 구조적으로 사라진다.
+                requestBody.put("model", "google/gemini-3.5-flash-lite");
                 requestBody.put("temperature", 0.1);
-                requestBody.put("max_tokens", 4096);
+                requestBody.put("max_tokens", 8192);
 
                 List<Map<String, String>> messages = new ArrayList<>();
                 // 한국어/일본어 자동 감지 및 출력 제약 추가된 시스템 프롬프트
@@ -463,6 +475,16 @@ public class ClaudeScheduleService {
 
                 ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
                 JsonNode rootNode = objectMapper.readTree(response.getBody());
+
+                // finish_reason이 "length"면 max_tokens 한도에 걸려 응답이 중간에 잘렸다는 뜻이다.
+                // gemini-3.5-flash-lite로 바꾸면서 한도를 8192로 넉넉하게 잡아 거의 안 일어나지만,
+                // 그래도 걸리면 같은 일수/프롬프트라 재시도해도 또 잘릴 뿐이므로, 재시도를 낭비하지 말고
+                // 바로 하루씩 개별 생성(병렬)으로 넘어간다.
+                String finishReason = rootNode.path("choices").get(0).path("finish_reason").asText("");
+                if ("length".equals(finishReason)) {
+                    log.warn("⚠️ 응답이 max_tokens 한도에 걸려 잘렸습니다 (시도: {}). 재시도 없이 하루씩 개별 생성으로 전환합니다.", attempt + 1);
+                    return createScheduleDayByDay(request);
+                }
 
                 String jsonText = rootNode.path("choices").get(0)
                         .path("message").path("content").asText();
@@ -667,57 +689,88 @@ public class ClaudeScheduleService {
         ClaudeScheduleResponse result = new ClaudeScheduleResponse();
         result.setTitle(regionName + " 추천 일정");
 
-        List<ClaudeScheduleResponse.DayDto> days = new ArrayList<>();
         int daysCount = request.getDaysCount() > 0 ? request.getDaysCount() : 2;
-        Set<String> usedPlaceNames = new LinkedHashSet<>();
 
+        // 1단계: 날짜별로 동시에 요청한다. 이 시점엔 아직 어느 날짜도 완성되지 않았으므로
+        // (기존 순차 코드도) 첫 시도의 제외 목록은 항상 "None"이었다 -- 동시에 쏘아도 첫 시도
+        // 자체의 동작은 달라지지 않는다. 날짜 간 중복 방지는 아래 2단계에서 사후 처리한다.
+        List<CompletableFuture<ClaudeScheduleResponse.DayDto>> futures = new ArrayList<>();
         for (int i = 1; i <= daysCount; i++) {
-            ClaudeScheduleResponse.DayDto day = new ClaudeScheduleResponse.DayDto();
-            day.setDayNumber(i);
+            int dayNumber = i;
+            futures.add(CompletableFuture.supplyAsync(
+                    () -> generateSingleDay(request, dayNumber, "None", regionName), dayGenerationExecutor));
+        }
+        List<ClaudeScheduleResponse.DayDto> days = futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
 
-            try {
-                List<ClaudeScheduleResponse.ItemDto> items = null;
+        // 2단계: 병렬 생성 특성상 날짜끼리 서로의 결과를 모른 채 만들어졌으므로, 실제로 겹치는
+        // 장소가 있는지 기존 검증(hasDuplicateAcrossDays)으로 확인하고, 겹친 날짜만 순서대로
+        // (이전 날짜들의 장소를 제외 목록으로 넘겨) 다시 생성한다. 대부분은 안 겹쳐서 이 블록 자체가 안 돈다.
+        if (hasDuplicateAcrossDays(days)) {
+            Set<String> usedPlaceNames = new LinkedHashSet<>();
+            for (int idx = 0; idx < days.size(); idx++) {
+                ClaudeScheduleResponse.DayDto day = days.get(idx);
+                List<ClaudeScheduleResponse.ItemDto> items = day.getItems();
 
-                // 프롬프트에 제외 목록을 넘겨도 저가형 모델이 가끔 이전 날짜와 겹치는 장소를 다시
-                // 내놓는 경우가 있어, 실제로 겹치는지 코드로 재확인하고 겹치면 몇 번 더 재시도한다.
-                // 재시도 후에도 계속 겹치면 중복을 그냥 받아들이는 대신 실패로 간주해 자리표시자로
-                // 대체한다 -- "다른 날과 중복된 일정"보다는 "이 날짜만 재생성 필요" 쪽이 낫다.
-                for (int dupAttempt = 0; dupAttempt <= MAX_RETRIES; dupAttempt++) {
-                    String otherDaysPlaces = usedPlaceNames.isEmpty() ? "None" : String.join(", ", usedPlaceNames);
-                    String prompt = buildNewDayPrompt(request, i, otherDaysPlaces);
-                    ClaudeScheduleResponse.DayDto generated = callOpenRouterApiForDay(prompt, request.getRegion());
-
-                    boolean overlapsUsedPlaces = generated.getItems() != null && generated.getItems().stream()
-                            .map(ClaudeScheduleResponse.ItemDto::getPlaceName)
-                            .filter(name -> name != null && !name.isBlank())
-                            .anyMatch(name -> usedPlaceNames.contains(name.trim().toLowerCase()));
-
-                    if (!overlapsUsedPlaces) {
-                        items = generated.getItems();
-                        break;
-                    }
-                    log.warn("⚠️ {}일차 개별 생성 결과가 이전 날짜와 겹쳐 재시도합니다 (시도: {}).", i, dupAttempt + 1);
-                }
-
-                if (items == null) {
-                    throw new IllegalStateException("이전 날짜와 겹치지 않는 장소를 만들지 못했습니다.");
-                }
-
-                day.setItems(items);
-                items.stream()
+                boolean overlapsUsedPlaces = items != null && items.stream()
                         .map(ClaudeScheduleResponse.ItemDto::getPlaceName)
                         .filter(name -> name != null && !name.isBlank())
-                        .forEach(name -> usedPlaceNames.add(name.trim().toLowerCase()));
-            } catch (Exception e) {
-                log.error("❌ {}일차 개별 생성도 실패하여 자리표시자로 대체합니다: {}", i, e.getMessage());
-                day.setItems(createPlaceholderItems(regionName, i));
-            }
+                        .anyMatch(name -> usedPlaceNames.contains(name.trim().toLowerCase()));
 
-            days.add(day);
+                if (overlapsUsedPlaces) {
+                    int dayNumber = day.getDayNumber();
+                    // 원래 순차 로직처럼(MAX_RETRIES회) 겹치지 않을 때까지 재시도한다. 한 번만 시도하면
+                    // 저가형 모델이 좁은 테마(예: 온천/카페 위주 요청)에서 같은 후보를 계속 반복 추천해
+                    // 여전히 겹친 채로 끝나버리는 경우가 있어, 이 재시도 횟수는 줄이면 안 된다.
+                    ClaudeScheduleResponse.DayDto regenerated = day;
+                    for (int retryAttempt = 0; retryAttempt <= MAX_RETRIES; retryAttempt++) {
+                        log.warn("⚠️ {}일차가 다른 날짜와 겹쳐 다시 생성합니다 (시도: {}).", dayNumber, retryAttempt + 1);
+                        String otherDaysPlaces = usedPlaceNames.isEmpty() ? "None" : String.join(", ", usedPlaceNames);
+                        regenerated = generateSingleDay(request, dayNumber, otherDaysPlaces, regionName);
+
+                        List<ClaudeScheduleResponse.ItemDto> regeneratedItems = regenerated.getItems();
+                        boolean stillOverlaps = regeneratedItems != null && regeneratedItems.stream()
+                                .map(ClaudeScheduleResponse.ItemDto::getPlaceName)
+                                .filter(name -> name != null && !name.isBlank())
+                                .anyMatch(name -> usedPlaceNames.contains(name.trim().toLowerCase()));
+
+                        if (!stillOverlaps) {
+                            break;
+                        }
+                    }
+                    days.set(idx, regenerated);
+                    items = regenerated.getItems();
+                }
+
+                if (items != null) {
+                    items.stream()
+                            .map(ClaudeScheduleResponse.ItemDto::getPlaceName)
+                            .filter(name -> name != null && !name.isBlank())
+                            .forEach(name -> usedPlaceNames.add(name.trim().toLowerCase()));
+                }
+            }
         }
 
         result.setDays(days);
         return result;
+    }
+
+    // 하루치를 생성하고, 실패하면 자리표시자로 대체한다 (기존 로직과 동일).
+    // 1단계 병렬 생성과 2단계 개별 재생성이 공유하는 로직.
+    private ClaudeScheduleResponse.DayDto generateSingleDay(AiScheduleRequest request, int dayNumber,
+                                                              String otherDaysPlaces, String regionName) {
+        ClaudeScheduleResponse.DayDto day = new ClaudeScheduleResponse.DayDto();
+        day.setDayNumber(dayNumber);
+        try {
+            String prompt = buildNewDayPrompt(request, dayNumber, otherDaysPlaces);
+            ClaudeScheduleResponse.DayDto generated = callOpenRouterApiForDay(prompt, request.getRegion());
+            day.setItems(generated.getItems());
+        } catch (Exception e) {
+            log.error("❌ {}일차 개별 생성도 실패하여 자리표시자로 대체합니다: {}", dayNumber, e.getMessage());
+            day.setItems(createPlaceholderItems(regionName, dayNumber));
+        }
+        return day;
     }
 
     /**

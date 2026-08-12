@@ -26,4 +26,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     // 전체 원화 환산 지출 합계 (e.amount -> e.amountKrw로 수정)
     @Query("SELECT COALESCE(SUM(e.amountKrw), 0) FROM Expense e WHERE e.travelSchedule.id = :scheduleId")
     BigDecimal sumTotalByScheduleId(@Param("scheduleId") Long scheduleId);
+
+    // 엔화로 기록된 지출의 원본(엔화) 금액 합계 (여행 일지에 "엔화 사용량"으로 별도 표기하기 위함, 원화 환산 전 금액)
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.travelSchedule.id = :scheduleId AND e.currency = com.rivermh.soratrip.domain.expense.entity.Currency.JPY")
+    BigDecimal sumJpyTotalByScheduleId(@Param("scheduleId") Long scheduleId);
 }

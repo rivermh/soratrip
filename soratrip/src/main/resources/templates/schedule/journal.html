@@ -26,7 +26,7 @@
             <div class="expense-summary__total">
                 <span>
                     <span th:text="#{expense.total}">총 지출</span>:
-                    ₩ <span th:text="${#numbers.formatDecimal(journal.totalKrw != null ? journal.totalKrw : (journal.total != null ? journal.total : 0), 0, 'COMMA', 0, 'POINT')}">0</span>
+                    ₩ <span th:text="${#numbers.formatDecimal(journal.total != null ? journal.total : 0, 0, 'COMMA', 0, 'POINT')}">0</span>
                 </span>
                 <span th:if="${journal.totalJpy != null and journal.totalJpy > 0}" class="expense-summary__jpy"
                       th:text="#{expense.jpy_total(${#numbers.formatDecimal(journal.totalJpy, 0, 'COMMA', 0, 'POINT')})}">(엔화 사용량: ¥ 0)</span>

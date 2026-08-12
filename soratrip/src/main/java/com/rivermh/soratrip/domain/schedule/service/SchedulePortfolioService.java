@@ -54,12 +54,13 @@ public class SchedulePortfolioService {
                 ));
 
         BigDecimal total = expenseRepository.sumTotalByScheduleId(scheduleId);
+        BigDecimal totalJpy = expenseRepository.sumJpyTotalByScheduleId(scheduleId);
         Map<ExpenseCategory, BigDecimal> byCategory = new EnumMap<>(ExpenseCategory.class);
         for (ExpenseCategoryTotal row : expenseRepository.sumByCategory(scheduleId)) {
             byCategory.put(row.getCategory(), row.getTotal());
         }
 
-        return new ScheduleJournalDto(schedule, expensesByDay, photosByDay, reviewByDay, total, byCategory);
+        return new ScheduleJournalDto(schedule, expensesByDay, photosByDay, reviewByDay, total, totalJpy, byCategory);
     }
 
     // 내가 완료한 여행 목록 (마이페이지, 공개 여부 무관)

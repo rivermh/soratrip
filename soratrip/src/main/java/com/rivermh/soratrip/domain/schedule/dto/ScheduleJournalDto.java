@@ -21,16 +21,18 @@ public class ScheduleJournalDto {
     private final Map<Long, List<Photo>> photosByDay;
     private final Map<Long, Review> reviewByDay;
     private final BigDecimal total;
+    private final BigDecimal totalJpy;
     private final Map<ExpenseCategory, BigDecimal> byCategory;
 
     public ScheduleJournalDto(TravelSchedule schedule, Map<Long, List<Expense>> expensesByDay,
             Map<Long, List<Photo>> photosByDay, Map<Long, Review> reviewByDay,
-            BigDecimal total, Map<ExpenseCategory, BigDecimal> byCategory) {
+            BigDecimal total, BigDecimal totalJpy, Map<ExpenseCategory, BigDecimal> byCategory) {
         this.schedule = schedule;
         this.expensesByDay = expensesByDay;
         this.photosByDay = photosByDay;
         this.reviewByDay = reviewByDay;
         this.total = total;
+        this.totalJpy = totalJpy;
         this.byCategory = byCategory;
     }
 }

@@ -40,7 +40,7 @@
 .hero-content h1 {
   text-wrap: balance;
   color: var(--ink-900);
-  font-size: var(--text-3xl);
+  font-size: clamp(1.875rem, 1.5rem + 1.8vw, 2.75rem);
   font-weight: var(--fw-black);
   letter-spacing: var(--tracking-tighter);
   line-height: var(--leading-heading);

@@ -162,7 +162,7 @@
                         <input type="text" class="form-control" th:id="'addPlaceMemo-' + ${day.id}"
                                th:placeholder="#{schedule.form.memo_placeholder}" placeholder="메모 (예: 오픈시간 맞춰 방문)" style="flex: 1; min-width: 160px;" />
                         <button type="button" class="btn btn-primary" style="width: auto;"
-                                th:onclick="'submitAddPlace(' + ${day.id} + ')'" th:text="#{schedule.item.add_submit}">추가하기</button>
+                                th:onclick="'submitAddPlace(' + ${day.id} + ', this)'" th:text="#{schedule.item.add_submit}">추가하기</button>
                     </div>
                 </div>
             </div>
@@ -256,7 +256,7 @@
         }
 
         // 장소 추가 (POST /api/schedules/days/{dayId}/items)
-        function submitAddPlace(dayId) {
+        function submitAddPlace(dayId, btnEl) {
             const place = selectedPlaceByDay[dayId];
             if (!place) {
                 alert(/*[[#{schedule.form.no_place_selected}]]*/ "먼저 지도 검색을 통해 장소를 선택해주세요.");
@@ -266,6 +266,12 @@
             const time = document.getElementById(`addPlaceTime-${dayId}`).value || null;
             const memo = document.getElementById(`addPlaceMemo-${dayId}`).value || null;
             const placeType = document.getElementById(`addPlaceType-${dayId}`).value || null;
+
+            const originalText = btnEl ? btnEl.textContent : null;
+            if (btnEl) {
+                btnEl.disabled = true;
+                btnEl.textContent = /*[[#{schedule.item.adding}]]*/ '추가하는 중...';
+            }
 
             fetch(`/api/schedules/days/${dayId}/items`, {
                 method: 'POST',
@@ -285,9 +291,13 @@
                     location.reload();
                 } else {
                     alert(/*[[#{schedule.item.add_failed}]]*/ '장소 추가에 실패했습니다.');
+                    if (btnEl) { btnEl.disabled = false; btnEl.textContent = originalText; }
                 }
             })
-            .catch(err => alert(/*[[#{common.error_prefix}]]*/ '오류가 발생했습니다:' + ' ' + err));
+            .catch(err => {
+                alert(/*[[#{common.error_prefix}]]*/ '오류가 발생했습니다:' + ' ' + err);
+                if (btnEl) { btnEl.disabled = false; btnEl.textContent = originalText; }
+            });
         }
 
         // 화면 뱃지 번호(1., 2., 3...) 재정렬

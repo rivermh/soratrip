@@ -97,6 +97,7 @@ public class NotificationService {
 			case POST_LIKE, POST_COMMENT, COMMENT_REPLY, POST_APPLICATION, APPLICATION_ACCEPTED, APPLICATION_REJECTED ->
 					"/posts/" + n.getTargetId();
 			case SCHEDULE_LIKE, TRIP_REMINDER -> "/schedules/" + n.getTargetId();
+			case CHAT_MESSAGE -> "/chat";
 		};
 
 		return new NotificationResponseDto(n.getId(), message, link, n.isRead(), n.getCreatedAt());

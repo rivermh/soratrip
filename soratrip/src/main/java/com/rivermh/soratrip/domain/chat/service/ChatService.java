@@ -8,6 +8,8 @@ import com.rivermh.soratrip.domain.chat.repository.ChatMessageRepository;
 import com.rivermh.soratrip.domain.chat.repository.ChatRoomRepository;
 import com.rivermh.soratrip.domain.member.entity.Member;
 import com.rivermh.soratrip.domain.member.repository.MemberRepository;
+import com.rivermh.soratrip.domain.notification.entity.NotificationType;
+import com.rivermh.soratrip.domain.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,10 @@ public class ChatService {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
     private final MemberRepository memberRepository;
+    private final NotificationService notificationService;
+
+    // contextTitle 컬럼 길이(VARCHAR 255)를 넘지 않도록 알림 미리보기 텍스트를 잘라내는 최대 길이
+    private static final int NOTIFICATION_PREVIEW_MAX_LENGTH = 50;
 
     /**
      * 두 사용자 간의 채팅방 생성 또는 기존 채팅방 반환
@@ -74,8 +80,18 @@ public class ChatService {
 
         ChatMessage saved = chatMessageRepository.save(message);
         log.info("메시지 저장됨 - ChatRoom: {}, Sender: {}", chatRoomId, senderId);
-        
+
+        Member recipient = chatRoom.getOtherMember(sender);
+        notificationService.notify(recipient, sender, NotificationType.CHAT_MESSAGE, chatRoom.getId(), truncateForPreview(content));
+
         return ChatMessageResponse.from(saved);
+    }
+
+    private String truncateForPreview(String content) {
+        if (content == null || content.length() <= NOTIFICATION_PREVIEW_MAX_LENGTH) {
+            return content;
+        }
+        return content.substring(0, NOTIFICATION_PREVIEW_MAX_LENGTH) + "...";
     }
 
     /**

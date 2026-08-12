@@ -24,6 +24,13 @@
     justify-content: center;
   }
 
+  /* .notif-wrap은 .btn/.nav-link가 아니라 위 규칙에 안 걸려서, 세로로 쌓이는 모바일 메뉴에서
+     혼자 왼쪽에 붙어보였다. 다른 메뉴 항목들과 동일하게 가운데 정렬되도록 맞춘다. */
+  .navbar-menu .notif-wrap {
+    width: 100%;
+    justify-content: center;
+  }
+
   .navbar-lang {
     justify-content: center;
     padding-left: 0;

@@ -279,7 +279,12 @@ public class ClaudeScheduleService {
                    chosen for their story, not their fame.
                 3. The user's request for this day (below) is a MANDATORY constraint, not optional
                    flavor text. Make sure EVERY item you choose is compatible with it, even if an
-                   otherwise-fitting local place would conflict with it.
+                   otherwise-fitting local place would conflict with it. If the request implies a
+                   tier or vibe (e.g., "luxury", "budget", "high-end", "가성비"), that tier applies
+                   to the ENTIRE day, not just one anchor item like the hotel -- e.g., a "luxury
+                   beachfront hotel" request means every meal/activity that day should also read
+                   as upscale, never a cheap fast-food chain like 김밥천국/Gimbap Cheonguk sitting
+                   next to a five-star hotel.
 
                 STRICT JSON Format Requirement:
                 Return ONLY valid JSON for this single day (no markdown, no comments). Use this EXACT structure:
@@ -766,7 +771,12 @@ public class ClaudeScheduleService {
                 3. The 'Additional Preferences & Requests' field is a MANDATORY constraint from the
                    user, not optional flavor text. Read it carefully and make sure EVERY item you
                    choose is compatible with it. If an item would conflict with that request (even
-                   if it otherwise fits the local-food theme), do not include it.
+                   if it otherwise fits the local-food theme), do not include it. If the request
+                   implies a tier or vibe (e.g., "luxury", "budget", "high-end", "가성비"), that
+                   tier applies to the ENTIRE itinerary, not just an anchor item like the hotel --
+                   e.g., a "luxury beachfront hotel" request means every meal/activity that day
+                   should also read as upscale, never a cheap fast-food chain like 김밥천국/Gimbap
+                   Cheonguk sitting next to a five-star hotel.
                 4. Automatically detect whether Korean or Japanese is requested or appropriate
                    based on the input context, and write all content in that matching language.
                 5. EVERY day must be built around entirely different places from every other day

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${schedule.title} + ' - SoraTrip'">여행 일정 상세보기 - SoraTrip</title>
+    <title th:text="(${translations.get('title')} ?: ${schedule.title}) + ' - SoraTrip'">여행 일정 상세보기 - SoraTrip</title>
 
     <!-- Spring Security CSRF Meta 태그 (null 안전 처리) -->
     <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
@@ -24,7 +24,7 @@
 
             <!-- 일정 제목 및 북마크 버튼 영역 -->
             <div class="schedule-title-row">
-                <h2 th:text="${schedule.title}">도쿄 3박 4일 일정</h2>
+                <h2 th:text="${translations.get('title')} ?: ${schedule.title}">도쿄 3박 4일 일정</h2>
 
                 <!-- 북마크 버튼 UI -->
                 <button id="bookmarkBtn" type="button" onclick="toggleBookmark()" class="bookmark-btn">
@@ -123,16 +123,16 @@
                         <div class="item-card__detail">
                             <strong class="item-card__name">
                                 <span class="order-badge" th:text="${item.visitOrder}">1</span>.
-                                <span th:text="${item.placeName}">도쿄 타워</span>
+                                <span th:text="${translations.get('item_' + item.id + '_placeName')} ?: ${item.placeName}">도쿄 타워</span>
                             </strong>
                             <span th:if="${item.visitTime != null}" th:text="'⏰ ' + ${item.visitTime}" class="item-time-chip">⏰ 10:00</span>
                             <span th:if="${item.placeType != null}" th:text="${item.placeType.emoji + ' ' + item.placeType.displayName}" class="item-type-chip">🍜 맛집</span>
                             <div class="item-card__address" th:text="${item.placeAddress}">주소 정보</div>
                             <div th:if="${item.memo != null and !#strings.isEmpty(item.memo)}" class="item-card__memo">
-                                📝 <span th:text="#{schedule.memo}">메모</span>: <span th:text="${item.memo}">메모 내용</span>
+                                📝 <span th:text="#{schedule.memo}">메모</span>: <span th:text="${translations.get('item_' + item.id + '_memo')} ?: ${item.memo}">메모 내용</span>
                             </div>
                             <div th:if="${item.recommendReason != null and !#strings.isEmpty(item.recommendReason)}" class="item-card__ai-reason">
-                                🤖 <span th:text="#{schedule.ai_reason}">AI 추천 이유</span>: <span th:text="${item.recommendReason}">AI 추천 이유 내용</span>
+                                🤖 <span th:text="#{schedule.ai_reason}">AI 추천 이유</span>: <span th:text="${translations.get('item_' + item.id + '_recommendReason')} ?: ${item.recommendReason}">AI 추천 이유 내용</span>
                                 <span class="item-card__ai-reason-disclaimer" th:text="'(' + #{schedule.ai_reason_disclaimer} + ')'">(AI가 지어낸 설명이라 실제와 다를 수 있어요)</span>
                             </div>
                         </div>

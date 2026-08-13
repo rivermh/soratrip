@@ -46,6 +46,7 @@ import com.rivermh.soratrip.domain.schedule.service.AffiliateLinkService;
 import com.rivermh.soratrip.domain.schedule.service.ClaudeScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.ScheduleExportService;
 import com.rivermh.soratrip.domain.schedule.service.ScheduleRecommendationService;
+import com.rivermh.soratrip.domain.schedule.service.TranslationService;
 import com.rivermh.soratrip.domain.schedule.service.TravelScheduleService;
 import com.rivermh.soratrip.domain.schedule.service.WeatherService;
 import com.rivermh.soratrip.global.file.FileStorageService;
@@ -66,6 +67,7 @@ public class TravelScheduleController {
     private final WeatherService weatherService;
     private final ScheduleExportService scheduleExportService;
     private final AffiliateLinkService affiliateLinkService;
+    private final TranslationService translationService;
 
     // 북마크 조회를 위해 추가된 의존성
     private final ScheduleBookmarkRepository scheduleBookmarkRepository;
@@ -179,6 +181,7 @@ public class TravelScheduleController {
         model.addAttribute("mobilityScore", MobilityScoreDto.fromReviews(reviews));
         model.addAttribute("agodaLink", affiliateLinkService.buildAgodaLink(schedule.getRegion(), schedule.getStartDate(), schedule.getEndDate()));
         model.addAttribute("bookingLink", affiliateLinkService.buildBookingLink(schedule.getRegion(), schedule.getStartDate(), schedule.getEndDate()));
+        model.addAttribute("translations", translationService.translateScheduleForView(schedule, LocaleContextHolder.getLocale()));
         return "schedule/detail";
     }
 
